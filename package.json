@@ -1,0 +1,13 @@
+{
+  "name": "@workspace-tmp/source",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {},
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {
+    "@nx/js": "21.6.11",
+    "@nx/workspace": "21.6.11",
+    "nx": "21.6.11"
+  }
+}
