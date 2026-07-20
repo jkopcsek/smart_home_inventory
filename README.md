@@ -1,96 +1,82 @@
-# WorkspaceTmp
+# Smart Home Inventory
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A Home Assistant add-on (served via Ingress) that documents your home's
+electrical and smart-home setup: areas, devices, capabilities, actual
+connections, annotated plans/photos, and mermaid diagrams.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+- Architecture background and constraints: [BOOTSTRAP.md](BOOTSTRAP.md)
+- Per-feature design notes: [docs/features/](docs/features/README.md)
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/intro#learn-nx?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## Stack
 
-## Run tasks
+Nx monorepo — NestJS backend (`apps/backend`), Angular frontend
+(`apps/frontend`), shared zod DTOs (`libs/shared`). SQLite via Prisma; all
+persistent state (DB + uploaded files) lives under `DATA_DIR` (`/data` in the
+add-on, `./data` in dev) so HA backups cover it automatically.
 
-To run tasks with Nx use:
+## Development
 
-```sh
-npx nx <target> <project-name>
+```bash
+npm install
+npm run prisma:migrate      # create/update ./data/inventory.db
+npm run dev                 # backend on :8099, frontend dev server with /api proxy
 ```
 
-For example:
+Open the frontend dev server URL it prints (usually http://localhost:4200).
 
-```sh
-npx nx build myproject
+Without any HA configuration the backend runs in **mock** mode — "Sync from
+Home Assistant" in Settings imports built-in fixture areas/devices. To sync a
+real instance during development, set in `.env`:
+
+```
+HA_URL=http://homeassistant.local:8123
+HA_TOKEN=<long-lived access token>
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+### Useful commands
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Add new projects
-
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-To install a new plugin you can use the `nx add` command. Here's an example of adding the React plugin:
-```sh
-npx nx add @nx/react
+```bash
+npx nx build backend|frontend|shared     # production builds
+npx nx test backend|frontend|shared      # unit tests (merge rules, schema, editor math)
+npx nx run-many -t eslint:lint           # lint everything
+npm run prisma:migrate                   # prisma migrate dev (schema changes)
 ```
 
-Use the plugin's generator to create new projects. For example, to create a new React app or library:
+### Testing the Ingress environment locally
 
-```sh
-# Generate an app
-npx nx g @nx/react:app demo
+Ingress serves the app under a dynamic path (`/api/hassio_ingress/<token>/`),
+which is the main class of bugs for add-on frontends. To simulate it:
 
-# Generate a library
-npx nx g @nx/react:lib some-lib
+```bash
+npx nx build backend && npx nx build frontend
+DATA_DIR=./data STATIC_DIR=dist/apps/frontend/browser node dist/apps/backend/main.js &
+node tools/ingress-proxy/proxy.mjs
+# open http://localhost:8100  (renders the app in an iframe under a fake ingress prefix)
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+The app survives this because it uses hash routing, `<base href="./">`, and
+strictly relative API/asset URLs (guarded by an HTTP interceptor).
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Install as a Home Assistant add-on
 
-## Set up CI!
+The repo root is the add-on directory (`config.yaml` + `Dockerfile`). For a
+local add-on: copy the repo to `/addons/smart_home_inventory` on your HA box,
+then Settings → Add-ons → Add-on store → ⋮ → Check for updates, and install
+"Smart Home Inventory". On startup the container runs `prisma migrate deploy`
+and serves the UI through Ingress on port 8099.
 
-### Step 1
+`homeassistant_api: true` gives the backend `SUPERVISOR_TOKEN` automatically —
+sync then talks to `ws://supervisor/core/websocket`.
 
-To connect to Nx Cloud, run the following command:
+## Environment variables
 
-```sh
-npx nx connect
-```
-
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/getting-started/intro#learn-nx?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PORT` | `8099` | must match `ingress_port` |
+| `DATA_DIR` | `/data` | SQLite DB + uploads root |
+| `STATIC_DIR` | unset | serve built Angular app from this dir (prod) |
+| `HA_URL` / `HA_TOKEN` | unset | dev: sync against a real HA instance |
+| `HA_MOCK` | `false` | force fixture registry |
+| `HA_READ_ONLY` | `true` | hard guard: block any non-read HA command at the client (also add-on option `read_only`) |
+| `HA_SYNC_INTERVAL_MINUTES` | `0` (off) | periodic background sync |
+| `UPLOAD_MAX_BYTES` | 50 MB | upload size limit |

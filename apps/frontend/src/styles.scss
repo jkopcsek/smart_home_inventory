@@ -1,0 +1,256 @@
+/* Roboto — self-hosted, no CDN (Ingress/offline friendliness) */
+@use '@fontsource/roboto/400.css' as roboto400;
+@use '@fontsource/roboto/500.css' as roboto500;
+@use '@fontsource/roboto/700.css' as roboto700;
+
+/*
+ * Theme tokens modeled on Home Assistant's stock Material palettes.
+ * Names deliberately mirror HA's documented theme variables.
+ * Switched by ThemeService setting data-theme="light|dark" on <html>.
+ */
+:root,
+:root[data-theme='light'] {
+  --primary-color: #03a9f4;
+  --accent-color: #ff9800;
+  --primary-background-color: #fafafa;
+  --secondary-background-color: #e5e5e5;
+  --card-background-color: #ffffff;
+  --primary-text-color: #212121;
+  --secondary-text-color: #727272;
+  --disabled-text-color: #bdbdbd;
+  --text-primary-on-primary: #ffffff;
+  --divider-color: rgba(0, 0, 0, 0.12);
+  --error-color: #db4437;
+  --warning-color: #ffa600;
+  --success-color: #43a047;
+  --info-color: #039be5;
+  --app-header-background-color: #03a9f4;
+  --app-header-text-color: #ffffff;
+  --ha-card-border-radius: 12px;
+  --ha-card-border-color: var(--divider-color);
+  --input-fill-color: #f5f5f5;
+  --chip-background-color: rgba(0, 0, 0, 0.06);
+  --hover-color: rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme='dark'] {
+  --primary-color: #03a9f4;
+  --accent-color: #ff9800;
+  --primary-background-color: #111111;
+  --secondary-background-color: #202020;
+  --card-background-color: #1c1c1c;
+  --primary-text-color: #e1e1e1;
+  --secondary-text-color: #9b9b9b;
+  --disabled-text-color: #6f6f6f;
+  --text-primary-on-primary: #ffffff;
+  --divider-color: rgba(255, 255, 255, 0.12);
+  --error-color: #db4437;
+  --warning-color: #ffa600;
+  --success-color: #43a047;
+  --info-color: #039be5;
+  --app-header-background-color: #101e24;
+  --app-header-text-color: #e1e1e1;
+  --ha-card-border-radius: 12px;
+  --ha-card-border-color: var(--divider-color);
+  --input-fill-color: #2b2b2b;
+  --chip-background-color: rgba(255, 255, 255, 0.1);
+  --hover-color: rgba(255, 255, 255, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: Roboto, system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--primary-text-color);
+  background: var(--primary-background-color);
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 400;
+  margin: 0 0 12px;
+}
+
+h1 {
+  font-size: 24px;
+}
+h2 {
+  font-size: 20px;
+}
+h3 {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* ---- shared element styles (HA-card look) ---- */
+
+.card {
+  background: var(--card-background-color);
+  border: 1px solid var(--ha-card-border-color);
+  border-radius: var(--ha-card-border-radius);
+  padding: 16px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  background: var(--primary-color);
+  color: var(--text-primary-on-primary);
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn.secondary {
+  background: transparent;
+  color: var(--primary-color);
+}
+
+.btn.danger {
+  background: transparent;
+  color: var(--error-color);
+}
+
+.btn.icon-only {
+  padding: 6px;
+  background: transparent;
+  color: var(--secondary-text-color);
+  border-radius: 50%;
+}
+
+.btn.icon-only:hover {
+  background: var(--hover-color);
+}
+
+input.text,
+textarea.text,
+select.text {
+  font: inherit;
+  color: var(--primary-text-color);
+  background: var(--input-fill-color);
+  border: 1px solid var(--divider-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+input.text:focus,
+textarea.text:focus,
+select.text:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -1px;
+}
+
+.field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.field > span {
+  display: block;
+  font-size: 12px;
+  color: var(--secondary-text-color);
+  margin-bottom: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--chip-background-color);
+  color: var(--primary-text-color);
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  border: none;
+  font-family: inherit;
+}
+
+.chip.active {
+  background: var(--primary-color);
+  color: var(--text-primary-on-primary);
+}
+
+button.chip {
+  cursor: pointer;
+}
+
+.muted {
+  color: var(--secondary-text-color);
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.data th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--secondary-text-color);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--divider-color);
+}
+
+table.data td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--divider-color);
+}
+
+table.data tr.clickable {
+  cursor: pointer;
+}
+
+table.data tr.clickable:hover {
+  background: var(--hover-color);
+}
+
+dialog {
+  border: none;
+  border-radius: var(--ha-card-border-radius);
+  background: var(--card-background-color);
+  color: var(--primary-text-color);
+  padding: 24px;
+  max-width: min(560px, 90vw);
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}

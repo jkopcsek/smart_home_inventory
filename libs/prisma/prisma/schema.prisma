@@ -1,0 +1,236 @@
+// Prisma 7: pure-TS client generated into this lib and checked in.
+// Regenerate after schema changes with `npm run prisma:generate`.
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+  runtime  = "nodejs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// NOTE: SQLite still has no Decimal (money = integer cents) and Json columns
+// cannot carry a DB default (Prisma renders invalid DDL — services write those
+// fields explicitly). Enums ARE supported since Prisma 7 (stored as TEXT); the
+// value lists must stay in sync with the zod unions in libs/shared.
+
+enum DeviceStatus {
+  installed
+  stored
+  retired
+  planned
+  broken
+}
+
+enum DeviceCategory {
+  light
+  switch_actor
+  sensor
+  thermostat
+  media
+  appliance
+  breaker
+  junction_box
+  outlet
+  wall_switch
+  network
+  hub
+  camera
+  other
+}
+
+enum AttachmentKind {
+  manual
+  image
+  invoice
+  diagram
+  plan
+  other
+}
+
+enum ConnectionType {
+  electrical
+  zigbee_binding
+  zigbee_network
+  zwave_network
+  matter_fabric
+  thread
+  ethernet
+  wifi
+  knx
+  other
+}
+
+enum CapabilityCategory {
+  protocol
+  network
+  power
+  other
+}
+
+enum EntitySource {
+  manual
+  ha
+}
+
+enum AreaImageKind {
+  floorplan
+  photo
+  schematic
+  other
+}
+
+model Area {
+  id         String   @id @default(cuid())
+  name       String
+  floor      String?
+  notes      String?
+  haAreaId   String?  @unique
+  haName     String?
+  haOrphaned Boolean      @default(false)
+  source     EntitySource @default(manual)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  devices     Device[]
+  attachments Attachment[]
+  images      AreaImage[]
+  diagrams    Diagram[]
+}
+
+model Device {
+  id                 String    @id @default(cuid())
+  name               String
+  category           DeviceCategory?
+  manufacturer       String?
+  model              String?
+  serialNumber       String?
+  purchaseDate       DateTime?
+  purchasePriceCents Int?
+  purchaseCurrency   String?   @default("EUR")
+  purchasedFrom      String?
+  productUrl         String?
+  notes              String?
+  status             DeviceStatus @default(installed)
+  areaId             String?
+  area               Area?     @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  haDeviceId         String?   @unique
+  haName             String?
+  haAreaIdAtSync     String?
+  haOrphaned         Boolean      @default(false)
+  source             EntitySource @default(manual)
+  primaryImageId     String?   @unique
+  primaryImage       Attachment? @relation("DevicePrimaryImage", fields: [primaryImageId], references: [id], onDelete: SetNull)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  attachments     Attachment[]       @relation("DeviceAttachments")
+  capabilities    DeviceCapability[]
+  connectionsFrom Connection[]       @relation("ConnectionFrom")
+  connectionsTo   Connection[]       @relation("ConnectionTo")
+  diagrams        Diagram[]
+
+  @@index([areaId])
+  @@index([status])
+  @@index([category])
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  kind         AttachmentKind @default(other)
+  title        String?
+  originalName String
+  storedName   String   @unique
+  mimeType     String
+  sizeBytes    Int
+  sha256       String?
+  deviceId     String?
+  device       Device?  @relation("DeviceAttachments", fields: [deviceId], references: [id], onDelete: Cascade)
+  areaId       String?
+  area         Area?    @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  primaryImageOf Device?    @relation("DevicePrimaryImage")
+  areaImageOf    AreaImage?
+
+  @@index([deviceId])
+  @@index([areaId])
+}
+
+model CapabilityType {
+  id       String  @id @default(cuid())
+  key      String  @unique
+  label    String
+  category CapabilityCategory @default(other)
+  isSystem Boolean @default(false)
+
+  devices DeviceCapability[]
+}
+
+model DeviceCapability {
+  deviceId         String
+  device           Device         @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  capabilityTypeId String
+  capabilityType   CapabilityType @relation(fields: [capabilityTypeId], references: [id], onDelete: Cascade)
+  metadata         Json?
+  notes            String?
+
+  @@id([deviceId, capabilityTypeId])
+}
+
+model Connection {
+  id           String   @id @default(cuid())
+  type         ConnectionType
+  // Directed edge: from = upstream/provider end (breaker, switch, coordinator),
+  // to = consumer end. UI may render undirected.
+  fromDeviceId String
+  fromDevice   Device   @relation("ConnectionFrom", fields: [fromDeviceId], references: [id], onDelete: Cascade)
+  toDeviceId   String
+  toDevice     Device   @relation("ConnectionTo", fields: [toDeviceId], references: [id], onDelete: Cascade)
+  label        String?
+  metadata     Json?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([fromDeviceId])
+  @@index([toDeviceId])
+  @@index([type])
+}
+
+model AreaImage {
+  id                String      @id @default(cuid())
+  areaId            String
+  area              Area        @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  name              String      @default("Plan")
+  kind              AreaImageKind?
+  description       String?
+  imageAttachmentId String?     @unique
+  imageAttachment   Attachment? @relation(fields: [imageAttachmentId], references: [id], onDelete: SetNull)
+  imageWidth        Int?
+  imageHeight       Int?
+  // No DB default: Prisma renders Json defaults as invalid (unquoted) SQLite
+  // DDL. The service always writes this field explicitly.
+  annotations       Json
+  version           Int         @default(1)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([areaId])
+}
+
+model Diagram {
+  id        String   @id @default(cuid())
+  title     String
+  source    String
+  deviceId  String?
+  device    Device?  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  areaId    String?
+  area      Area?    @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([deviceId])
+  @@index([areaId])
+}

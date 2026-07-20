@@ -1,0 +1,28 @@
+import { BadRequestException, PipeTransform } from '@nestjs/common';
+import { ZodType } from 'zod';
+
+/**
+ * Per-parameter validation pipe: `@Body(zodPipe(CreateAreaSchema))`.
+ * Returns the parsed (defaulted, transformed) value on success.
+ */
+export class ZodValidationPipe<T> implements PipeTransform<unknown, T> {
+  constructor(private readonly schema: ZodType<T>) {}
+
+  transform(value: unknown): T {
+    const result = this.schema.safeParse(value);
+    if (!result.success) {
+      throw new BadRequestException({
+        message: 'Validation failed',
+        issues: result.error.issues.map((i) => ({
+          path: i.path.join('.'),
+          message: i.message,
+        })),
+      });
+    }
+    return result.data;
+  }
+}
+
+export function zodPipe<T>(schema: ZodType<T>): ZodValidationPipe<T> {
+  return new ZodValidationPipe(schema);
+}

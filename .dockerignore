@@ -1,0 +1,9 @@
+node_modules
+dist
+data
+.nx
+.git
+.angular
+coverage
+tmp
+*.log
