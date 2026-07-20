@@ -57,7 +57,6 @@ export const ModelName = {
   CapabilityType: 'CapabilityType',
   DeviceCapability: 'DeviceCapability',
   Connection: 'Connection',
-  AreaImage: 'AreaImage',
   Diagram: 'Diagram'
 } as const
 
@@ -171,28 +170,11 @@ export const ConnectionScalarFieldEnum = {
 export type ConnectionScalarFieldEnum = (typeof ConnectionScalarFieldEnum)[keyof typeof ConnectionScalarFieldEnum]
 
 
-export const AreaImageScalarFieldEnum = {
-  id: 'id',
-  areaId: 'areaId',
-  name: 'name',
-  kind: 'kind',
-  description: 'description',
-  imageAttachmentId: 'imageAttachmentId',
-  imageWidth: 'imageWidth',
-  imageHeight: 'imageHeight',
-  annotations: 'annotations',
-  version: 'version',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type AreaImageScalarFieldEnum = (typeof AreaImageScalarFieldEnum)[keyof typeof AreaImageScalarFieldEnum]
-
-
 export const DiagramScalarFieldEnum = {
   id: 'id',
   title: 'title',
-  source: 'source',
+  content: 'content',
+  version: 'version',
   deviceId: 'deviceId',
   areaId: 'areaId',
   createdAt: 'createdAt',

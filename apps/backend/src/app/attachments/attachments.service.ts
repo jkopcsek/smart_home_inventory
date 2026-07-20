@@ -23,9 +23,23 @@ export interface UploadedFileInfo {
   path: string;
 }
 
+/** `{ home: true }` means an attachment scoped to the whole home, not a specific area/device. */
 export type AttachmentOwner =
   | { deviceId: string }
-  | { areaId: string };
+  | { areaId: string }
+  | { home: true };
+
+function ownerData(owner: AttachmentOwner): { deviceId?: string; areaId?: string } {
+  if ('deviceId' in owner) return { deviceId: owner.deviceId };
+  if ('areaId' in owner) return { areaId: owner.areaId };
+  return {};
+}
+
+function ownerWhere(owner: AttachmentOwner): { deviceId: string | null; areaId: string | null } {
+  if ('deviceId' in owner) return { deviceId: owner.deviceId, areaId: null };
+  if ('areaId' in owner) return { deviceId: null, areaId: owner.areaId };
+  return { deviceId: null, areaId: null };
+}
 
 @Injectable()
 export class AttachmentsService {
@@ -52,7 +66,7 @@ export class AttachmentsService {
           mimeType: file.mimetype,
           sizeBytes: file.size,
           sha256,
-          ...owner,
+          ...ownerData(owner),
         },
       });
       return toAttachmentDto(attachment);
@@ -70,11 +84,10 @@ export class AttachmentsService {
   async listForOwner(owner: AttachmentOwner): Promise<AttachmentDto[]> {
     await this.ensureOwnerExists(owner);
     const attachments = await this.prisma.attachment.findMany({
-      where: owner,
+      where: ownerWhere(owner),
       orderBy: { createdAt: 'desc' },
     });
-    // Plan images are managed through their AreaImage, not the generic list.
-    return attachments.filter((a) => a.kind !== 'plan').map(toAttachmentDto);
+    return attachments.map(toAttachmentDto);
   }
 
   async getEntity(id: string): Promise<Attachment> {
@@ -121,7 +134,7 @@ export class AttachmentsService {
       if (!device) {
         throw new BadRequestException(`Device ${owner.deviceId} does not exist`);
       }
-    } else {
+    } else if ('areaId' in owner) {
       const area = await this.prisma.area.findUnique({
         where: { id: owner.areaId },
         select: { id: true },
@@ -130,5 +143,6 @@ export class AttachmentsService {
         throw new BadRequestException(`Area ${owner.areaId} does not exist`);
       }
     }
+    // Home has no row to validate — it always exists.
   }
 }

@@ -74,13 +74,6 @@ enum EntitySource {
   ha
 }
 
-enum AreaImageKind {
-  floorplan
-  photo
-  schematic
-  other
-}
-
 model Area {
   id         String   @id @default(cuid())
   name       String
@@ -95,7 +88,6 @@ model Area {
 
   devices     Device[]
   attachments Attachment[]
-  images      AreaImage[]
   diagrams    Diagram[]
 }
 
@@ -152,7 +144,6 @@ model Attachment {
   createdAt    DateTime @default(now())
 
   primaryImageOf Device?    @relation("DevicePrimaryImage")
-  areaImageOf    AreaImage?
 
   @@index([deviceId])
   @@index([areaId])
@@ -199,31 +190,14 @@ model Connection {
   @@index([type])
 }
 
-model AreaImage {
-  id                String      @id @default(cuid())
-  areaId            String
-  area              Area        @relation(fields: [areaId], references: [id], onDelete: Cascade)
-  name              String      @default("Plan")
-  kind              AreaImageKind?
-  description       String?
-  imageAttachmentId String?     @unique
-  imageAttachment   Attachment? @relation(fields: [imageAttachmentId], references: [id], onDelete: SetNull)
-  imageWidth        Int?
-  imageHeight       Int?
-  // No DB default: Prisma renders Json defaults as invalid (unquoted) SQLite
-  // DDL. The service always writes this field explicitly.
-  annotations       Json
-  version           Int         @default(1)
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-
-  @@index([areaId])
-}
-
 model Diagram {
   id        String   @id @default(cuid())
   title     String
-  source    String
+  // ng-diagram serializable model: { schemaVersion: 1, nodes: [...], edges: [...] }.
+  // No DB default: Prisma renders Json defaults as invalid (unquoted) SQLite
+  // DDL. The service always writes this field explicitly.
+  content   Json
+  version   Int      @default(1)
   deviceId  String?
   device    Device?  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   areaId    String?

@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import {
@@ -14,6 +15,8 @@ import {
   CreateDiagramSchema,
   DiagramQueryDto,
   DiagramQuerySchema,
+  PutDiagramContentDto,
+  PutDiagramContentSchema,
   UpdateDiagramDto,
   UpdateDiagramSchema,
 } from '@smart-home-inventory/shared';
@@ -45,6 +48,14 @@ export class DiagramsController {
     @Body(zodPipe(UpdateDiagramSchema)) dto: UpdateDiagramDto
   ) {
     return this.diagrams.update(id, dto);
+  }
+
+  @Put(':id/content')
+  putContent(
+    @Param('id') id: string,
+    @Body(zodPipe(PutDiagramContentSchema)) dto: PutDiagramContentDto
+  ) {
+    return this.diagrams.putContent(id, dto.version, dto.content);
   }
 
   @Delete(':id')

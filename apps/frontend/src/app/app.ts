@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   mdiCog,
-  mdiChartTimelineVariant,
   mdiDevices,
   mdiFloorPlan,
   mdiTransitConnectionVariant,
@@ -34,9 +33,6 @@ import { ConfirmDialogComponent } from './core/confirm/confirm-dialog.component'
         </a>
         <a routerLink="/connections" routerLinkActive="active">
           <app-icon [path]="icons.connections" [size]="18" /> Connections
-        </a>
-        <a routerLink="/diagrams" routerLinkActive="active">
-          <app-icon [path]="icons.diagrams" [size]="18" /> Diagrams
         </a>
         <a routerLink="/settings" routerLinkActive="active">
           <app-icon [path]="icons.settings" [size]="18" /> Settings
@@ -113,7 +109,6 @@ export class App {
     areas: mdiFloorPlan,
     devices: mdiDevices,
     connections: mdiTransitConnectionVariant,
-    diagrams: mdiChartTimelineVariant,
     settings: mdiCog,
   };
 }

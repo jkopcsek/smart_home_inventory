@@ -64,20 +64,6 @@ export const CAPABILITY_CATEGORIES = [
 export const CapabilityCategorySchema = z.enum(CAPABILITY_CATEGORIES);
 export type CapabilityCategory = z.infer<typeof CapabilityCategorySchema>;
 
-/**
- * Optional semantic type of an annotated area image. `floorplan` is the
- * prominent one (sorted first, acts as the natural hub image); the rest are
- * loose categories, not behavior-critical.
- */
-export const AREA_IMAGE_KINDS = [
-  'floorplan',
-  'photo',
-  'schematic',
-  'other',
-] as const;
-export const AreaImageKindSchema = z.enum(AREA_IMAGE_KINDS);
-export type AreaImageKind = z.infer<typeof AreaImageKindSchema>;
-
 export const ENTITY_SOURCES = ['manual', 'ha'] as const;
 export const EntitySourceSchema = z.enum(ENTITY_SOURCES);
 export type EntitySource = z.infer<typeof EntitySourceSchema>;

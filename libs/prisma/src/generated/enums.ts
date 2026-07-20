@@ -84,13 +84,3 @@ export const EntitySource = {
 } as const
 
 export type EntitySource = (typeof EntitySource)[keyof typeof EntitySource]
-
-
-export const AreaImageKind = {
-  floorplan: 'floorplan',
-  photo: 'photo',
-  schematic: 'schematic',
-  other: 'other'
-} as const
-
-export type AreaImageKind = (typeof AreaImageKind)[keyof typeof AreaImageKind]

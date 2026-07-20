@@ -9,7 +9,7 @@ import {
 import { Area } from '@smart-home-inventory/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 
-type AreaWithCounts = Area & { _count: { devices: number; images: number } };
+type AreaWithCounts = Area & { _count: { devices: number; diagrams: number } };
 
 export function toAreaDto(area: AreaWithCounts): AreaDto {
   return {
@@ -21,13 +21,13 @@ export function toAreaDto(area: AreaWithCounts): AreaDto {
     haOrphaned: area.haOrphaned,
     source: area.source as EntitySource,
     deviceCount: area._count.devices,
-    imageCount: area._count.images,
+    diagramCount: area._count.diagrams,
     createdAt: area.createdAt.toISOString(),
     updatedAt: area.updatedAt.toISOString(),
   };
 }
 
-const withCounts = { _count: { select: { devices: true, images: true } } } as const;
+const withCounts = { _count: { select: { devices: true, diagrams: true } } } as const;
 
 @Injectable()
 export class AreasService {

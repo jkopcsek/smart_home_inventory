@@ -3,13 +3,11 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   AreaDto,
-  AreaImageDto,
   AttachmentDto,
   AttachmentKind,
   CapabilityTypeDto,
   ConnectionDto,
   CreateAreaDto,
-  CreateAreaImageDto,
   CreateCapabilityTypeDto,
   CreateConnectionDto,
   CreateDeviceDto,
@@ -18,13 +16,12 @@ import {
   DeviceDetailDto,
   DeviceDto,
   DeviceQueryDto,
+  DiagramContent,
   DiagramDto,
   HaStatusDto,
-  PlanAnnotations,
   SetDeviceCapabilityDto,
   SyncResultDto,
   UpdateAreaDto,
-  UpdateAreaImageDto,
   UpdateCapabilityTypeDto,
   UpdateConnectionDto,
   UpdateDeviceDto,
@@ -93,25 +90,32 @@ export class DevicesApi {
   }
 }
 
+export type AttachmentOwner = { deviceId: string } | { areaId: string } | { home: true };
+
+function ownerAttachmentsUrl(owner: AttachmentOwner): string {
+  if ('deviceId' in owner) return `api/devices/${owner.deviceId}/attachments`;
+  if ('areaId' in owner) return `api/areas/${owner.areaId}/attachments`;
+  return 'api/home/attachments';
+}
+
 @Injectable({ providedIn: 'root' })
 export class AttachmentsApi {
   private readonly http = inject(HttpClient);
 
+  listForOwner(owner: AttachmentOwner): Observable<AttachmentDto[]> {
+    return this.http.get<AttachmentDto[]>(ownerAttachmentsUrl(owner));
+  }
   upload(
-    owner: { deviceId: string } | { areaId: string },
+    owner: AttachmentOwner,
     file: File,
     kind: AttachmentKind,
     title?: string
   ): Observable<HttpEvent<AttachmentDto>> {
-    const target =
-      'deviceId' in owner
-        ? `api/devices/${owner.deviceId}/attachments`
-        : `api/areas/${owner.areaId}/attachments`;
     const form = new FormData();
     form.append('file', file);
     form.append('kind', kind);
     if (title) form.append('title', title);
-    return this.http.post<AttachmentDto>(target, form, {
+    return this.http.post<AttachmentDto>(ownerAttachmentsUrl(owner), form, {
       reportProgress: true,
       observe: 'events',
     });
@@ -183,51 +187,6 @@ export class ConnectionsApi {
 }
 
 @Injectable({ providedIn: 'root' })
-export class AreaImagesApi {
-  private readonly http = inject(HttpClient);
-
-  listForArea(areaId: string): Observable<AreaImageDto[]> {
-    return this.http.get<AreaImageDto[]>(`api/areas/${areaId}/images`);
-  }
-  get(id: string): Observable<AreaImageDto> {
-    return this.http.get<AreaImageDto>(`api/area-images/${id}`);
-  }
-  create(
-    areaId: string,
-    dto: CreateAreaImageDto,
-    file?: File
-  ): Observable<AreaImageDto> {
-    const form = new FormData();
-    form.append('name', dto.name);
-    if (dto.kind) form.append('kind', dto.kind);
-    if (dto.description) form.append('description', dto.description);
-    if (file) form.append('file', file);
-    return this.http.post<AreaImageDto>(`api/areas/${areaId}/images`, form);
-  }
-  update(id: string, dto: UpdateAreaImageDto): Observable<AreaImageDto> {
-    return this.http.patch<AreaImageDto>(`api/area-images/${id}`, dto);
-  }
-  replaceImage(id: string, file: File): Observable<AreaImageDto> {
-    const form = new FormData();
-    form.append('file', file);
-    return this.http.put<AreaImageDto>(`api/area-images/${id}/image`, form);
-  }
-  putAnnotations(
-    id: string,
-    version: number,
-    annotations: PlanAnnotations
-  ): Observable<AreaImageDto> {
-    return this.http.put<AreaImageDto>(`api/area-images/${id}/annotations`, {
-      version,
-      annotations,
-    });
-  }
-  remove(id: string): Observable<void> {
-    return this.http.delete<void>(`api/area-images/${id}`);
-  }
-}
-
-@Injectable({ providedIn: 'root' })
 export class DiagramsApi {
   private readonly http = inject(HttpClient);
 
@@ -246,6 +205,9 @@ export class DiagramsApi {
   }
   update(id: string, dto: UpdateDiagramDto): Observable<DiagramDto> {
     return this.http.patch<DiagramDto>(`api/diagrams/${id}`, dto);
+  }
+  putContent(id: string, version: number, content: DiagramContent): Observable<DiagramDto> {
+    return this.http.put<DiagramDto>(`api/diagrams/${id}/content`, { version, content });
   }
   remove(id: string): Observable<void> {
     return this.http.delete<void>(`api/diagrams/${id}`);

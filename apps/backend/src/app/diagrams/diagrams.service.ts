@@ -1,22 +1,34 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Diagram } from '@smart-home-inventory/prisma';
+import { Diagram, Prisma } from '@smart-home-inventory/prisma';
 import {
   CreateDiagramDto,
+  DiagramContent,
+  DiagramContentSchema,
   DiagramDto,
   DiagramQueryDto,
+  EMPTY_DIAGRAM_CONTENT,
   UpdateDiagramDto,
 } from '@smart-home-inventory/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
+const logger = new Logger('DiagramsService');
+
 function toDiagramDto(d: Diagram): DiagramDto {
+  const parsed = DiagramContentSchema.safeParse(d.content);
+  if (!parsed.success) {
+    logger.warn(`Diagram ${d.id} has content that no longer matches the schema; showing empty`);
+  }
   return {
     id: d.id,
     title: d.title,
-    source: d.source,
+    content: parsed.success ? parsed.data : EMPTY_DIAGRAM_CONTENT,
+    version: d.version,
     deviceId: d.deviceId,
     areaId: d.areaId,
     createdAt: d.createdAt.toISOString(),
@@ -41,9 +53,7 @@ export class DiagramsService {
   }
 
   async get(id: string): Promise<DiagramDto> {
-    const diagram = await this.prisma.diagram.findUnique({ where: { id } });
-    if (!diagram) throw new NotFoundException(`Diagram ${id} not found`);
-    return toDiagramDto(diagram);
+    return toDiagramDto(await this.getEntity(id));
   }
 
   async create(dto: CreateDiagramDto): Promise<DiagramDto> {
@@ -51,9 +61,9 @@ export class DiagramsService {
     const diagram = await this.prisma.diagram.create({
       data: {
         title: dto.title,
-        source: dto.source,
         deviceId: dto.deviceId ?? null,
         areaId: dto.areaId ?? null,
+        content: EMPTY_DIAGRAM_CONTENT as unknown as Prisma.InputJsonValue,
       },
     });
     return toDiagramDto(diagram);
@@ -68,9 +78,29 @@ export class DiagramsService {
       where: { id },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.source !== undefined ? { source: dto.source } : {}),
         ...(dto.deviceId !== undefined ? { deviceId: dto.deviceId } : {}),
         ...(dto.areaId !== undefined ? { areaId: dto.areaId } : {}),
+      },
+    });
+    return toDiagramDto(diagram);
+  }
+
+  async putContent(
+    id: string,
+    version: number,
+    content: DiagramContent
+  ): Promise<DiagramDto> {
+    const existing = await this.getEntity(id);
+    if (existing.version !== version) {
+      throw new ConflictException(
+        `Diagram version conflict: expected ${existing.version}, got ${version}`
+      );
+    }
+    const diagram = await this.prisma.diagram.update({
+      where: { id },
+      data: {
+        content: content as unknown as Prisma.InputJsonValue,
+        version: { increment: 1 },
       },
     });
     return toDiagramDto(diagram);
@@ -79,6 +109,12 @@ export class DiagramsService {
   async remove(id: string): Promise<void> {
     await this.get(id);
     await this.prisma.diagram.delete({ where: { id } });
+  }
+
+  private async getEntity(id: string): Promise<Diagram> {
+    const diagram = await this.prisma.diagram.findUnique({ where: { id } });
+    if (!diagram) throw new NotFoundException(`Diagram ${id} not found`);
+    return diagram;
   }
 
   private async validateAnchors(

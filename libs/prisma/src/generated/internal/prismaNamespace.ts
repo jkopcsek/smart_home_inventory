@@ -390,7 +390,6 @@ export const ModelName = {
   CapabilityType: 'CapabilityType',
   DeviceCapability: 'DeviceCapability',
   Connection: 'Connection',
-  AreaImage: 'AreaImage',
   Diagram: 'Diagram'
 } as const
 
@@ -407,7 +406,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "area" | "device" | "attachment" | "capabilityType" | "deviceCapability" | "connection" | "areaImage" | "diagram"
+    modelProps: "area" | "device" | "attachment" | "capabilityType" | "deviceCapability" | "connection" | "diagram"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -855,80 +854,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    AreaImage: {
-      payload: Prisma.$AreaImagePayload<ExtArgs>
-      fields: Prisma.AreaImageFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.AreaImageFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AreaImagePayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.AreaImageFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AreaImagePayload>
-        }
-        findFirst: {
-          args: Prisma.AreaImageFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AreaImagePayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.AreaImageFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AreaImagePayload>
-        }
-        findMany: {
-          args: Prisma.AreaImageFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AreaImagePayload>[]
-        }
-        create: {
-          args: Prisma.AreaImageCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AreaImagePayload>
-        }
-        createMany: {
-          args: Prisma.AreaImageCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.AreaImageCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AreaImagePayload>[]
-        }
-        delete: {
-          args: Prisma.AreaImageDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AreaImagePayload>
-        }
-        update: {
-          args: Prisma.AreaImageUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AreaImagePayload>
-        }
-        deleteMany: {
-          args: Prisma.AreaImageDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.AreaImageUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.AreaImageUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AreaImagePayload>[]
-        }
-        upsert: {
-          args: Prisma.AreaImageUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AreaImagePayload>
-        }
-        aggregate: {
-          args: Prisma.AreaImageAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateAreaImage>
-        }
-        groupBy: {
-          args: Prisma.AreaImageGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AreaImageGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.AreaImageCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AreaImageCountAggregateOutputType> | number
-        }
-      }
-    }
     Diagram: {
       payload: Prisma.$DiagramPayload<ExtArgs>
       fields: Prisma.DiagramFieldRefs
@@ -1136,28 +1061,11 @@ export const ConnectionScalarFieldEnum = {
 export type ConnectionScalarFieldEnum = (typeof ConnectionScalarFieldEnum)[keyof typeof ConnectionScalarFieldEnum]
 
 
-export const AreaImageScalarFieldEnum = {
-  id: 'id',
-  areaId: 'areaId',
-  name: 'name',
-  kind: 'kind',
-  description: 'description',
-  imageAttachmentId: 'imageAttachmentId',
-  imageWidth: 'imageWidth',
-  imageHeight: 'imageHeight',
-  annotations: 'annotations',
-  version: 'version',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type AreaImageScalarFieldEnum = (typeof AreaImageScalarFieldEnum)[keyof typeof AreaImageScalarFieldEnum]
-
-
 export const DiagramScalarFieldEnum = {
   id: 'id',
   title: 'title',
-  source: 'source',
+  content: 'content',
+  version: 'version',
   deviceId: 'deviceId',
   areaId: 'areaId',
   createdAt: 'createdAt',
@@ -1306,13 +1214,6 @@ export type EnumConnectionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$P
 
 
 /**
- * Reference to a field of type 'AreaImageKind'
- */
-export type EnumAreaImageKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AreaImageKind'>
-    
-
-
-/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -1434,7 +1335,6 @@ export type GlobalOmitConfig = {
   capabilityType?: Prisma.CapabilityTypeOmit
   deviceCapability?: Prisma.DeviceCapabilityOmit
   connection?: Prisma.ConnectionOmit
-  areaImage?: Prisma.AreaImageOmit
   diagram?: Prisma.DiagramOmit
 }
 

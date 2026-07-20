@@ -59,6 +59,21 @@ export class AttachmentsController {
     return this.attachments.listForOwner({ areaId });
   }
 
+  @Post('home/attachments')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadForHome(
+    @UploadedFile() file: UploadedFileInfo | undefined,
+    @Body(zodPipe(UploadAttachmentSchema)) dto: UploadAttachmentDto
+  ) {
+    if (!file) throw new BadRequestException('file field is required');
+    return this.attachments.createFromUpload({ home: true }, file, dto);
+  }
+
+  @Get('home/attachments')
+  listForHome() {
+    return this.attachments.listForOwner({ home: true });
+  }
+
   @Get('attachments/:id')
   get(@Param('id') id: string) {
     return this.attachments.get(id);

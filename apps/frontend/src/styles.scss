@@ -3,6 +3,8 @@
 @use '@fontsource/roboto/500.css' as roboto500;
 @use '@fontsource/roboto/700.css' as roboto700;
 
+@import 'ng-diagram/styles.css';
+
 /*
  * Theme tokens modeled on Home Assistant's stock Material palettes.
  * Names deliberately mirror HA's documented theme variables.
@@ -253,4 +255,31 @@ dialog {
 
 dialog::backdrop {
   background: rgba(0, 0, 0, 0.45);
+}
+
+/* ---- ng-diagram theme tokens, mapped onto this app's HA palette ---- */
+/* ng-diagram already toggles its dark theme off html[data-theme='dark'],
+   the same attribute this app's ThemeService sets — so both switch together. */
+:root {
+  --ngd-diagram-background-color: var(--secondary-background-color);
+  --ngd-node-bg-primary-default: var(--card-background-color);
+  --ngd-node-stroke-primary-default: var(--divider-color);
+  --ngd-node-stroke-primary-hover: var(--primary-color);
+  --ngd-txt-primary-default: var(--primary-text-color);
+  --ngd-ui-bg-primary-default: var(--card-background-color);
+  --ngd-ui-bg-tertiary-default: var(--secondary-background-color);
+  --ngd-ui-border-color: var(--divider-color);
+  --ngd-ui-stroke-primary-focus: var(--primary-color);
+  --ngd-focus-ring-node-active: color-mix(in srgb, var(--primary-color) 40%, transparent);
+  --ngd-transform-box: var(--primary-color);
+  --ngd-default-edge-label-bg-primary-default: var(--card-background-color);
+  --ngd-background-line-minor-color: var(--divider-color);
+  --ngd-background-line-major-color: var(--divider-color);
+  --ngd-minimap-bg-primary-default: var(--card-background-color);
+  --ngd-minimap-stroke-primary-default: var(--divider-color);
+  --ngd-nav-button-primary-default: var(--secondary-text-color);
+  --ngd-nav-button-primary-hover: var(--hover-color);
+  --ngd-nav-button-primary-pressed: var(--primary-color);
+  --ngd-button-gray-bg-default: var(--secondary-background-color);
+  --ngd-button-gray-bg-hover: var(--hover-color);
 }

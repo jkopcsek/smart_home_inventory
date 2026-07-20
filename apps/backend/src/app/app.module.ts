@@ -9,7 +9,6 @@ import { DevicesModule } from './devices/devices.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { CapabilitiesModule } from './capabilities/capabilities.module';
 import { ConnectionsModule } from './connections/connections.module';
-import { AreaImagesModule } from './area-images/area-images.module';
 import { DiagramsModule } from './diagrams/diagrams.module';
 import { HaModule } from './ha/ha.module';
 
@@ -38,7 +37,6 @@ import { HaModule } from './ha/ha.module';
     AttachmentsModule,
     CapabilitiesModule,
     ConnectionsModule,
-    AreaImagesModule,
     DiagramsModule,
     HaModule,
   ],

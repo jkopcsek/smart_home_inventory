@@ -24,7 +24,7 @@ import {
   mdiStar,
   mdiStarOutline,
 } from '@mdi/js';
-import { AttachmentsApi, attachmentUrl } from '../../core/api/api.services';
+import { AttachmentOwner, AttachmentsApi, attachmentUrl } from '../../core/api/api.services';
 import { ConfirmService } from '../../core/confirm/confirm.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { IconComponent } from '../../shared/ui/icon.component';
@@ -184,7 +184,7 @@ export class AttachmentGalleryComponent {
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
 
-  readonly owner = input.required<{ deviceId: string } | { areaId: string }>();
+  readonly owner = input.required<AttachmentOwner>();
   readonly attachments = input.required<AttachmentDto[]>();
   /** Pass the device's primary image id to enable the star toggle; undefined hides it. */
   readonly primaryImageId = input<string | null | undefined>(undefined);

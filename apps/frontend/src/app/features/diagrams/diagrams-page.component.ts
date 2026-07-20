@@ -1,43 +1,27 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import {
-  AreaDto,
-  DeviceDto,
-  DiagramDto,
-} from '@smart-home-inventory/shared';
-import { mdiChartTimelineVariant, mdiDelete, mdiPlus } from '@mdi/js';
-import {
-  AreasApi,
-  DevicesApi,
-  DiagramsApi,
-} from '../../core/api/api.services';
-import { ConfirmService } from '../../core/confirm/confirm.service';
+import { DiagramDto } from '@smart-home-inventory/shared';
+import { mdiChartTimelineVariant, mdiPlus } from '@mdi/js';
+import { DiagramsApi } from '../../core/api/api.services';
 import { ToastService } from '../../core/toast/toast.service';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
-import { MermaidViewComponent } from './mermaid-view.component';
-
-const DEFAULT_SOURCE = `graph LR
-  Breaker[F7 breaker] -->|230V L2| Switch[Wall switch]
-  Switch --> Lamp[Ceiling lamp]
-`;
+import { DiagramCanvasComponent } from './diagram-canvas.component';
 
 @Component({
   selector: 'app-diagrams-page',
-  imports: [FormsModule, IconComponent, EmptyStateComponent, MermaidViewComponent],
+  imports: [FormsModule, IconComponent, EmptyStateComponent, DiagramCanvasComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="header">
       <h1>Diagrams</h1>
-      <button class="btn" (click)="startNew()">
-        <app-icon [path]="icons.plus" [size]="18" /> New diagram
-      </button>
+      <div class="new">
+        <input class="text" placeholder="Title" [(ngModel)]="newTitle" />
+        <button class="btn" [disabled]="!newTitle.trim()" (click)="create()">
+          <app-icon [path]="icons.plus" [size]="18" /> New diagram
+        </button>
+      </div>
     </div>
 
     <div class="layout">
@@ -49,62 +33,51 @@ const DEFAULT_SOURCE = `graph LR
             (click)="select(diagram)"
           >
             <span>{{ diagram.title }}</span>
-            <span class="muted">{{ anchorLabel(diagram) }}</span>
+            <span class="muted">{{ diagram.content.nodes.length }} nodes</span>
           </button>
         } @empty {
           <app-empty-state [icon]="icons.diagram" message="No diagrams yet" />
         }
       </div>
 
-      @if (editing()) {
-        <div class="editor card">
-          <div class="editor-head">
-            <input class="text title" placeholder="Title" [(ngModel)]="title" />
-            <select class="text" [(ngModel)]="anchorKey">
-              <option value="">standalone</option>
-              <optgroup label="Areas">
-                @for (area of areas(); track area.id) {
-                  <option [value]="'area:' + area.id">{{ area.name }}</option>
-                }
-              </optgroup>
-              <optgroup label="Devices">
-                @for (device of devices(); track device.id) {
-                  <option [value]="'device:' + device.id">{{ device.name }}</option>
-                }
-              </optgroup>
-            </select>
-            <button class="btn" [disabled]="!title.trim()" (click)="save()">Save</button>
-            @if (selected(); as s) {
-              <button class="btn icon-only" title="Delete" (click)="remove(s)">
-                <app-icon [path]="icons.delete" [size]="18" />
-              </button>
-            }
-          </div>
-          <div class="panes">
-            <textarea
-              class="text source"
-              rows="16"
-              spellcheck="false"
-              [(ngModel)]="source"
-              (ngModelChange)="liveSource.set($event)"
-            ></textarea>
-            <div class="preview">
-              <app-mermaid-view [source]="liveSource()" />
-            </div>
-          </div>
+      @if (selected(); as s) {
+        <div class="detail">
+          <app-diagram-canvas
+            [diagramId]="s.id"
+            [areaId]="areaId()"
+            [deviceId]="deviceId()"
+            (saved)="onSaved($event)"
+            (deleted)="onDeleted(s)"
+          />
         </div>
       }
     </div>
   `,
   styles: `
+    /* The diagram canvas needs real screen space — opt this page out of the
+       app-wide 1100px content cap set by main > * in styles.scss/app.ts. */
+    :host {
+      display: block;
+      max-width: none;
+      width: 100%;
+    }
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
     }
     .header h1 {
       margin: 0;
+    }
+    .new {
+      display: flex;
+      gap: 8px;
+    }
+    .new input {
+      width: 220px;
     }
     .layout {
       display: grid;
@@ -139,37 +112,13 @@ const DEFAULT_SOURCE = `graph LR
     .item.selected {
       background: color-mix(in srgb, var(--primary-color) 15%, transparent);
     }
-    .editor-head {
+    .detail {
       display: flex;
-      gap: 8px;
-      margin-bottom: 12px;
-      align-items: center;
-    }
-    .editor-head .title {
-      flex: 1;
-    }
-    .editor-head select {
-      width: auto;
-    }
-    .panes {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      flex-direction: column;
       gap: 12px;
     }
-    .source {
-      font-family: monospace;
-      font-size: 13px;
-      resize: vertical;
-    }
-    .preview {
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-      padding: 12px;
-      min-height: 200px;
-    }
     @media (max-width: 860px) {
-      .layout,
-      .panes {
+      .layout {
         grid-template-columns: 1fr;
       }
     }
@@ -177,96 +126,79 @@ const DEFAULT_SOURCE = `graph LR
 })
 export class DiagramsPageComponent implements OnInit {
   private readonly api = inject(DiagramsApi);
-  private readonly areasApi = inject(AreasApi);
-  private readonly devicesApi = inject(DevicesApi);
-  private readonly confirm = inject(ConfirmService);
+  private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
 
   protected readonly diagrams = signal<DiagramDto[]>([]);
   protected readonly selected = signal<DiagramDto | null>(null);
-  protected readonly editing = signal(false);
-  protected readonly areas = signal<AreaDto[]>([]);
-  protected readonly devices = signal<DeviceDto[]>([]);
-  protected readonly liveSource = signal('');
+  protected readonly areaId = signal<string | null>(null);
+  protected readonly deviceId = signal<string | null>(null);
+  protected readonly standalone = signal(false);
 
-  protected title = '';
-  protected source = '';
-  protected anchorKey = '';
+  protected newTitle = '';
 
   protected readonly icons = {
     plus: mdiPlus,
-    delete: mdiDelete,
     diagram: mdiChartTimelineVariant,
   };
 
   ngOnInit(): void {
-    this.load();
-    this.areasApi.list().subscribe((areas) => this.areas.set(areas));
-    this.devicesApi.list().subscribe((devices) => this.devices.set(devices));
+    this.route.queryParamMap.subscribe((params) => {
+      this.areaId.set(params.get('areaId'));
+      this.deviceId.set(params.get('deviceId'));
+      this.standalone.set(params.get('standalone') === '1');
+      const openId = params.get('open');
+      this.load(openId ?? undefined);
+    });
   }
 
-  protected load(): void {
-    this.api.list().subscribe((diagrams) => this.diagrams.set(diagrams));
-  }
-
-  protected anchorLabel(diagram: DiagramDto): string {
-    if (diagram.areaId) {
-      return this.areas().find((a) => a.id === diagram.areaId)?.name ?? 'area';
-    }
-    if (diagram.deviceId) {
-      return this.devices().find((d) => d.id === diagram.deviceId)?.name ?? 'device';
-    }
-    return '';
-  }
-
-  protected startNew(): void {
-    this.selected.set(null);
-    this.title = '';
-    this.source = DEFAULT_SOURCE;
-    this.liveSource.set(DEFAULT_SOURCE);
-    this.anchorKey = '';
-    this.editing.set(true);
+  private load(openId?: string): void {
+    const areaId = this.areaId();
+    const deviceId = this.deviceId();
+    const q = areaId ? { areaId } : deviceId ? { deviceId } : { standalone: '1' as const };
+    this.api.list(q).subscribe((diagrams) => {
+      this.diagrams.set(diagrams);
+      const toSelect = openId
+        ? diagrams.find((d) => d.id === openId)
+        : this.selected()
+          ? diagrams.find((d) => d.id === this.selected()?.id)
+          : undefined;
+      this.selectQuiet(toSelect ?? null);
+    });
   }
 
   protected select(diagram: DiagramDto): void {
+    this.selectQuiet(diagram);
+  }
+
+  private selectQuiet(diagram: DiagramDto | null): void {
     this.selected.set(diagram);
-    this.title = diagram.title;
-    this.source = diagram.source;
-    this.liveSource.set(diagram.source);
-    this.anchorKey = diagram.areaId
-      ? `area:${diagram.areaId}`
-      : diagram.deviceId
-        ? `device:${diagram.deviceId}`
-        : '';
-    this.editing.set(true);
   }
 
-  protected save(): void {
-    const [kind, id] = this.anchorKey.split(':');
-    const dto = {
-      title: this.title.trim(),
-      source: this.source,
-      areaId: kind === 'area' ? id : null,
-      deviceId: kind === 'device' ? id : null,
-    };
-    const current = this.selected();
-    const req = current ? this.api.update(current.id, dto) : this.api.create(dto);
-    req.subscribe((saved) => {
-      this.toast.success('Diagram saved');
-      this.selected.set(saved);
-      this.load();
-    });
+  protected create(): void {
+    const title = this.newTitle.trim();
+    if (!title) return;
+    this.api
+      .create({
+        title,
+        areaId: this.areaId() ?? undefined,
+        deviceId: this.deviceId() ?? undefined,
+      })
+      .subscribe((created) => {
+        this.newTitle = '';
+        this.toast.success('Diagram created');
+        this.diagrams.update((list) => [...list, created]);
+        this.selectQuiet(created);
+      });
   }
 
-  protected async remove(diagram: DiagramDto): Promise<void> {
-    const confirmed = await this.confirm.ask(`Delete diagram "${diagram.title}"?`, {
-      confirmLabel: 'Delete',
-    });
-    if (!confirmed) return;
-    this.api.remove(diagram.id).subscribe(() => {
-      this.editing.set(false);
-      this.selected.set(null);
-      this.load();
-    });
+  protected onSaved(updated: DiagramDto): void {
+    this.diagrams.update((list) => list.map((d) => (d.id === updated.id ? updated : d)));
+    if (this.selected()?.id === updated.id) this.selected.set(updated);
+  }
+
+  protected onDeleted(diagram: DiagramDto): void {
+    this.diagrams.update((list) => list.filter((d) => d.id !== diagram.id));
+    this.selected.set(null);
   }
 }

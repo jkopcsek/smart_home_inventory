@@ -10,17 +10,17 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'home',
+    loadComponent: () =>
+      import('./features/home/home-detail-page.component').then(
+        (m) => m.HomeDetailPageComponent
+      ),
+  },
+  {
     path: 'areas/:areaId',
     loadComponent: () =>
       import('./features/areas/area-detail-page.component').then(
         (m) => m.AreaDetailPageComponent
-      ),
-  },
-  {
-    path: 'areas/:areaId/images/:imageId',
-    loadComponent: () =>
-      import('./features/image-editor/area-image-page.component').then(
-        (m) => m.AreaImagePageComponent
       ),
   },
   {

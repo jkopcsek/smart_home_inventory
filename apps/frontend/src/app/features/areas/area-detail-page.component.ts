@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   inject,
   input,
   OnInit,
@@ -9,26 +8,19 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { AreaDto, AttachmentDto, DeviceDto, DiagramDto } from '@smart-home-inventory/shared';
 import {
-  AREA_IMAGE_KINDS,
-  AreaDto,
-  AreaImageDto,
-  AreaImageKind,
-  AttachmentDto,
-  DeviceDto,
-} from '@smart-home-inventory/shared';
-import {
+  mdiChartTimelineVariant,
   mdiDelete,
   mdiDevices,
-  mdiImageMultipleOutline,
   mdiPencil,
   mdiPlus,
 } from '@mdi/js';
 import {
-  AreaImagesApi,
   AreasApi,
   attachmentUrl,
   DevicesApi,
+  DiagramsApi,
 } from '../../core/api/api.services';
 import { HttpClient } from '@angular/common/http';
 import { ConfirmService } from '../../core/confirm/confirm.service';
@@ -36,7 +28,6 @@ import { ToastService } from '../../core/toast/toast.service';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { AttachmentGalleryComponent } from '../attachments/attachment-gallery.component';
-import { FileDropzoneComponent } from '../attachments/file-dropzone.component';
 import { AreaFormDialogComponent } from './area-form-dialog.component';
 
 @Component({
@@ -47,7 +38,6 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
     IconComponent,
     EmptyStateComponent,
     AttachmentGalleryComponent,
-    FileDropzoneComponent,
     AreaFormDialogComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -113,48 +103,31 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
 
       <div class="card section">
         <div class="section-head">
-          <h3>Images &amp; plans ({{ images().length }})</h3>
+          <h3>Diagrams ({{ diagrams().length }})</h3>
         </div>
         <div class="image-grid">
-          @for (img of sortedImages(); track img.id) {
-            <a class="image-tile" [routerLink]="['/areas', a.id, 'images', img.id]">
-              @if (img.imageAttachmentId) {
-                <img [src]="thumbUrl(img.imageAttachmentId)" [alt]="img.name" />
-              } @else {
-                <div class="placeholder">
-                  <app-icon [path]="icons.images" [size]="32" />
-                </div>
-              }
+          @for (d of diagrams(); track d.id) {
+            <button type="button" class="image-tile" (click)="openDiagram(d)">
+              <div class="placeholder">
+                <app-icon [path]="icons.diagram" [size]="32" />
+              </div>
               <div class="tile-caption">
-                <span class="tile-name">{{ img.name }}</span>
+                <span class="tile-name">{{ d.title }}</span>
                 <span class="tile-meta">
-                  @if (img.kind) {
-                    <span class="chip">{{ img.kind }}</span>
-                  }
-                  @if (img.annotations.items.length > 0) {
-                    <span class="muted">{{ img.annotations.items.length }} ⌖</span>
-                  }
+                  <span class="muted">{{ d.content.nodes.length }} nodes</span>
                 </span>
               </div>
-            </a>
+            </button>
           }
           <div class="image-tile new">
             <input
               class="text"
               placeholder="Name (e.g. Floor plan, Fuse box)"
-              [(ngModel)]="newImageName"
+              [(ngModel)]="newDiagramTitle"
             />
-            <select class="text" [(ngModel)]="newImageKind">
-              <option value="">no type</option>
-              @for (kind of imageKinds; track kind) {
-                <option [value]="kind">{{ kind }}</option>
-              }
-            </select>
-            <app-file-dropzone
-              label="Add annotated image"
-              accept="image/*"
-              (files)="createImage($event)"
-            />
+            <button class="btn secondary" [disabled]="!newDiagramTitle.trim()" (click)="createDiagram()">
+              <app-icon [path]="icons.plus" [size]="18" /> New diagram
+            </button>
           </div>
         </div>
       </div>
@@ -223,6 +196,11 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
       color: inherit;
       display: flex;
       flex-direction: column;
+      font: inherit;
+      background: none;
+      cursor: pointer;
+      text-align: left;
+      padding: 0;
     }
     .image-tile:hover {
       text-decoration: none;
@@ -265,7 +243,7 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
 export class AreaDetailPageComponent implements OnInit {
   private readonly areasApi = inject(AreasApi);
   private readonly devicesApi = inject(DevicesApi);
-  private readonly imagesApi = inject(AreaImagesApi);
+  private readonly diagramsApi = inject(DiagramsApi);
   private readonly http = inject(HttpClient);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
@@ -275,27 +253,17 @@ export class AreaDetailPageComponent implements OnInit {
 
   protected readonly area = signal<AreaDto | null>(null);
   protected readonly devices = signal<DeviceDto[]>([]);
-  protected readonly images = signal<AreaImageDto[]>([]);
+  protected readonly diagrams = signal<DiagramDto[]>([]);
   protected readonly attachments = signal<AttachmentDto[]>([]);
   protected readonly editOpen = signal(false);
-  protected newImageName = '';
-  protected newImageKind: AreaImageKind | '' = '';
-  protected readonly imageKinds = AREA_IMAGE_KINDS;
-
-  /** Floor plans first — they act as the hub image of an area. */
-  protected readonly sortedImages = computed(() =>
-    [...this.images()].sort((a, b) => {
-      const rank = (img: AreaImageDto) => (img.kind === 'floorplan' ? 0 : 1);
-      return rank(a) - rank(b) || a.createdAt.localeCompare(b.createdAt);
-    })
-  );
+  protected newDiagramTitle = '';
 
   protected readonly icons = {
     pencil: mdiPencil,
     delete: mdiDelete,
     plus: mdiPlus,
     devices: mdiDevices,
-    images: mdiImageMultipleOutline,
+    diagram: mdiChartTimelineVariant,
   };
 
   ngOnInit(): void {
@@ -308,13 +276,11 @@ export class AreaDetailPageComponent implements OnInit {
     const id = this.areaId();
     this.areasApi.get(id).subscribe((area) => this.area.set(area));
     this.devicesApi.list({ areaId: id }).subscribe((d) => this.devices.set(d));
-    this.imagesApi.listForArea(id).subscribe((i) => this.images.set(i));
+    this.diagramsApi.list({ areaId: id }).subscribe((d) => this.diagrams.set(d));
     this.loadAttachments();
   }
 
   protected loadAttachments(): void {
-    // Area attachments = all attachments owned by the area, minus plan images
-    // (those are shown in the images grid).
     this.http
       .get<AttachmentDto[]>(`api/areas/${this.areaId()}/attachments`)
       .subscribe((atts) => this.attachments.set(atts));
@@ -324,16 +290,21 @@ export class AreaDetailPageComponent implements OnInit {
     this.router.navigate(['/devices', device.id]);
   }
 
-  protected createImage(files: File[]): void {
-    const file = files[0];
-    if (!file) return;
-    const name = this.newImageName.trim() || file.name.replace(/\.[^.]+$/, '');
-    const kind = this.newImageKind || undefined;
-    this.imagesApi.create(this.areaId(), { name, kind }, file).subscribe((img) => {
-      this.newImageName = '';
-      this.newImageKind = '';
-      this.toast.success('Image added');
-      this.router.navigate(['/areas', this.areaId(), 'images', img.id]);
+  protected openDiagram(diagram: DiagramDto): void {
+    this.router.navigate(['/diagrams'], {
+      queryParams: { areaId: this.areaId(), open: diagram.id },
+    });
+  }
+
+  protected createDiagram(): void {
+    const title = this.newDiagramTitle.trim();
+    if (!title) return;
+    this.diagramsApi.create({ title, areaId: this.areaId() }).subscribe((diagram) => {
+      this.newDiagramTitle = '';
+      this.toast.success('Diagram created');
+      this.router.navigate(['/diagrams'], {
+        queryParams: { areaId: this.areaId(), open: diagram.id },
+      });
     });
   }
 
@@ -341,7 +312,7 @@ export class AreaDetailPageComponent implements OnInit {
     const area = this.area();
     if (!area) return;
     const confirmed = await this.confirm.ask(
-      `Delete area "${area.name}"? Devices in it are kept but unassigned; images and attachments are removed.`,
+      `Delete area "${area.name}"? Devices in it are kept but unassigned; diagrams and attachments are removed.`,
       { confirmLabel: 'Delete' }
     );
     if (!confirmed) return;

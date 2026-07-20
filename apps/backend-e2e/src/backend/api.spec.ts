@@ -71,28 +71,35 @@ describe('smart home inventory API (real server, temp DB)', () => {
     expect(after.name).toBe('Mein Umbenannt');
   });
 
-  it('enforces optimistic locking on annotations', async () => {
+  it('enforces optimistic locking on diagram content', async () => {
     const area = (await axios.post('/api/areas', { name: 'Plan-Test' })).data;
-    const form = new FormData();
-    form.append('name', 'Fuse box');
-    const image = (await axios.post(`/api/areas/${area.id}/images`, form)).data;
-    expect(image.version).toBe(1);
+    const diagram = (
+      await axios.post('/api/diagrams', { title: 'Fuse box', areaId: area.id })
+    ).data;
+    expect(diagram.version).toBe(1);
 
-    const annotations = {
-      version: 1,
-      items: [{ id: 'p1', kind: 'pin', x: 0.5, y: 0.5 }],
+    const content = {
+      schemaVersion: 1,
+      nodes: [
+        {
+          id: 'n1',
+          position: { x: 0, y: 0 },
+          data: { shape: 'box', label: 'Breaker' },
+        },
+      ],
+      edges: [],
     };
     const saved = (
-      await axios.put(`/api/area-images/${image.id}/annotations`, {
+      await axios.put(`/api/diagrams/${diagram.id}/content`, {
         version: 1,
-        annotations,
+        content,
       })
     ).data;
     expect(saved.version).toBe(2);
 
     const stale = await axios.put(
-      `/api/area-images/${image.id}/annotations`,
-      { version: 1, annotations },
+      `/api/diagrams/${diagram.id}/content`,
+      { version: 1, content },
       { validateStatus: () => true }
     );
     expect(stale.status).toBe(409);

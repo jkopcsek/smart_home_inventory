@@ -267,7 +267,6 @@ export type AttachmentWhereInput = {
   device?: Prisma.XOR<Prisma.DeviceNullableScalarRelationFilter, Prisma.DeviceWhereInput> | null
   area?: Prisma.XOR<Prisma.AreaNullableScalarRelationFilter, Prisma.AreaWhereInput> | null
   primaryImageOf?: Prisma.XOR<Prisma.DeviceNullableScalarRelationFilter, Prisma.DeviceWhereInput> | null
-  areaImageOf?: Prisma.XOR<Prisma.AreaImageNullableScalarRelationFilter, Prisma.AreaImageWhereInput> | null
 }
 
 export type AttachmentOrderByWithRelationInput = {
@@ -285,7 +284,6 @@ export type AttachmentOrderByWithRelationInput = {
   device?: Prisma.DeviceOrderByWithRelationInput
   area?: Prisma.AreaOrderByWithRelationInput
   primaryImageOf?: Prisma.DeviceOrderByWithRelationInput
-  areaImageOf?: Prisma.AreaImageOrderByWithRelationInput
 }
 
 export type AttachmentWhereUniqueInput = Prisma.AtLeast<{
@@ -306,7 +304,6 @@ export type AttachmentWhereUniqueInput = Prisma.AtLeast<{
   device?: Prisma.XOR<Prisma.DeviceNullableScalarRelationFilter, Prisma.DeviceWhereInput> | null
   area?: Prisma.XOR<Prisma.AreaNullableScalarRelationFilter, Prisma.AreaWhereInput> | null
   primaryImageOf?: Prisma.XOR<Prisma.DeviceNullableScalarRelationFilter, Prisma.DeviceWhereInput> | null
-  areaImageOf?: Prisma.XOR<Prisma.AreaImageNullableScalarRelationFilter, Prisma.AreaImageWhereInput> | null
 }, "id" | "storedName">
 
 export type AttachmentOrderByWithAggregationInput = {
@@ -358,7 +355,6 @@ export type AttachmentCreateInput = {
   device?: Prisma.DeviceCreateNestedOneWithoutAttachmentsInput
   area?: Prisma.AreaCreateNestedOneWithoutAttachmentsInput
   primaryImageOf?: Prisma.DeviceCreateNestedOneWithoutPrimaryImageInput
-  areaImageOf?: Prisma.AreaImageCreateNestedOneWithoutImageAttachmentInput
 }
 
 export type AttachmentUncheckedCreateInput = {
@@ -374,7 +370,6 @@ export type AttachmentUncheckedCreateInput = {
   areaId?: string | null
   createdAt?: Date | string
   primaryImageOf?: Prisma.DeviceUncheckedCreateNestedOneWithoutPrimaryImageInput
-  areaImageOf?: Prisma.AreaImageUncheckedCreateNestedOneWithoutImageAttachmentInput
 }
 
 export type AttachmentUpdateInput = {
@@ -390,7 +385,6 @@ export type AttachmentUpdateInput = {
   device?: Prisma.DeviceUpdateOneWithoutAttachmentsNestedInput
   area?: Prisma.AreaUpdateOneWithoutAttachmentsNestedInput
   primaryImageOf?: Prisma.DeviceUpdateOneWithoutPrimaryImageNestedInput
-  areaImageOf?: Prisma.AreaImageUpdateOneWithoutImageAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateInput = {
@@ -406,7 +400,6 @@ export type AttachmentUncheckedUpdateInput = {
   areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryImageOf?: Prisma.DeviceUncheckedUpdateOneWithoutPrimaryImageNestedInput
-  areaImageOf?: Prisma.AreaImageUncheckedUpdateOneWithoutImageAttachmentNestedInput
 }
 
 export type AttachmentCreateManyInput = {
@@ -626,22 +619,6 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
-export type AttachmentCreateNestedOneWithoutAreaImageOfInput = {
-  create?: Prisma.XOR<Prisma.AttachmentCreateWithoutAreaImageOfInput, Prisma.AttachmentUncheckedCreateWithoutAreaImageOfInput>
-  connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutAreaImageOfInput
-  connect?: Prisma.AttachmentWhereUniqueInput
-}
-
-export type AttachmentUpdateOneWithoutAreaImageOfNestedInput = {
-  create?: Prisma.XOR<Prisma.AttachmentCreateWithoutAreaImageOfInput, Prisma.AttachmentUncheckedCreateWithoutAreaImageOfInput>
-  connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutAreaImageOfInput
-  upsert?: Prisma.AttachmentUpsertWithoutAreaImageOfInput
-  disconnect?: Prisma.AttachmentWhereInput | boolean
-  delete?: Prisma.AttachmentWhereInput | boolean
-  connect?: Prisma.AttachmentWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.AttachmentUpdateToOneWithWhereWithoutAreaImageOfInput, Prisma.AttachmentUpdateWithoutAreaImageOfInput>, Prisma.AttachmentUncheckedUpdateWithoutAreaImageOfInput>
-}
-
 export type AttachmentCreateWithoutAreaInput = {
   id?: string
   kind?: $Enums.AttachmentKind
@@ -654,7 +631,6 @@ export type AttachmentCreateWithoutAreaInput = {
   createdAt?: Date | string
   device?: Prisma.DeviceCreateNestedOneWithoutAttachmentsInput
   primaryImageOf?: Prisma.DeviceCreateNestedOneWithoutPrimaryImageInput
-  areaImageOf?: Prisma.AreaImageCreateNestedOneWithoutImageAttachmentInput
 }
 
 export type AttachmentUncheckedCreateWithoutAreaInput = {
@@ -669,7 +645,6 @@ export type AttachmentUncheckedCreateWithoutAreaInput = {
   deviceId?: string | null
   createdAt?: Date | string
   primaryImageOf?: Prisma.DeviceUncheckedCreateNestedOneWithoutPrimaryImageInput
-  areaImageOf?: Prisma.AreaImageUncheckedCreateNestedOneWithoutImageAttachmentInput
 }
 
 export type AttachmentCreateOrConnectWithoutAreaInput = {
@@ -726,7 +701,6 @@ export type AttachmentCreateWithoutPrimaryImageOfInput = {
   createdAt?: Date | string
   device?: Prisma.DeviceCreateNestedOneWithoutAttachmentsInput
   area?: Prisma.AreaCreateNestedOneWithoutAttachmentsInput
-  areaImageOf?: Prisma.AreaImageCreateNestedOneWithoutImageAttachmentInput
 }
 
 export type AttachmentUncheckedCreateWithoutPrimaryImageOfInput = {
@@ -741,7 +715,6 @@ export type AttachmentUncheckedCreateWithoutPrimaryImageOfInput = {
   deviceId?: string | null
   areaId?: string | null
   createdAt?: Date | string
-  areaImageOf?: Prisma.AreaImageUncheckedCreateNestedOneWithoutImageAttachmentInput
 }
 
 export type AttachmentCreateOrConnectWithoutPrimaryImageOfInput = {
@@ -761,7 +734,6 @@ export type AttachmentCreateWithoutDeviceInput = {
   createdAt?: Date | string
   area?: Prisma.AreaCreateNestedOneWithoutAttachmentsInput
   primaryImageOf?: Prisma.DeviceCreateNestedOneWithoutPrimaryImageInput
-  areaImageOf?: Prisma.AreaImageCreateNestedOneWithoutImageAttachmentInput
 }
 
 export type AttachmentUncheckedCreateWithoutDeviceInput = {
@@ -776,7 +748,6 @@ export type AttachmentUncheckedCreateWithoutDeviceInput = {
   areaId?: string | null
   createdAt?: Date | string
   primaryImageOf?: Prisma.DeviceUncheckedCreateNestedOneWithoutPrimaryImageInput
-  areaImageOf?: Prisma.AreaImageUncheckedCreateNestedOneWithoutImageAttachmentInput
 }
 
 export type AttachmentCreateOrConnectWithoutDeviceInput = {
@@ -811,7 +782,6 @@ export type AttachmentUpdateWithoutPrimaryImageOfInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   device?: Prisma.DeviceUpdateOneWithoutAttachmentsNestedInput
   area?: Prisma.AreaUpdateOneWithoutAttachmentsNestedInput
-  areaImageOf?: Prisma.AreaImageUpdateOneWithoutImageAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateWithoutPrimaryImageOfInput = {
@@ -826,7 +796,6 @@ export type AttachmentUncheckedUpdateWithoutPrimaryImageOfInput = {
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  areaImageOf?: Prisma.AreaImageUncheckedUpdateOneWithoutImageAttachmentNestedInput
 }
 
 export type AttachmentUpsertWithWhereUniqueWithoutDeviceInput = {
@@ -843,82 +812,6 @@ export type AttachmentUpdateWithWhereUniqueWithoutDeviceInput = {
 export type AttachmentUpdateManyWithWhereWithoutDeviceInput = {
   where: Prisma.AttachmentScalarWhereInput
   data: Prisma.XOR<Prisma.AttachmentUpdateManyMutationInput, Prisma.AttachmentUncheckedUpdateManyWithoutDeviceInput>
-}
-
-export type AttachmentCreateWithoutAreaImageOfInput = {
-  id?: string
-  kind?: $Enums.AttachmentKind
-  title?: string | null
-  originalName: string
-  storedName: string
-  mimeType: string
-  sizeBytes: number
-  sha256?: string | null
-  createdAt?: Date | string
-  device?: Prisma.DeviceCreateNestedOneWithoutAttachmentsInput
-  area?: Prisma.AreaCreateNestedOneWithoutAttachmentsInput
-  primaryImageOf?: Prisma.DeviceCreateNestedOneWithoutPrimaryImageInput
-}
-
-export type AttachmentUncheckedCreateWithoutAreaImageOfInput = {
-  id?: string
-  kind?: $Enums.AttachmentKind
-  title?: string | null
-  originalName: string
-  storedName: string
-  mimeType: string
-  sizeBytes: number
-  sha256?: string | null
-  deviceId?: string | null
-  areaId?: string | null
-  createdAt?: Date | string
-  primaryImageOf?: Prisma.DeviceUncheckedCreateNestedOneWithoutPrimaryImageInput
-}
-
-export type AttachmentCreateOrConnectWithoutAreaImageOfInput = {
-  where: Prisma.AttachmentWhereUniqueInput
-  create: Prisma.XOR<Prisma.AttachmentCreateWithoutAreaImageOfInput, Prisma.AttachmentUncheckedCreateWithoutAreaImageOfInput>
-}
-
-export type AttachmentUpsertWithoutAreaImageOfInput = {
-  update: Prisma.XOR<Prisma.AttachmentUpdateWithoutAreaImageOfInput, Prisma.AttachmentUncheckedUpdateWithoutAreaImageOfInput>
-  create: Prisma.XOR<Prisma.AttachmentCreateWithoutAreaImageOfInput, Prisma.AttachmentUncheckedCreateWithoutAreaImageOfInput>
-  where?: Prisma.AttachmentWhereInput
-}
-
-export type AttachmentUpdateToOneWithWhereWithoutAreaImageOfInput = {
-  where?: Prisma.AttachmentWhereInput
-  data: Prisma.XOR<Prisma.AttachmentUpdateWithoutAreaImageOfInput, Prisma.AttachmentUncheckedUpdateWithoutAreaImageOfInput>
-}
-
-export type AttachmentUpdateWithoutAreaImageOfInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  kind?: Prisma.EnumAttachmentKindFieldUpdateOperationsInput | $Enums.AttachmentKind
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  originalName?: Prisma.StringFieldUpdateOperationsInput | string
-  storedName?: Prisma.StringFieldUpdateOperationsInput | string
-  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
-  sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
-  sha256?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  device?: Prisma.DeviceUpdateOneWithoutAttachmentsNestedInput
-  area?: Prisma.AreaUpdateOneWithoutAttachmentsNestedInput
-  primaryImageOf?: Prisma.DeviceUpdateOneWithoutPrimaryImageNestedInput
-}
-
-export type AttachmentUncheckedUpdateWithoutAreaImageOfInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  kind?: Prisma.EnumAttachmentKindFieldUpdateOperationsInput | $Enums.AttachmentKind
-  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  originalName?: Prisma.StringFieldUpdateOperationsInput | string
-  storedName?: Prisma.StringFieldUpdateOperationsInput | string
-  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
-  sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
-  sha256?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  primaryImageOf?: Prisma.DeviceUncheckedUpdateOneWithoutPrimaryImageNestedInput
 }
 
 export type AttachmentCreateManyAreaInput = {
@@ -946,7 +839,6 @@ export type AttachmentUpdateWithoutAreaInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   device?: Prisma.DeviceUpdateOneWithoutAttachmentsNestedInput
   primaryImageOf?: Prisma.DeviceUpdateOneWithoutPrimaryImageNestedInput
-  areaImageOf?: Prisma.AreaImageUpdateOneWithoutImageAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateWithoutAreaInput = {
@@ -961,7 +853,6 @@ export type AttachmentUncheckedUpdateWithoutAreaInput = {
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryImageOf?: Prisma.DeviceUncheckedUpdateOneWithoutPrimaryImageNestedInput
-  areaImageOf?: Prisma.AreaImageUncheckedUpdateOneWithoutImageAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateManyWithoutAreaInput = {
@@ -1002,7 +893,6 @@ export type AttachmentUpdateWithoutDeviceInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   area?: Prisma.AreaUpdateOneWithoutAttachmentsNestedInput
   primaryImageOf?: Prisma.DeviceUpdateOneWithoutPrimaryImageNestedInput
-  areaImageOf?: Prisma.AreaImageUpdateOneWithoutImageAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateWithoutDeviceInput = {
@@ -1017,7 +907,6 @@ export type AttachmentUncheckedUpdateWithoutDeviceInput = {
   areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryImageOf?: Prisma.DeviceUncheckedUpdateOneWithoutPrimaryImageNestedInput
-  areaImageOf?: Prisma.AreaImageUncheckedUpdateOneWithoutImageAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateManyWithoutDeviceInput = {
@@ -1050,7 +939,6 @@ export type AttachmentSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   device?: boolean | Prisma.Attachment$deviceArgs<ExtArgs>
   area?: boolean | Prisma.Attachment$areaArgs<ExtArgs>
   primaryImageOf?: boolean | Prisma.Attachment$primaryImageOfArgs<ExtArgs>
-  areaImageOf?: boolean | Prisma.Attachment$areaImageOfArgs<ExtArgs>
 }, ExtArgs["result"]["attachment"]>
 
 export type AttachmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1104,7 +992,6 @@ export type AttachmentInclude<ExtArgs extends runtime.Types.Extensions.InternalA
   device?: boolean | Prisma.Attachment$deviceArgs<ExtArgs>
   area?: boolean | Prisma.Attachment$areaArgs<ExtArgs>
   primaryImageOf?: boolean | Prisma.Attachment$primaryImageOfArgs<ExtArgs>
-  areaImageOf?: boolean | Prisma.Attachment$areaImageOfArgs<ExtArgs>
 }
 export type AttachmentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   device?: boolean | Prisma.Attachment$deviceArgs<ExtArgs>
@@ -1121,7 +1008,6 @@ export type $AttachmentPayload<ExtArgs extends runtime.Types.Extensions.Internal
     device: Prisma.$DevicePayload<ExtArgs> | null
     area: Prisma.$AreaPayload<ExtArgs> | null
     primaryImageOf: Prisma.$DevicePayload<ExtArgs> | null
-    areaImageOf: Prisma.$AreaImagePayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1532,7 +1418,6 @@ export interface Prisma__AttachmentClient<T, Null = never, ExtArgs extends runti
   device<T extends Prisma.Attachment$deviceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$deviceArgs<ExtArgs>>): Prisma.Prisma__DeviceClient<runtime.Types.Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   area<T extends Prisma.Attachment$areaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$areaArgs<ExtArgs>>): Prisma.Prisma__AreaClient<runtime.Types.Result.GetResult<Prisma.$AreaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   primaryImageOf<T extends Prisma.Attachment$primaryImageOfArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$primaryImageOfArgs<ExtArgs>>): Prisma.Prisma__DeviceClient<runtime.Types.Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  areaImageOf<T extends Prisma.Attachment$areaImageOfArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$areaImageOfArgs<ExtArgs>>): Prisma.Prisma__AreaImageClient<runtime.Types.Result.GetResult<Prisma.$AreaImagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2026,25 +1911,6 @@ export type Attachment$primaryImageOfArgs<ExtArgs extends runtime.Types.Extensio
    */
   include?: Prisma.DeviceInclude<ExtArgs> | null
   where?: Prisma.DeviceWhereInput
-}
-
-/**
- * Attachment.areaImageOf
- */
-export type Attachment$areaImageOfArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the AreaImage
-   */
-  select?: Prisma.AreaImageSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the AreaImage
-   */
-  omit?: Prisma.AreaImageOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.AreaImageInclude<ExtArgs> | null
-  where?: Prisma.AreaImageWhereInput
 }
 
 /**

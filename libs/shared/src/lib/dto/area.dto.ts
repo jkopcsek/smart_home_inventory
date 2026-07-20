@@ -10,7 +10,7 @@ export interface AreaDto {
   haOrphaned: boolean;
   source: EntitySource;
   deviceCount: number;
-  imageCount: number;
+  diagramCount: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -341,13 +341,6 @@ export type EnumConnectionTypeWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumConnectionTypeFilter<$PrismaModel>
 }
 
-export type EnumAreaImageKindNullableFilter<$PrismaModel = never> = {
-  equals?: $Enums.AreaImageKind | Prisma.EnumAreaImageKindFieldRefInput<$PrismaModel> | null
-  in?: $Enums.AreaImageKind[] | null
-  notIn?: $Enums.AreaImageKind[] | null
-  not?: Prisma.NestedEnumAreaImageKindNullableFilter<$PrismaModel> | $Enums.AreaImageKind | null
-}
-
 export type JsonFilter<$PrismaModel = never> =
 | Prisma.PatchUndefined<
     Prisma.Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
@@ -365,16 +358,6 @@ export type JsonFilterBase<$PrismaModel = never> = {
   array_starts_with?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
   array_ends_with?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
-}
-
-export type EnumAreaImageKindNullableWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.AreaImageKind | Prisma.EnumAreaImageKindFieldRefInput<$PrismaModel> | null
-  in?: $Enums.AreaImageKind[] | null
-  notIn?: $Enums.AreaImageKind[] | null
-  not?: Prisma.NestedEnumAreaImageKindNullableWithAggregatesFilter<$PrismaModel> | $Enums.AreaImageKind | null
-  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumAreaImageKindNullableFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumAreaImageKindNullableFilter<$PrismaModel>
 }
 
 export type JsonWithAggregatesFilter<$PrismaModel = never> =
@@ -719,23 +702,6 @@ export type NestedEnumConnectionTypeWithAggregatesFilter<$PrismaModel = never> =
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumConnectionTypeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumConnectionTypeFilter<$PrismaModel>
-}
-
-export type NestedEnumAreaImageKindNullableFilter<$PrismaModel = never> = {
-  equals?: $Enums.AreaImageKind | Prisma.EnumAreaImageKindFieldRefInput<$PrismaModel> | null
-  in?: $Enums.AreaImageKind[] | null
-  notIn?: $Enums.AreaImageKind[] | null
-  not?: Prisma.NestedEnumAreaImageKindNullableFilter<$PrismaModel> | $Enums.AreaImageKind | null
-}
-
-export type NestedEnumAreaImageKindNullableWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.AreaImageKind | Prisma.EnumAreaImageKindFieldRefInput<$PrismaModel> | null
-  in?: $Enums.AreaImageKind[] | null
-  notIn?: $Enums.AreaImageKind[] | null
-  not?: Prisma.NestedEnumAreaImageKindNullableWithAggregatesFilter<$PrismaModel> | $Enums.AreaImageKind | null
-  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumAreaImageKindNullableFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumAreaImageKindNullableFilter<$PrismaModel>
 }
 
 export type NestedJsonFilter<$PrismaModel = never> =

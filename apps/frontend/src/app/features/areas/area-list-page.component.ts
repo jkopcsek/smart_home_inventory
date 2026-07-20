@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AreaDto } from '@smart-home-inventory/shared';
-import { mdiFloorPlan, mdiHomeAlert, mdiPlus } from '@mdi/js';
+import { mdiFloorPlan, mdiHomeAlert, mdiHomeOutline, mdiPlus } from '@mdi/js';
 import { AreasApi } from '../../core/api/api.services';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
@@ -23,6 +23,15 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
       <button class="btn" (click)="dialogOpen.set(true)">
         <app-icon [path]="icons.plus" [size]="18" /> New area
       </button>
+    </div>
+
+    <div class="grid home-grid">
+      <a class="card area home" routerLink="/home">
+        <div class="row">
+          <span class="name"><app-icon [path]="icons.home" [size]="18" /> Home</span>
+        </div>
+        <span class="muted">Diagrams and files for the whole home</span>
+      </a>
     </div>
 
     @for (group of grouped(); track group.floor) {
@@ -45,8 +54,8 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
             </div>
             <span class="muted">
               {{ area.deviceCount }} device{{ area.deviceCount === 1 ? '' : 's' }}
-              @if (area.imageCount > 0) {
-                · {{ area.imageCount }} image{{ area.imageCount === 1 ? '' : 's' }}
+              @if (area.diagramCount > 0) {
+                · {{ area.diagramCount }} diagram{{ area.diagramCount === 1 ? '' : 's' }}
               }
               @if (area.source === 'ha') {
                 · from HA
@@ -84,6 +93,9 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
       margin: 20px 0 8px;
       color: var(--secondary-text-color);
     }
+    .home-grid {
+      margin-bottom: 8px;
+    }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -94,6 +106,11 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
       flex-direction: column;
       gap: 4px;
       color: inherit;
+    }
+    .area.home .name {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
     .area:hover {
       text-decoration: none;
@@ -123,6 +140,7 @@ export class AreaListPageComponent {
     plus: mdiPlus,
     floorPlan: mdiFloorPlan,
     orphaned: mdiHomeAlert,
+    home: mdiHomeOutline,
   };
 
   protected readonly grouped = computed(() => {

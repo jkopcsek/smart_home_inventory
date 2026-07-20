@@ -48,11 +48,6 @@ export type DeviceCapability = Prisma.DeviceCapabilityModel
  */
 export type Connection = Prisma.ConnectionModel
 /**
- * Model AreaImage
- * 
- */
-export type AreaImage = Prisma.AreaImageModel
-/**
  * Model Diagram
  * 
  */
