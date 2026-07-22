@@ -1,9 +1,9 @@
 name: "Smart Home Inventory"
-version: "0.2.4"
+version: "0.2.5"
 slug: "smart_home_inventory"
 description: "Document areas, devices, capabilities, connections, and electrical setup"
-url: "https://github.com/jankopcsek/smart-home-inventory"
-image: "ghcr.io/jankopcsek/smart_home_inventory-{arch}"
+url: "https://github.com/jkopcsek/smart_home_inventory"
+image: "ghcr.io/jkopcsek/smart_home_inventory-{arch}"
 arch:
   - aarch64
   - amd64

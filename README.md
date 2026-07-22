@@ -79,22 +79,15 @@ builds the image per architecture and pushes it to GHCR
 of that, nothing needs to be checked out on the Pi at all — the add-on
 directory under `/addons` holds a single file, `config.yaml`.
 
-One-time setup, via the Terminal & SSH add-on:
-
-```bash
-mkdir -p /addons/local/smart_home_inventory
-```
-
-Then, on GitHub, make the `smart_home_inventory-aarch64` and
+One-time setup (also needed again if the `/addons/local/smart_home_inventory`
+directory is ever deleted, since Supervisor loses track of the add-on with
+it): on GitHub, make the `smart_home_inventory-aarch64` and
 `smart_home_inventory-amd64` packages public (Supervisor pulls without
-registry auth) — they only exist after the first CI run completes.
-
-Copy `config.yaml` over and register the add-on:
+registry auth) — they only exist after the first CI run completes. Then, from
+your own machine:
 
 ```bash
-tools/deploy/update-ha.sh
-ha apps install local_smart_home_inventory
-ha apps start local_smart_home_inventory
+tools/deploy/install-ha.sh
 ```
 
 To ship a new version: bump `version` in `config.yaml`, push to `main`, wait
