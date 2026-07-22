@@ -11,8 +11,11 @@ FROM node:22-alpine AS build
 WORKDIR /workspace
 
 COPY package.json package-lock.json ./
+# fetch-* flags: under QEMU (cross-arch CI builds), npm's own crypto/TLS work
+# runs slow enough that registry requests can trip the default timeout/retry
+# budget outright — widen it rather than let a slow emulated CPU fail the build.
 RUN apk add --no-cache --virtual .build python3 make g++ \
-  && npm ci \
+  && npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000 --fetch-timeout=600000 \
   && apk del .build
 
 COPY nx.json tsconfig.base.json jest.preset.js eslint.config.mjs prisma.config.ts ./
@@ -33,7 +36,7 @@ ENV NODE_ENV=production \
 
 COPY package.json package-lock.json ./
 RUN apk add --no-cache --virtual .build python3 make g++ \
-  && npm ci --omit=dev \
+  && npm ci --omit=dev --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000 --fetch-timeout=600000 \
   && apk del .build \
   && npm cache clean --force
 
