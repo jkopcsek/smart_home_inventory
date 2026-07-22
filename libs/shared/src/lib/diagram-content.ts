@@ -6,11 +6,13 @@ import { z } from 'zod';
  * Only the `data` payload is app-specific and validated.
  *
  * A node's visual form ("shape") and what it references ("link") are
- * orthogonal: any shape can optionally link to a Device, another Diagram, or
- * an image Attachment, rather than each combination being its own kind.
+ * orthogonal: any shape can optionally link to an Area, a Device, another
+ * Diagram, or an image Attachment, rather than each combination being its
+ * own kind.
  */
 
 export const NodeLinkSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('area'), areaId: z.string().min(1) }),
   z.object({ kind: z.literal('device'), deviceId: z.string().min(1) }),
   z.object({ kind: z.literal('diagram'), diagramId: z.string().min(1) }),
   z.object({ kind: z.literal('image'), attachmentId: z.string().min(1) }),
@@ -30,6 +32,7 @@ export type NodePort = z.infer<typeof NodePortSchema>;
 const NodeDataBase = z.object({
   label: z.string().max(200).optional(),
   color: z.string().optional(),
+  borderColor: z.string().optional(),
   link: NodeLinkSchema.optional(),
   /** true = used as a backdrop: locked, sent to back, excluded from click-selection.
    *  Only meaningful for a box linked to an image. */
@@ -91,6 +94,9 @@ export const DiagramEdgeSchema = z.object({
   /** Which named port on the source/target node this wire attaches to, if any. */
   sourcePort: z.string().optional(),
   targetPort: z.string().optional(),
+  /** Arrowhead marker id shown at that end, if any — see the registered 'arrow' marker. */
+  sourceArrowhead: z.string().optional(),
+  targetArrowhead: z.string().optional(),
   data: EdgeDataSchema.optional(),
 });
 export type DiagramEdge = z.infer<typeof DiagramEdgeSchema>;

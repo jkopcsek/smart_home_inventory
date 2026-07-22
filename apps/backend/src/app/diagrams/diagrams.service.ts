@@ -16,6 +16,7 @@ import {
   UpdateDiagramDto,
 } from '@smart-home-inventory/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { AttachmentsService } from '../attachments/attachments.service';
 
 const logger = new Logger('DiagramsService');
 
@@ -31,6 +32,7 @@ function toDiagramDto(d: Diagram): DiagramDto {
     version: d.version,
     deviceId: d.deviceId,
     areaId: d.areaId,
+    previewAttachmentId: d.previewAttachmentId,
     createdAt: d.createdAt.toISOString(),
     updatedAt: d.updatedAt.toISOString(),
   };
@@ -38,7 +40,10 @@ function toDiagramDto(d: Diagram): DiagramDto {
 
 @Injectable()
 export class DiagramsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly attachments: AttachmentsService
+  ) {}
 
   async list(query: DiagramQueryDto): Promise<DiagramDto[]> {
     const diagrams = await this.prisma.diagram.findMany({
@@ -70,7 +75,7 @@ export class DiagramsService {
   }
 
   async update(id: string, dto: UpdateDiagramDto): Promise<DiagramDto> {
-    await this.get(id);
+    const existing = await this.getEntity(id);
     if (dto.deviceId !== undefined || dto.areaId !== undefined) {
       await this.validateAnchors(dto.deviceId, dto.areaId);
     }
@@ -80,8 +85,22 @@ export class DiagramsService {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
         ...(dto.deviceId !== undefined ? { deviceId: dto.deviceId } : {}),
         ...(dto.areaId !== undefined ? { areaId: dto.areaId } : {}),
+        ...(dto.previewAttachmentId !== undefined
+          ? { previewAttachmentId: dto.previewAttachmentId }
+          : {}),
       },
     });
+    // The old preview is a generated artifact with no gallery of its own —
+    // clean it up rather than leaving an orphaned, unreachable file behind.
+    if (
+      dto.previewAttachmentId !== undefined &&
+      existing.previewAttachmentId &&
+      existing.previewAttachmentId !== dto.previewAttachmentId
+    ) {
+      await this.attachments.remove(existing.previewAttachmentId).catch((err) => {
+        logger.warn(`Failed to remove old preview attachment ${existing.previewAttachmentId}: ${err}`);
+      });
+    }
     return toDiagramDto(diagram);
   }
 

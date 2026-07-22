@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { ConnectionDto, DeviceDetailDto } from '@smart-home-inventory/shared';
+import { ConnectionDto, DeviceDetailDto, DiagramDto } from '@smart-home-inventory/shared';
 import {
   mdiArrowLeftThin,
   mdiArrowRightThin,
@@ -21,11 +21,12 @@ import {
   attachmentUrl,
   ConnectionsApi,
   DevicesApi,
+  DiagramsApi,
 } from '../../core/api/api.services';
 import { ConfirmService } from '../../core/confirm/confirm.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { IconComponent } from '../../shared/ui/icon.component';
-import { AttachmentGalleryComponent } from '../attachments/attachment-gallery.component';
+import { OwnerItemsComponent } from '../attachments/owner-items.component';
 import { ConnectionFormDialogComponent } from '../connections/connection-form-dialog.component';
 
 @Component({
@@ -33,7 +34,7 @@ import { ConnectionFormDialogComponent } from '../connections/connection-form-di
   imports: [
     RouterLink,
     IconComponent,
-    AttachmentGalleryComponent,
+    OwnerItemsComponent,
     ConnectionFormDialogComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -167,13 +168,11 @@ import { ConnectionFormDialogComponent } from '../connections/connection-form-di
       </div>
 
       <div class="card section">
-        <h3>Attachments</h3>
-        <app-attachment-gallery
+        <app-owner-items
           [owner]="{ deviceId: d.id }"
+          [diagrams]="diagrams()"
           [attachments]="d.attachments"
-          [primaryImageId]="d.primaryImageId"
           (changed)="load()"
-          (primaryChanged)="setPrimary($event)"
         />
       </div>
 
@@ -266,6 +265,7 @@ import { ConnectionFormDialogComponent } from '../connections/connection-form-di
 export class DeviceDetailPageComponent implements OnInit {
   private readonly devicesApi = inject(DevicesApi);
   private readonly connectionsApi = inject(ConnectionsApi);
+  private readonly diagramsApi = inject(DiagramsApi);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -273,6 +273,7 @@ export class DeviceDetailPageComponent implements OnInit {
   readonly deviceId = input.required<string>();
 
   protected readonly device = signal<DeviceDetailDto | null>(null);
+  protected readonly diagrams = signal<DiagramDto[]>([]);
   protected readonly connectionDialogOpen = signal(false);
 
   protected readonly icons = {
@@ -293,12 +294,7 @@ export class DeviceDetailPageComponent implements OnInit {
 
   protected load(): void {
     this.devicesApi.get(this.deviceId()).subscribe((device) => this.device.set(device));
-  }
-
-  protected setPrimary(attachmentId: string | null): void {
-    this.devicesApi
-      .setPrimaryImage(this.deviceId(), attachmentId)
-      .subscribe((device) => this.device.set(device));
+    this.diagramsApi.list({ deviceId: this.deviceId() }).subscribe((d) => this.diagrams.set(d));
   }
 
   protected async removeConnection(conn: ConnectionDto): Promise<void> {

@@ -144,6 +144,7 @@ model Attachment {
   createdAt    DateTime @default(now())
 
   primaryImageOf Device?    @relation("DevicePrimaryImage")
+  previewOf      Diagram?   @relation("DiagramPreview")
 
   @@index([deviceId])
   @@index([areaId])
@@ -204,6 +205,13 @@ model Diagram {
   area      Area?    @relation(fields: [areaId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Client-captured PNG snapshot of the canvas, uploaded on save (see
+  // diagrams.service.ts#setPreview). Mirrors Device.primaryImage: a
+  // dedicated 1:1 Attachment reference, not the general deviceId/areaId
+  // gallery FK, so it never shows up as a manageable attachment itself.
+  previewAttachmentId String?     @unique
+  previewAttachment   Attachment? @relation("DiagramPreview", fields: [previewAttachmentId], references: [id], onDelete: SetNull)
 
   @@index([deviceId])
   @@index([areaId])

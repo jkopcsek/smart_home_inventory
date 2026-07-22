@@ -8,6 +8,7 @@ export interface DiagramDto {
   version: number;
   deviceId: string | null;
   areaId: string | null;
+  previewAttachmentId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -21,7 +22,11 @@ export type CreateDiagramDto = z.infer<typeof CreateDiagramSchema>;
 
 // Title/anchor patch only — content is never patched here, only via the
 // version-guarded PUT below (mirrors the old AreaImage's update() vs putAnnotations() split).
-export const UpdateDiagramSchema = CreateDiagramSchema.partial();
+// previewAttachmentId is the exception: set by the client after it uploads a
+// fresh canvas snapshot on save (see diagram-canvas.component.ts#capturePreview).
+export const UpdateDiagramSchema = CreateDiagramSchema.partial().extend({
+  previewAttachmentId: z.string().nullish(),
+});
 export type UpdateDiagramDto = z.infer<typeof UpdateDiagramSchema>;
 
 export const DiagramQuerySchema = z.object({

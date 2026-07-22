@@ -42,6 +42,7 @@ export type DiagramMinAggregateOutputType = {
   areaId: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  previewAttachmentId: string | null
 }
 
 export type DiagramMaxAggregateOutputType = {
@@ -52,6 +53,7 @@ export type DiagramMaxAggregateOutputType = {
   areaId: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  previewAttachmentId: string | null
 }
 
 export type DiagramCountAggregateOutputType = {
@@ -63,6 +65,7 @@ export type DiagramCountAggregateOutputType = {
   areaId: number
   createdAt: number
   updatedAt: number
+  previewAttachmentId: number
   _all: number
 }
 
@@ -83,6 +86,7 @@ export type DiagramMinAggregateInputType = {
   areaId?: true
   createdAt?: true
   updatedAt?: true
+  previewAttachmentId?: true
 }
 
 export type DiagramMaxAggregateInputType = {
@@ -93,6 +97,7 @@ export type DiagramMaxAggregateInputType = {
   areaId?: true
   createdAt?: true
   updatedAt?: true
+  previewAttachmentId?: true
 }
 
 export type DiagramCountAggregateInputType = {
@@ -104,6 +109,7 @@ export type DiagramCountAggregateInputType = {
   areaId?: true
   createdAt?: true
   updatedAt?: true
+  previewAttachmentId?: true
   _all?: true
 }
 
@@ -202,6 +208,7 @@ export type DiagramGroupByOutputType = {
   areaId: string | null
   createdAt: Date
   updatedAt: Date
+  previewAttachmentId: string | null
   _count: DiagramCountAggregateOutputType | null
   _avg: DiagramAvgAggregateOutputType | null
   _sum: DiagramSumAggregateOutputType | null
@@ -236,8 +243,10 @@ export type DiagramWhereInput = {
   areaId?: Prisma.StringNullableFilter<"Diagram"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Diagram"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Diagram"> | Date | string
+  previewAttachmentId?: Prisma.StringNullableFilter<"Diagram"> | string | null
   device?: Prisma.XOR<Prisma.DeviceNullableScalarRelationFilter, Prisma.DeviceWhereInput> | null
   area?: Prisma.XOR<Prisma.AreaNullableScalarRelationFilter, Prisma.AreaWhereInput> | null
+  previewAttachment?: Prisma.XOR<Prisma.AttachmentNullableScalarRelationFilter, Prisma.AttachmentWhereInput> | null
 }
 
 export type DiagramOrderByWithRelationInput = {
@@ -249,12 +258,15 @@ export type DiagramOrderByWithRelationInput = {
   areaId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  previewAttachmentId?: Prisma.SortOrderInput | Prisma.SortOrder
   device?: Prisma.DeviceOrderByWithRelationInput
   area?: Prisma.AreaOrderByWithRelationInput
+  previewAttachment?: Prisma.AttachmentOrderByWithRelationInput
 }
 
 export type DiagramWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  previewAttachmentId?: string
   AND?: Prisma.DiagramWhereInput | Prisma.DiagramWhereInput[]
   OR?: Prisma.DiagramWhereInput[]
   NOT?: Prisma.DiagramWhereInput | Prisma.DiagramWhereInput[]
@@ -267,7 +279,8 @@ export type DiagramWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Diagram"> | Date | string
   device?: Prisma.XOR<Prisma.DeviceNullableScalarRelationFilter, Prisma.DeviceWhereInput> | null
   area?: Prisma.XOR<Prisma.AreaNullableScalarRelationFilter, Prisma.AreaWhereInput> | null
-}, "id">
+  previewAttachment?: Prisma.XOR<Prisma.AttachmentNullableScalarRelationFilter, Prisma.AttachmentWhereInput> | null
+}, "id" | "previewAttachmentId">
 
 export type DiagramOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -278,6 +291,7 @@ export type DiagramOrderByWithAggregationInput = {
   areaId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  previewAttachmentId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.DiagramCountOrderByAggregateInput
   _avg?: Prisma.DiagramAvgOrderByAggregateInput
   _max?: Prisma.DiagramMaxOrderByAggregateInput
@@ -297,6 +311,7 @@ export type DiagramScalarWhereWithAggregatesInput = {
   areaId?: Prisma.StringNullableWithAggregatesFilter<"Diagram"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Diagram"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Diagram"> | Date | string
+  previewAttachmentId?: Prisma.StringNullableWithAggregatesFilter<"Diagram"> | string | null
 }
 
 export type DiagramCreateInput = {
@@ -308,6 +323,7 @@ export type DiagramCreateInput = {
   updatedAt?: Date | string
   device?: Prisma.DeviceCreateNestedOneWithoutDiagramsInput
   area?: Prisma.AreaCreateNestedOneWithoutDiagramsInput
+  previewAttachment?: Prisma.AttachmentCreateNestedOneWithoutPreviewOfInput
 }
 
 export type DiagramUncheckedCreateInput = {
@@ -319,6 +335,7 @@ export type DiagramUncheckedCreateInput = {
   areaId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  previewAttachmentId?: string | null
 }
 
 export type DiagramUpdateInput = {
@@ -330,6 +347,7 @@ export type DiagramUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   device?: Prisma.DeviceUpdateOneWithoutDiagramsNestedInput
   area?: Prisma.AreaUpdateOneWithoutDiagramsNestedInput
+  previewAttachment?: Prisma.AttachmentUpdateOneWithoutPreviewOfNestedInput
 }
 
 export type DiagramUncheckedUpdateInput = {
@@ -341,6 +359,7 @@ export type DiagramUncheckedUpdateInput = {
   areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  previewAttachmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type DiagramCreateManyInput = {
@@ -352,6 +371,7 @@ export type DiagramCreateManyInput = {
   areaId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  previewAttachmentId?: string | null
 }
 
 export type DiagramUpdateManyMutationInput = {
@@ -372,6 +392,7 @@ export type DiagramUncheckedUpdateManyInput = {
   areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  previewAttachmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type DiagramListRelationFilter = {
@@ -384,6 +405,11 @@ export type DiagramOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type DiagramNullableScalarRelationFilter = {
+  is?: Prisma.DiagramWhereInput | null
+  isNot?: Prisma.DiagramWhereInput | null
+}
+
 export type DiagramCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
@@ -393,6 +419,7 @@ export type DiagramCountOrderByAggregateInput = {
   areaId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  previewAttachmentId?: Prisma.SortOrder
 }
 
 export type DiagramAvgOrderByAggregateInput = {
@@ -407,6 +434,7 @@ export type DiagramMaxOrderByAggregateInput = {
   areaId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  previewAttachmentId?: Prisma.SortOrder
 }
 
 export type DiagramMinOrderByAggregateInput = {
@@ -417,6 +445,7 @@ export type DiagramMinOrderByAggregateInput = {
   areaId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  previewAttachmentId?: Prisma.SortOrder
 }
 
 export type DiagramSumOrderByAggregateInput = {
@@ -507,6 +536,38 @@ export type DiagramUncheckedUpdateManyWithoutDeviceNestedInput = {
   deleteMany?: Prisma.DiagramScalarWhereInput | Prisma.DiagramScalarWhereInput[]
 }
 
+export type DiagramCreateNestedOneWithoutPreviewAttachmentInput = {
+  create?: Prisma.XOR<Prisma.DiagramCreateWithoutPreviewAttachmentInput, Prisma.DiagramUncheckedCreateWithoutPreviewAttachmentInput>
+  connectOrCreate?: Prisma.DiagramCreateOrConnectWithoutPreviewAttachmentInput
+  connect?: Prisma.DiagramWhereUniqueInput
+}
+
+export type DiagramUncheckedCreateNestedOneWithoutPreviewAttachmentInput = {
+  create?: Prisma.XOR<Prisma.DiagramCreateWithoutPreviewAttachmentInput, Prisma.DiagramUncheckedCreateWithoutPreviewAttachmentInput>
+  connectOrCreate?: Prisma.DiagramCreateOrConnectWithoutPreviewAttachmentInput
+  connect?: Prisma.DiagramWhereUniqueInput
+}
+
+export type DiagramUpdateOneWithoutPreviewAttachmentNestedInput = {
+  create?: Prisma.XOR<Prisma.DiagramCreateWithoutPreviewAttachmentInput, Prisma.DiagramUncheckedCreateWithoutPreviewAttachmentInput>
+  connectOrCreate?: Prisma.DiagramCreateOrConnectWithoutPreviewAttachmentInput
+  upsert?: Prisma.DiagramUpsertWithoutPreviewAttachmentInput
+  disconnect?: Prisma.DiagramWhereInput | boolean
+  delete?: Prisma.DiagramWhereInput | boolean
+  connect?: Prisma.DiagramWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.DiagramUpdateToOneWithWhereWithoutPreviewAttachmentInput, Prisma.DiagramUpdateWithoutPreviewAttachmentInput>, Prisma.DiagramUncheckedUpdateWithoutPreviewAttachmentInput>
+}
+
+export type DiagramUncheckedUpdateOneWithoutPreviewAttachmentNestedInput = {
+  create?: Prisma.XOR<Prisma.DiagramCreateWithoutPreviewAttachmentInput, Prisma.DiagramUncheckedCreateWithoutPreviewAttachmentInput>
+  connectOrCreate?: Prisma.DiagramCreateOrConnectWithoutPreviewAttachmentInput
+  upsert?: Prisma.DiagramUpsertWithoutPreviewAttachmentInput
+  disconnect?: Prisma.DiagramWhereInput | boolean
+  delete?: Prisma.DiagramWhereInput | boolean
+  connect?: Prisma.DiagramWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.DiagramUpdateToOneWithWhereWithoutPreviewAttachmentInput, Prisma.DiagramUpdateWithoutPreviewAttachmentInput>, Prisma.DiagramUncheckedUpdateWithoutPreviewAttachmentInput>
+}
+
 export type DiagramCreateWithoutAreaInput = {
   id?: string
   title: string
@@ -515,6 +576,7 @@ export type DiagramCreateWithoutAreaInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   device?: Prisma.DeviceCreateNestedOneWithoutDiagramsInput
+  previewAttachment?: Prisma.AttachmentCreateNestedOneWithoutPreviewOfInput
 }
 
 export type DiagramUncheckedCreateWithoutAreaInput = {
@@ -525,6 +587,7 @@ export type DiagramUncheckedCreateWithoutAreaInput = {
   deviceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  previewAttachmentId?: string | null
 }
 
 export type DiagramCreateOrConnectWithoutAreaInput = {
@@ -564,6 +627,7 @@ export type DiagramScalarWhereInput = {
   areaId?: Prisma.StringNullableFilter<"Diagram"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Diagram"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Diagram"> | Date | string
+  previewAttachmentId?: Prisma.StringNullableFilter<"Diagram"> | string | null
 }
 
 export type DiagramCreateWithoutDeviceInput = {
@@ -574,6 +638,7 @@ export type DiagramCreateWithoutDeviceInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   area?: Prisma.AreaCreateNestedOneWithoutDiagramsInput
+  previewAttachment?: Prisma.AttachmentCreateNestedOneWithoutPreviewOfInput
 }
 
 export type DiagramUncheckedCreateWithoutDeviceInput = {
@@ -584,6 +649,7 @@ export type DiagramUncheckedCreateWithoutDeviceInput = {
   areaId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  previewAttachmentId?: string | null
 }
 
 export type DiagramCreateOrConnectWithoutDeviceInput = {
@@ -611,6 +677,66 @@ export type DiagramUpdateManyWithWhereWithoutDeviceInput = {
   data: Prisma.XOR<Prisma.DiagramUpdateManyMutationInput, Prisma.DiagramUncheckedUpdateManyWithoutDeviceInput>
 }
 
+export type DiagramCreateWithoutPreviewAttachmentInput = {
+  id?: string
+  title: string
+  content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  version?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  device?: Prisma.DeviceCreateNestedOneWithoutDiagramsInput
+  area?: Prisma.AreaCreateNestedOneWithoutDiagramsInput
+}
+
+export type DiagramUncheckedCreateWithoutPreviewAttachmentInput = {
+  id?: string
+  title: string
+  content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  version?: number
+  deviceId?: string | null
+  areaId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type DiagramCreateOrConnectWithoutPreviewAttachmentInput = {
+  where: Prisma.DiagramWhereUniqueInput
+  create: Prisma.XOR<Prisma.DiagramCreateWithoutPreviewAttachmentInput, Prisma.DiagramUncheckedCreateWithoutPreviewAttachmentInput>
+}
+
+export type DiagramUpsertWithoutPreviewAttachmentInput = {
+  update: Prisma.XOR<Prisma.DiagramUpdateWithoutPreviewAttachmentInput, Prisma.DiagramUncheckedUpdateWithoutPreviewAttachmentInput>
+  create: Prisma.XOR<Prisma.DiagramCreateWithoutPreviewAttachmentInput, Prisma.DiagramUncheckedCreateWithoutPreviewAttachmentInput>
+  where?: Prisma.DiagramWhereInput
+}
+
+export type DiagramUpdateToOneWithWhereWithoutPreviewAttachmentInput = {
+  where?: Prisma.DiagramWhereInput
+  data: Prisma.XOR<Prisma.DiagramUpdateWithoutPreviewAttachmentInput, Prisma.DiagramUncheckedUpdateWithoutPreviewAttachmentInput>
+}
+
+export type DiagramUpdateWithoutPreviewAttachmentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  device?: Prisma.DeviceUpdateOneWithoutDiagramsNestedInput
+  area?: Prisma.AreaUpdateOneWithoutDiagramsNestedInput
+}
+
+export type DiagramUncheckedUpdateWithoutPreviewAttachmentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type DiagramCreateManyAreaInput = {
   id?: string
   title: string
@@ -619,6 +745,7 @@ export type DiagramCreateManyAreaInput = {
   deviceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  previewAttachmentId?: string | null
 }
 
 export type DiagramUpdateWithoutAreaInput = {
@@ -629,6 +756,7 @@ export type DiagramUpdateWithoutAreaInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   device?: Prisma.DeviceUpdateOneWithoutDiagramsNestedInput
+  previewAttachment?: Prisma.AttachmentUpdateOneWithoutPreviewOfNestedInput
 }
 
 export type DiagramUncheckedUpdateWithoutAreaInput = {
@@ -639,6 +767,7 @@ export type DiagramUncheckedUpdateWithoutAreaInput = {
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  previewAttachmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type DiagramUncheckedUpdateManyWithoutAreaInput = {
@@ -649,6 +778,7 @@ export type DiagramUncheckedUpdateManyWithoutAreaInput = {
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  previewAttachmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type DiagramCreateManyDeviceInput = {
@@ -659,6 +789,7 @@ export type DiagramCreateManyDeviceInput = {
   areaId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  previewAttachmentId?: string | null
 }
 
 export type DiagramUpdateWithoutDeviceInput = {
@@ -669,6 +800,7 @@ export type DiagramUpdateWithoutDeviceInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   area?: Prisma.AreaUpdateOneWithoutDiagramsNestedInput
+  previewAttachment?: Prisma.AttachmentUpdateOneWithoutPreviewOfNestedInput
 }
 
 export type DiagramUncheckedUpdateWithoutDeviceInput = {
@@ -679,6 +811,7 @@ export type DiagramUncheckedUpdateWithoutDeviceInput = {
   areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  previewAttachmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type DiagramUncheckedUpdateManyWithoutDeviceInput = {
@@ -689,6 +822,7 @@ export type DiagramUncheckedUpdateManyWithoutDeviceInput = {
   areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  previewAttachmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -702,8 +836,10 @@ export type DiagramSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   areaId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  previewAttachmentId?: boolean
   device?: boolean | Prisma.Diagram$deviceArgs<ExtArgs>
   area?: boolean | Prisma.Diagram$areaArgs<ExtArgs>
+  previewAttachment?: boolean | Prisma.Diagram$previewAttachmentArgs<ExtArgs>
 }, ExtArgs["result"]["diagram"]>
 
 export type DiagramSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -715,8 +851,10 @@ export type DiagramSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   areaId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  previewAttachmentId?: boolean
   device?: boolean | Prisma.Diagram$deviceArgs<ExtArgs>
   area?: boolean | Prisma.Diagram$areaArgs<ExtArgs>
+  previewAttachment?: boolean | Prisma.Diagram$previewAttachmentArgs<ExtArgs>
 }, ExtArgs["result"]["diagram"]>
 
 export type DiagramSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -728,8 +866,10 @@ export type DiagramSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   areaId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  previewAttachmentId?: boolean
   device?: boolean | Prisma.Diagram$deviceArgs<ExtArgs>
   area?: boolean | Prisma.Diagram$areaArgs<ExtArgs>
+  previewAttachment?: boolean | Prisma.Diagram$previewAttachmentArgs<ExtArgs>
 }, ExtArgs["result"]["diagram"]>
 
 export type DiagramSelectScalar = {
@@ -741,20 +881,24 @@ export type DiagramSelectScalar = {
   areaId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  previewAttachmentId?: boolean
 }
 
-export type DiagramOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "content" | "version" | "deviceId" | "areaId" | "createdAt" | "updatedAt", ExtArgs["result"]["diagram"]>
+export type DiagramOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "content" | "version" | "deviceId" | "areaId" | "createdAt" | "updatedAt" | "previewAttachmentId", ExtArgs["result"]["diagram"]>
 export type DiagramInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   device?: boolean | Prisma.Diagram$deviceArgs<ExtArgs>
   area?: boolean | Prisma.Diagram$areaArgs<ExtArgs>
+  previewAttachment?: boolean | Prisma.Diagram$previewAttachmentArgs<ExtArgs>
 }
 export type DiagramIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   device?: boolean | Prisma.Diagram$deviceArgs<ExtArgs>
   area?: boolean | Prisma.Diagram$areaArgs<ExtArgs>
+  previewAttachment?: boolean | Prisma.Diagram$previewAttachmentArgs<ExtArgs>
 }
 export type DiagramIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   device?: boolean | Prisma.Diagram$deviceArgs<ExtArgs>
   area?: boolean | Prisma.Diagram$areaArgs<ExtArgs>
+  previewAttachment?: boolean | Prisma.Diagram$previewAttachmentArgs<ExtArgs>
 }
 
 export type $DiagramPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -762,6 +906,7 @@ export type $DiagramPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   objects: {
     device: Prisma.$DevicePayload<ExtArgs> | null
     area: Prisma.$AreaPayload<ExtArgs> | null
+    previewAttachment: Prisma.$AttachmentPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -772,6 +917,7 @@ export type $DiagramPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     areaId: string | null
     createdAt: Date
     updatedAt: Date
+    previewAttachmentId: string | null
   }, ExtArgs["result"]["diagram"]>
   composites: {}
 }
@@ -1168,6 +1314,7 @@ export interface Prisma__DiagramClient<T, Null = never, ExtArgs extends runtime.
   readonly [Symbol.toStringTag]: "PrismaPromise"
   device<T extends Prisma.Diagram$deviceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Diagram$deviceArgs<ExtArgs>>): Prisma.Prisma__DeviceClient<runtime.Types.Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   area<T extends Prisma.Diagram$areaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Diagram$areaArgs<ExtArgs>>): Prisma.Prisma__AreaClient<runtime.Types.Result.GetResult<Prisma.$AreaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  previewAttachment<T extends Prisma.Diagram$previewAttachmentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Diagram$previewAttachmentArgs<ExtArgs>>): Prisma.Prisma__AttachmentClient<runtime.Types.Result.GetResult<Prisma.$AttachmentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1205,6 +1352,7 @@ export interface DiagramFieldRefs {
   readonly areaId: Prisma.FieldRef<"Diagram", 'String'>
   readonly createdAt: Prisma.FieldRef<"Diagram", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Diagram", 'DateTime'>
+  readonly previewAttachmentId: Prisma.FieldRef<"Diagram", 'String'>
 }
     
 
@@ -1639,6 +1787,25 @@ export type Diagram$areaArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
    */
   include?: Prisma.AreaInclude<ExtArgs> | null
   where?: Prisma.AreaWhereInput
+}
+
+/**
+ * Diagram.previewAttachment
+ */
+export type Diagram$previewAttachmentArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Attachment
+   */
+  select?: Prisma.AttachmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Attachment
+   */
+  omit?: Prisma.AttachmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AttachmentInclude<ExtArgs> | null
+  where?: Prisma.AttachmentWhereInput
 }
 
 /**

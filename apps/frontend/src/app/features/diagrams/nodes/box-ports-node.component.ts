@@ -5,7 +5,8 @@ import { BoxPortsNodeData, NodePort } from '@smart-home-inventory/shared';
 /**
  * The "Box with ports" shape: a user-configurable number of named
  * input/output ports — modeled on ng-diagram's AV-schematic demo's
- * device-node component (inputs left, outputs right).
+ * device-node component (inputs left, outputs right; a row per port with a
+ * small rectangular pin nudged past the card's edge).
  */
 @Component({
   selector: 'app-box-ports-node',
@@ -18,20 +19,22 @@ import { BoxPortsNodeData, NodePort } from '@smart-home-inventory/shared';
       </div>
       <div class="columns">
         <div class="column">
-          @for (port of inputPorts(); track port.id) {
-            <div class="port-row">
-              <ng-diagram-port [id]="port.id" side="left" type="both" />
-              <span class="dot"></span>
+          @for (port of inputPorts(); track port.id; let last = $last) {
+            <div class="port-row" [class.port-row--last]="last">
+              <ng-diagram-port [id]="port.id" side="left" type="both" class="port">
+                <div class="port-shape port-shape--input"></div>
+              </ng-diagram-port>
               <span class="label">{{ port.label }}</span>
             </div>
           }
         </div>
         <div class="column align-right">
-          @for (port of outputPorts(); track port.id) {
-            <div class="port-row">
+          @for (port of outputPorts(); track port.id; let last = $last) {
+            <div class="port-row" [class.port-row--last]="last">
               <span class="label">{{ port.label }}</span>
-              <span class="dot"></span>
-              <ng-diagram-port [id]="port.id" side="right" type="both" />
+              <ng-diagram-port [id]="port.id" side="right" type="both" class="port">
+                <div class="port-shape port-shape--output"></div>
+              </ng-diagram-port>
             </div>
           }
         </div>
@@ -43,7 +46,7 @@ import { BoxPortsNodeData, NodePort } from '@smart-home-inventory/shared';
       background: var(--card-background-color);
       border: 2px solid;
       border-radius: 8px;
-      min-width: 160px;
+      min-width: 170px;
       overflow: visible;
     }
     .header {
@@ -56,15 +59,16 @@ import { BoxPortsNodeData, NodePort } from '@smart-home-inventory/shared';
     }
     .columns {
       display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 8px 6px;
     }
     .column {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      min-width: 60px;
+      flex: 1 1 50%;
+      min-width: 0;
+      padding: 4px 0;
+    }
+    .column:first-child {
+      border-right: 1px solid var(--divider-color);
     }
     .align-right {
       align-items: flex-end;
@@ -73,22 +77,60 @@ import { BoxPortsNodeData, NodePort } from '@smart-home-inventory/shared';
       position: relative;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 32px;
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--divider-color);
+    }
+    .port-row--last {
+      border-bottom: none;
     }
     .align-right .port-row {
       flex-direction: row-reverse;
     }
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
+    .port {
+      /* null out the port's own default marker — .port-shape is the visible pin */
+      --ngd-port-size: 0;
+      --ngd-port-background-color: transparent;
+      --ngd-port-border-size: 0;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .column:not(.align-right) .port {
+      left: -9px;
+    }
+    .align-right .port {
+      right: -9px;
+    }
+    .port-shape {
+      width: 9px;
+      height: 14px;
+      background: var(--card-background-color);
+      border: 1px solid var(--secondary-text-color);
+      transition:
+        background-color 120ms ease,
+        border-color 120ms ease;
+    }
+    .port-shape--input {
+      border-radius: 4px 0 0 4px;
+      border-right: none;
+    }
+    .port-shape--output {
+      border-radius: 0 4px 4px 0;
+      border-left: none;
+    }
+    .port-row:hover .port-shape {
       background: var(--secondary-text-color);
-      flex-shrink: 0;
     }
     .label {
       font-size: 11px;
       color: var(--primary-text-color);
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   `,
 })

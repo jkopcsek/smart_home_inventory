@@ -7,37 +7,30 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
 import { AreaDto, AttachmentDto, DeviceDto, DiagramDto } from '@smart-home-inventory/shared';
 import {
-  mdiChartTimelineVariant,
+  mdiChevronRight,
   mdiDelete,
   mdiDevices,
   mdiPencil,
   mdiPlus,
 } from '@mdi/js';
-import {
-  AreasApi,
-  attachmentUrl,
-  DevicesApi,
-  DiagramsApi,
-} from '../../core/api/api.services';
+import { AreasApi, DevicesApi, DiagramsApi } from '../../core/api/api.services';
 import { HttpClient } from '@angular/common/http';
 import { ConfirmService } from '../../core/confirm/confirm.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
-import { AttachmentGalleryComponent } from '../attachments/attachment-gallery.component';
+import { OwnerItemsComponent } from '../attachments/owner-items.component';
 import { AreaFormDialogComponent } from './area-form-dialog.component';
 
 @Component({
   selector: 'app-area-detail-page',
   imports: [
     RouterLink,
-    FormsModule,
     IconComponent,
     EmptyStateComponent,
-    AttachmentGalleryComponent,
+    OwnerItemsComponent,
     AreaFormDialogComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -85,59 +78,31 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
           </a>
         </div>
         @if (devices().length > 0) {
-          <table class="data">
-            <tbody>
-              @for (device of devices(); track device.id) {
-                <tr class="clickable" (click)="openDevice(device)">
-                  <td>{{ device.name }}</td>
-                  <td class="muted">{{ device.manufacturer }} {{ device.model }}</td>
-                  <td class="muted">{{ device.status }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          <div class="device-list">
+            @for (device of devices(); track device.id) {
+              <button type="button" class="device-row" (click)="openDevice(device)">
+                <app-icon class="device-icon" [path]="icons.devices" [size]="24" />
+                <div class="device-info">
+                  <span class="device-name">{{ device.name }}</span>
+                  <span class="device-sub muted">
+                    {{ device.manufacturer }} {{ device.model }} · {{ device.status }}
+                  </span>
+                </div>
+                <app-icon class="device-chevron" [path]="icons.chevron" [size]="20" />
+              </button>
+            }
+          </div>
         } @else {
           <app-empty-state [icon]="icons.devices" message="No devices in this area" />
         }
       </div>
 
       <div class="card section">
-        <div class="section-head">
-          <h3>Diagrams ({{ diagrams().length }})</h3>
-        </div>
-        <div class="image-grid">
-          @for (d of diagrams(); track d.id) {
-            <button type="button" class="image-tile" (click)="openDiagram(d)">
-              <div class="placeholder">
-                <app-icon [path]="icons.diagram" [size]="32" />
-              </div>
-              <div class="tile-caption">
-                <span class="tile-name">{{ d.title }}</span>
-                <span class="tile-meta">
-                  <span class="muted">{{ d.content.nodes.length }} nodes</span>
-                </span>
-              </div>
-            </button>
-          }
-          <div class="image-tile new">
-            <input
-              class="text"
-              placeholder="Name (e.g. Floor plan, Fuse box)"
-              [(ngModel)]="newDiagramTitle"
-            />
-            <button class="btn secondary" [disabled]="!newDiagramTitle.trim()" (click)="createDiagram()">
-              <app-icon [path]="icons.plus" [size]="18" /> New diagram
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card section">
-        <h3>Attachments</h3>
-        <app-attachment-gallery
+        <app-owner-items
           [owner]="{ areaId: a.id }"
+          [diagrams]="diagrams()"
           [attachments]="attachments()"
-          (changed)="loadAttachments()"
+          (changed)="load()"
         />
       </div>
 
@@ -184,59 +149,53 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
     .warn {
       color: var(--warning-color);
     }
-    .image-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
-    }
-    .image-tile {
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-      overflow: hidden;
-      color: inherit;
+    .device-list {
       display: flex;
       flex-direction: column;
-      font: inherit;
-      background: none;
-      cursor: pointer;
-      text-align: left;
-      padding: 0;
     }
-    .image-tile:hover {
-      text-decoration: none;
-      border-color: var(--primary-color);
-    }
-    .image-tile img,
-    .placeholder {
+    .device-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
       width: 100%;
-      height: 130px;
-      object-fit: cover;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      padding: 14px 16px;
+      border: none;
+      border-bottom: 1px solid var(--divider-color);
+      background: none;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .device-row:last-child {
+      border-bottom: none;
+    }
+    .device-row:hover {
+      background: var(--hover-color);
+    }
+    .device-icon {
       color: var(--secondary-text-color);
-      background: var(--secondary-background-color);
+      flex-shrink: 0;
     }
-    .tile-caption {
-      padding: 6px 10px;
+    .device-info {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
     }
-    .tile-meta {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .tile-name {
+    .device-name {
       font-weight: 500;
     }
-    .image-tile.new {
-      padding: 10px;
-      gap: 8px;
-      border-style: dashed;
+    .device-sub {
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .device-chevron {
+      color: var(--secondary-text-color);
+      flex-shrink: 0;
     }
   `,
 })
@@ -256,21 +215,18 @@ export class AreaDetailPageComponent implements OnInit {
   protected readonly diagrams = signal<DiagramDto[]>([]);
   protected readonly attachments = signal<AttachmentDto[]>([]);
   protected readonly editOpen = signal(false);
-  protected newDiagramTitle = '';
 
   protected readonly icons = {
     pencil: mdiPencil,
     delete: mdiDelete,
     plus: mdiPlus,
     devices: mdiDevices,
-    diagram: mdiChartTimelineVariant,
+    chevron: mdiChevronRight,
   };
 
   ngOnInit(): void {
     this.load();
   }
-
-  protected thumbUrl = (attachmentId: string) => attachmentUrl(attachmentId, true);
 
   protected load(): void {
     const id = this.areaId();
@@ -288,24 +244,6 @@ export class AreaDetailPageComponent implements OnInit {
 
   protected openDevice(device: DeviceDto): void {
     this.router.navigate(['/devices', device.id]);
-  }
-
-  protected openDiagram(diagram: DiagramDto): void {
-    this.router.navigate(['/diagrams'], {
-      queryParams: { areaId: this.areaId(), open: diagram.id },
-    });
-  }
-
-  protected createDiagram(): void {
-    const title = this.newDiagramTitle.trim();
-    if (!title) return;
-    this.diagramsApi.create({ title, areaId: this.areaId() }).subscribe((diagram) => {
-      this.newDiagramTitle = '';
-      this.toast.success('Diagram created');
-      this.router.navigate(['/diagrams'], {
-        queryParams: { areaId: this.areaId(), open: diagram.id },
-      });
-    });
   }
 
   protected async removeArea(): Promise<void> {

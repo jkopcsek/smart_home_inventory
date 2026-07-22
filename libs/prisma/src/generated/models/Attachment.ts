@@ -267,6 +267,7 @@ export type AttachmentWhereInput = {
   device?: Prisma.XOR<Prisma.DeviceNullableScalarRelationFilter, Prisma.DeviceWhereInput> | null
   area?: Prisma.XOR<Prisma.AreaNullableScalarRelationFilter, Prisma.AreaWhereInput> | null
   primaryImageOf?: Prisma.XOR<Prisma.DeviceNullableScalarRelationFilter, Prisma.DeviceWhereInput> | null
+  previewOf?: Prisma.XOR<Prisma.DiagramNullableScalarRelationFilter, Prisma.DiagramWhereInput> | null
 }
 
 export type AttachmentOrderByWithRelationInput = {
@@ -284,6 +285,7 @@ export type AttachmentOrderByWithRelationInput = {
   device?: Prisma.DeviceOrderByWithRelationInput
   area?: Prisma.AreaOrderByWithRelationInput
   primaryImageOf?: Prisma.DeviceOrderByWithRelationInput
+  previewOf?: Prisma.DiagramOrderByWithRelationInput
 }
 
 export type AttachmentWhereUniqueInput = Prisma.AtLeast<{
@@ -304,6 +306,7 @@ export type AttachmentWhereUniqueInput = Prisma.AtLeast<{
   device?: Prisma.XOR<Prisma.DeviceNullableScalarRelationFilter, Prisma.DeviceWhereInput> | null
   area?: Prisma.XOR<Prisma.AreaNullableScalarRelationFilter, Prisma.AreaWhereInput> | null
   primaryImageOf?: Prisma.XOR<Prisma.DeviceNullableScalarRelationFilter, Prisma.DeviceWhereInput> | null
+  previewOf?: Prisma.XOR<Prisma.DiagramNullableScalarRelationFilter, Prisma.DiagramWhereInput> | null
 }, "id" | "storedName">
 
 export type AttachmentOrderByWithAggregationInput = {
@@ -355,6 +358,7 @@ export type AttachmentCreateInput = {
   device?: Prisma.DeviceCreateNestedOneWithoutAttachmentsInput
   area?: Prisma.AreaCreateNestedOneWithoutAttachmentsInput
   primaryImageOf?: Prisma.DeviceCreateNestedOneWithoutPrimaryImageInput
+  previewOf?: Prisma.DiagramCreateNestedOneWithoutPreviewAttachmentInput
 }
 
 export type AttachmentUncheckedCreateInput = {
@@ -370,6 +374,7 @@ export type AttachmentUncheckedCreateInput = {
   areaId?: string | null
   createdAt?: Date | string
   primaryImageOf?: Prisma.DeviceUncheckedCreateNestedOneWithoutPrimaryImageInput
+  previewOf?: Prisma.DiagramUncheckedCreateNestedOneWithoutPreviewAttachmentInput
 }
 
 export type AttachmentUpdateInput = {
@@ -385,6 +390,7 @@ export type AttachmentUpdateInput = {
   device?: Prisma.DeviceUpdateOneWithoutAttachmentsNestedInput
   area?: Prisma.AreaUpdateOneWithoutAttachmentsNestedInput
   primaryImageOf?: Prisma.DeviceUpdateOneWithoutPrimaryImageNestedInput
+  previewOf?: Prisma.DiagramUpdateOneWithoutPreviewAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateInput = {
@@ -400,6 +406,7 @@ export type AttachmentUncheckedUpdateInput = {
   areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryImageOf?: Prisma.DeviceUncheckedUpdateOneWithoutPrimaryImageNestedInput
+  previewOf?: Prisma.DiagramUncheckedUpdateOneWithoutPreviewAttachmentNestedInput
 }
 
 export type AttachmentCreateManyInput = {
@@ -619,6 +626,22 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
+export type AttachmentCreateNestedOneWithoutPreviewOfInput = {
+  create?: Prisma.XOR<Prisma.AttachmentCreateWithoutPreviewOfInput, Prisma.AttachmentUncheckedCreateWithoutPreviewOfInput>
+  connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutPreviewOfInput
+  connect?: Prisma.AttachmentWhereUniqueInput
+}
+
+export type AttachmentUpdateOneWithoutPreviewOfNestedInput = {
+  create?: Prisma.XOR<Prisma.AttachmentCreateWithoutPreviewOfInput, Prisma.AttachmentUncheckedCreateWithoutPreviewOfInput>
+  connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutPreviewOfInput
+  upsert?: Prisma.AttachmentUpsertWithoutPreviewOfInput
+  disconnect?: Prisma.AttachmentWhereInput | boolean
+  delete?: Prisma.AttachmentWhereInput | boolean
+  connect?: Prisma.AttachmentWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AttachmentUpdateToOneWithWhereWithoutPreviewOfInput, Prisma.AttachmentUpdateWithoutPreviewOfInput>, Prisma.AttachmentUncheckedUpdateWithoutPreviewOfInput>
+}
+
 export type AttachmentCreateWithoutAreaInput = {
   id?: string
   kind?: $Enums.AttachmentKind
@@ -631,6 +654,7 @@ export type AttachmentCreateWithoutAreaInput = {
   createdAt?: Date | string
   device?: Prisma.DeviceCreateNestedOneWithoutAttachmentsInput
   primaryImageOf?: Prisma.DeviceCreateNestedOneWithoutPrimaryImageInput
+  previewOf?: Prisma.DiagramCreateNestedOneWithoutPreviewAttachmentInput
 }
 
 export type AttachmentUncheckedCreateWithoutAreaInput = {
@@ -645,6 +669,7 @@ export type AttachmentUncheckedCreateWithoutAreaInput = {
   deviceId?: string | null
   createdAt?: Date | string
   primaryImageOf?: Prisma.DeviceUncheckedCreateNestedOneWithoutPrimaryImageInput
+  previewOf?: Prisma.DiagramUncheckedCreateNestedOneWithoutPreviewAttachmentInput
 }
 
 export type AttachmentCreateOrConnectWithoutAreaInput = {
@@ -701,6 +726,7 @@ export type AttachmentCreateWithoutPrimaryImageOfInput = {
   createdAt?: Date | string
   device?: Prisma.DeviceCreateNestedOneWithoutAttachmentsInput
   area?: Prisma.AreaCreateNestedOneWithoutAttachmentsInput
+  previewOf?: Prisma.DiagramCreateNestedOneWithoutPreviewAttachmentInput
 }
 
 export type AttachmentUncheckedCreateWithoutPrimaryImageOfInput = {
@@ -715,6 +741,7 @@ export type AttachmentUncheckedCreateWithoutPrimaryImageOfInput = {
   deviceId?: string | null
   areaId?: string | null
   createdAt?: Date | string
+  previewOf?: Prisma.DiagramUncheckedCreateNestedOneWithoutPreviewAttachmentInput
 }
 
 export type AttachmentCreateOrConnectWithoutPrimaryImageOfInput = {
@@ -734,6 +761,7 @@ export type AttachmentCreateWithoutDeviceInput = {
   createdAt?: Date | string
   area?: Prisma.AreaCreateNestedOneWithoutAttachmentsInput
   primaryImageOf?: Prisma.DeviceCreateNestedOneWithoutPrimaryImageInput
+  previewOf?: Prisma.DiagramCreateNestedOneWithoutPreviewAttachmentInput
 }
 
 export type AttachmentUncheckedCreateWithoutDeviceInput = {
@@ -748,6 +776,7 @@ export type AttachmentUncheckedCreateWithoutDeviceInput = {
   areaId?: string | null
   createdAt?: Date | string
   primaryImageOf?: Prisma.DeviceUncheckedCreateNestedOneWithoutPrimaryImageInput
+  previewOf?: Prisma.DiagramUncheckedCreateNestedOneWithoutPreviewAttachmentInput
 }
 
 export type AttachmentCreateOrConnectWithoutDeviceInput = {
@@ -782,6 +811,7 @@ export type AttachmentUpdateWithoutPrimaryImageOfInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   device?: Prisma.DeviceUpdateOneWithoutAttachmentsNestedInput
   area?: Prisma.AreaUpdateOneWithoutAttachmentsNestedInput
+  previewOf?: Prisma.DiagramUpdateOneWithoutPreviewAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateWithoutPrimaryImageOfInput = {
@@ -796,6 +826,7 @@ export type AttachmentUncheckedUpdateWithoutPrimaryImageOfInput = {
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  previewOf?: Prisma.DiagramUncheckedUpdateOneWithoutPreviewAttachmentNestedInput
 }
 
 export type AttachmentUpsertWithWhereUniqueWithoutDeviceInput = {
@@ -812,6 +843,82 @@ export type AttachmentUpdateWithWhereUniqueWithoutDeviceInput = {
 export type AttachmentUpdateManyWithWhereWithoutDeviceInput = {
   where: Prisma.AttachmentScalarWhereInput
   data: Prisma.XOR<Prisma.AttachmentUpdateManyMutationInput, Prisma.AttachmentUncheckedUpdateManyWithoutDeviceInput>
+}
+
+export type AttachmentCreateWithoutPreviewOfInput = {
+  id?: string
+  kind?: $Enums.AttachmentKind
+  title?: string | null
+  originalName: string
+  storedName: string
+  mimeType: string
+  sizeBytes: number
+  sha256?: string | null
+  createdAt?: Date | string
+  device?: Prisma.DeviceCreateNestedOneWithoutAttachmentsInput
+  area?: Prisma.AreaCreateNestedOneWithoutAttachmentsInput
+  primaryImageOf?: Prisma.DeviceCreateNestedOneWithoutPrimaryImageInput
+}
+
+export type AttachmentUncheckedCreateWithoutPreviewOfInput = {
+  id?: string
+  kind?: $Enums.AttachmentKind
+  title?: string | null
+  originalName: string
+  storedName: string
+  mimeType: string
+  sizeBytes: number
+  sha256?: string | null
+  deviceId?: string | null
+  areaId?: string | null
+  createdAt?: Date | string
+  primaryImageOf?: Prisma.DeviceUncheckedCreateNestedOneWithoutPrimaryImageInput
+}
+
+export type AttachmentCreateOrConnectWithoutPreviewOfInput = {
+  where: Prisma.AttachmentWhereUniqueInput
+  create: Prisma.XOR<Prisma.AttachmentCreateWithoutPreviewOfInput, Prisma.AttachmentUncheckedCreateWithoutPreviewOfInput>
+}
+
+export type AttachmentUpsertWithoutPreviewOfInput = {
+  update: Prisma.XOR<Prisma.AttachmentUpdateWithoutPreviewOfInput, Prisma.AttachmentUncheckedUpdateWithoutPreviewOfInput>
+  create: Prisma.XOR<Prisma.AttachmentCreateWithoutPreviewOfInput, Prisma.AttachmentUncheckedCreateWithoutPreviewOfInput>
+  where?: Prisma.AttachmentWhereInput
+}
+
+export type AttachmentUpdateToOneWithWhereWithoutPreviewOfInput = {
+  where?: Prisma.AttachmentWhereInput
+  data: Prisma.XOR<Prisma.AttachmentUpdateWithoutPreviewOfInput, Prisma.AttachmentUncheckedUpdateWithoutPreviewOfInput>
+}
+
+export type AttachmentUpdateWithoutPreviewOfInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumAttachmentKindFieldUpdateOperationsInput | $Enums.AttachmentKind
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  originalName?: Prisma.StringFieldUpdateOperationsInput | string
+  storedName?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
+  sha256?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  device?: Prisma.DeviceUpdateOneWithoutAttachmentsNestedInput
+  area?: Prisma.AreaUpdateOneWithoutAttachmentsNestedInput
+  primaryImageOf?: Prisma.DeviceUpdateOneWithoutPrimaryImageNestedInput
+}
+
+export type AttachmentUncheckedUpdateWithoutPreviewOfInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumAttachmentKindFieldUpdateOperationsInput | $Enums.AttachmentKind
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  originalName?: Prisma.StringFieldUpdateOperationsInput | string
+  storedName?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
+  sha256?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  primaryImageOf?: Prisma.DeviceUncheckedUpdateOneWithoutPrimaryImageNestedInput
 }
 
 export type AttachmentCreateManyAreaInput = {
@@ -839,6 +946,7 @@ export type AttachmentUpdateWithoutAreaInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   device?: Prisma.DeviceUpdateOneWithoutAttachmentsNestedInput
   primaryImageOf?: Prisma.DeviceUpdateOneWithoutPrimaryImageNestedInput
+  previewOf?: Prisma.DiagramUpdateOneWithoutPreviewAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateWithoutAreaInput = {
@@ -853,6 +961,7 @@ export type AttachmentUncheckedUpdateWithoutAreaInput = {
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryImageOf?: Prisma.DeviceUncheckedUpdateOneWithoutPrimaryImageNestedInput
+  previewOf?: Prisma.DiagramUncheckedUpdateOneWithoutPreviewAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateManyWithoutAreaInput = {
@@ -893,6 +1002,7 @@ export type AttachmentUpdateWithoutDeviceInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   area?: Prisma.AreaUpdateOneWithoutAttachmentsNestedInput
   primaryImageOf?: Prisma.DeviceUpdateOneWithoutPrimaryImageNestedInput
+  previewOf?: Prisma.DiagramUpdateOneWithoutPreviewAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateWithoutDeviceInput = {
@@ -907,6 +1017,7 @@ export type AttachmentUncheckedUpdateWithoutDeviceInput = {
   areaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   primaryImageOf?: Prisma.DeviceUncheckedUpdateOneWithoutPrimaryImageNestedInput
+  previewOf?: Prisma.DiagramUncheckedUpdateOneWithoutPreviewAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateManyWithoutDeviceInput = {
@@ -939,6 +1050,7 @@ export type AttachmentSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   device?: boolean | Prisma.Attachment$deviceArgs<ExtArgs>
   area?: boolean | Prisma.Attachment$areaArgs<ExtArgs>
   primaryImageOf?: boolean | Prisma.Attachment$primaryImageOfArgs<ExtArgs>
+  previewOf?: boolean | Prisma.Attachment$previewOfArgs<ExtArgs>
 }, ExtArgs["result"]["attachment"]>
 
 export type AttachmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -992,6 +1104,7 @@ export type AttachmentInclude<ExtArgs extends runtime.Types.Extensions.InternalA
   device?: boolean | Prisma.Attachment$deviceArgs<ExtArgs>
   area?: boolean | Prisma.Attachment$areaArgs<ExtArgs>
   primaryImageOf?: boolean | Prisma.Attachment$primaryImageOfArgs<ExtArgs>
+  previewOf?: boolean | Prisma.Attachment$previewOfArgs<ExtArgs>
 }
 export type AttachmentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   device?: boolean | Prisma.Attachment$deviceArgs<ExtArgs>
@@ -1008,6 +1121,7 @@ export type $AttachmentPayload<ExtArgs extends runtime.Types.Extensions.Internal
     device: Prisma.$DevicePayload<ExtArgs> | null
     area: Prisma.$AreaPayload<ExtArgs> | null
     primaryImageOf: Prisma.$DevicePayload<ExtArgs> | null
+    previewOf: Prisma.$DiagramPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1418,6 +1532,7 @@ export interface Prisma__AttachmentClient<T, Null = never, ExtArgs extends runti
   device<T extends Prisma.Attachment$deviceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$deviceArgs<ExtArgs>>): Prisma.Prisma__DeviceClient<runtime.Types.Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   area<T extends Prisma.Attachment$areaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$areaArgs<ExtArgs>>): Prisma.Prisma__AreaClient<runtime.Types.Result.GetResult<Prisma.$AreaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   primaryImageOf<T extends Prisma.Attachment$primaryImageOfArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$primaryImageOfArgs<ExtArgs>>): Prisma.Prisma__DeviceClient<runtime.Types.Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  previewOf<T extends Prisma.Attachment$previewOfArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$previewOfArgs<ExtArgs>>): Prisma.Prisma__DiagramClient<runtime.Types.Result.GetResult<Prisma.$DiagramPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1911,6 +2026,25 @@ export type Attachment$primaryImageOfArgs<ExtArgs extends runtime.Types.Extensio
    */
   include?: Prisma.DeviceInclude<ExtArgs> | null
   where?: Prisma.DeviceWhereInput
+}
+
+/**
+ * Attachment.previewOf
+ */
+export type Attachment$previewOfArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Diagram
+   */
+  select?: Prisma.DiagramSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Diagram
+   */
+  omit?: Prisma.DiagramOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DiagramInclude<ExtArgs> | null
+  where?: Prisma.DiagramWhereInput
 }
 
 /**

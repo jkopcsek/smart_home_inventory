@@ -187,6 +187,23 @@ select.text:focus {
   margin-bottom: 4px;
 }
 
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.fields-inline {
+  display: flex;
+  gap: 12px;
+}
+
+.fields-inline > .field {
+  flex: 1;
+  min-width: 0;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -225,13 +242,17 @@ table.data th {
   font-weight: 500;
   color: var(--secondary-text-color);
   font-size: 12px;
-  padding: 8px 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--divider-color);
 }
 
 table.data td {
-  padding: 8px 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--divider-color);
+}
+
+table.data tr:last-child td {
+  border-bottom: none;
 }
 
 table.data tr.clickable {
@@ -282,4 +303,20 @@ dialog::backdrop {
   --ngd-nav-button-primary-pressed: var(--primary-color);
   --ngd-button-gray-bg-default: var(--secondary-background-color);
   --ngd-button-gray-bg-hover: var(--hover-color);
+}
+
+/* Read-only diagram mode: ports/handles live in node-template components
+   ng-diagram renders dynamically, outside this app's own component tree, so
+   disabling them can't be scoped via a component's styles — it has to be
+   global. The actual guarantee against changes is the 'read-only-guard'
+   middleware in diagram-canvas.component.ts; this just avoids showing
+   handles that would visually appear to work but do nothing. */
+.read-only ng-diagram-port,
+.read-only ng-diagram-node-rotate-adornment,
+.read-only ng-diagram-node-resize-adornment .ng-diagram-resize-handle {
+  pointer-events: none !important;
+}
+
+.read-only ng-diagram-node-rotate-adornment {
+  display: none !important;
 }

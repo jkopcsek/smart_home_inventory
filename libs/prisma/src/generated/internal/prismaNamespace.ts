@@ -1069,7 +1069,8 @@ export const DiagramScalarFieldEnum = {
   deviceId: 'deviceId',
   areaId: 'areaId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  previewAttachmentId: 'previewAttachmentId'
 } as const
 
 export type DiagramScalarFieldEnum = (typeof DiagramScalarFieldEnum)[keyof typeof DiagramScalarFieldEnum]

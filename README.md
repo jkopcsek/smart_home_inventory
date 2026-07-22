@@ -68,6 +68,42 @@ and serves the UI through Ingress on port 8099.
 `homeassistant_api: true` gives the backend `SUPERVISOR_TOKEN` automatically —
 sync then talks to `ws://supervisor/core/websocket`.
 
+### Updating the add-on
+
+The add-on is a plain git clone living directly on the add-ons partition, so
+updating is a `git pull` + rebuild rather than a manual file copy. Note:
+`/addons` is its own mounted filesystem, separate from `/config` — a clone
+under `/config` symlinked into `/addons/local` looks fine from an SSH shell
+(which mounts both), but Supervisor's own container only sees `/addons`, so it
+can't resolve a symlink pointing outside it and silently fails to discover the
+add-on. The clone has to physically live under `/addons/local`.
+
+One-time setup, via the Terminal & SSH add-on:
+
+```bash
+mkdir -p /config/.ssh
+ssh-keygen -t ed25519 -f /config/.ssh/id_ed25519_smart_home_inventory -N "" -C "smart-home-inventory-deploy-key"
+cat /config/.ssh/id_ed25519_smart_home_inventory.pub
+# add the printed key as a read-only Deploy Key on the GitHub repo, then:
+GIT_SSH_COMMAND="ssh -i /config/.ssh/id_ed25519_smart_home_inventory -o IdentitiesOnly=yes" \
+  git clone git@github.com:jkopcsek/smart_home_inventory.git /addons/local/smart_home_inventory
+# optional: a pointer under /config for convenient Samba/File Editor access
+ln -s /addons/local/smart_home_inventory /config/git-repos/smart_home_inventory
+ha store reload
+ha apps install local_smart_home_inventory
+ha apps start local_smart_home_inventory
+```
+
+After that, pull and rebuild the latest commit from your own machine with:
+
+```bash
+tools/deploy/update-ha.sh
+```
+
+It SSHes to `homeassistant.local` (override with `HA_HOST`/`HA_USER`/`HA_PORT`
+env vars), runs `git pull --ff-only` against the deploy key above, then
+`ha apps rebuild local_smart_home_inventory` — no HA terminal needed.
+
 ## Environment variables
 
 | Variable | Default | Purpose |

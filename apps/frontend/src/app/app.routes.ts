@@ -66,6 +66,13 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'attachments/:attachmentId',
+    loadComponent: () =>
+      import('./features/attachments/attachment-view-page.component').then(
+        (m) => m.AttachmentViewPageComponent
+      ),
+  },
+  {
     path: 'settings',
     loadComponent: () =>
       import('./features/settings/settings-page.component').then(

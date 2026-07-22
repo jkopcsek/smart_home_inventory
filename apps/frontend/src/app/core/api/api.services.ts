@@ -105,6 +105,9 @@ export class AttachmentsApi {
   listForOwner(owner: AttachmentOwner): Observable<AttachmentDto[]> {
     return this.http.get<AttachmentDto[]>(ownerAttachmentsUrl(owner));
   }
+  get(id: string): Observable<AttachmentDto> {
+    return this.http.get<AttachmentDto>(`api/attachments/${id}`);
+  }
   upload(
     owner: AttachmentOwner,
     file: File,

@@ -1,27 +1,22 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DiagramDto } from '@smart-home-inventory/shared';
-import { mdiChartTimelineVariant, mdiPlus } from '@mdi/js';
+import { mdiArrowLeft, mdiChartTimelineVariant } from '@mdi/js';
 import { DiagramsApi } from '../../core/api/api.services';
-import { ToastService } from '../../core/toast/toast.service';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { DiagramCanvasComponent } from './diagram-canvas.component';
 
 @Component({
   selector: 'app-diagrams-page',
-  imports: [FormsModule, IconComponent, EmptyStateComponent, DiagramCanvasComponent],
+  imports: [IconComponent, EmptyStateComponent, DiagramCanvasComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="header">
+      <button type="button" class="btn secondary" (click)="back()">
+        <app-icon [path]="icons.back" [size]="18" /> Back
+      </button>
       <h1>Diagrams</h1>
-      <div class="new">
-        <input class="text" placeholder="Title" [(ngModel)]="newTitle" />
-        <button class="btn" [disabled]="!newTitle.trim()" (click)="create()">
-          <app-icon [path]="icons.plus" [size]="18" /> New diagram
-        </button>
-      </div>
     </div>
 
     <div class="layout">
@@ -63,21 +58,13 @@ import { DiagramCanvasComponent } from './diagram-canvas.component';
     }
     .header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
       gap: 12px;
+      margin-bottom: 16px;
       flex-wrap: wrap;
     }
     .header h1 {
       margin: 0;
-    }
-    .new {
-      display: flex;
-      gap: 8px;
-    }
-    .new input {
-      width: 220px;
     }
     .layout {
       display: grid;
@@ -127,7 +114,7 @@ import { DiagramCanvasComponent } from './diagram-canvas.component';
 export class DiagramsPageComponent implements OnInit {
   private readonly api = inject(DiagramsApi);
   private readonly route = inject(ActivatedRoute);
-  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
 
   protected readonly diagrams = signal<DiagramDto[]>([]);
   protected readonly selected = signal<DiagramDto | null>(null);
@@ -135,10 +122,8 @@ export class DiagramsPageComponent implements OnInit {
   protected readonly deviceId = signal<string | null>(null);
   protected readonly standalone = signal(false);
 
-  protected newTitle = '';
-
   protected readonly icons = {
-    plus: mdiPlus,
+    back: mdiArrowLeft,
     diagram: mdiChartTimelineVariant,
   };
 
@@ -175,21 +160,12 @@ export class DiagramsPageComponent implements OnInit {
     this.selected.set(diagram);
   }
 
-  protected create(): void {
-    const title = this.newTitle.trim();
-    if (!title) return;
-    this.api
-      .create({
-        title,
-        areaId: this.areaId() ?? undefined,
-        deviceId: this.deviceId() ?? undefined,
-      })
-      .subscribe((created) => {
-        this.newTitle = '';
-        this.toast.success('Diagram created');
-        this.diagrams.update((list) => [...list, created]);
-        this.selectQuiet(created);
-      });
+  protected back(): void {
+    const areaId = this.areaId();
+    const deviceId = this.deviceId();
+    if (areaId) this.router.navigate(['/areas', areaId]);
+    else if (deviceId) this.router.navigate(['/devices', deviceId]);
+    else this.router.navigate(['/home']);
   }
 
   protected onSaved(updated: DiagramDto): void {
