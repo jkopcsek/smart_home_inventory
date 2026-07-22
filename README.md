@@ -70,39 +70,45 @@ sync then talks to `ws://supervisor/core/websocket`.
 
 ### Updating the add-on
 
-The add-on is a plain git clone living directly on the add-ons partition, so
-updating is a `git pull` + rebuild rather than a manual file copy. Note:
-`/addons` is its own mounted filesystem, separate from `/config` — a clone
-under `/config` symlinked into `/addons/local` looks fine from an SSH shell
-(which mounts both), but Supervisor's own container only sees `/addons`, so it
-can't resolve a symlink pointing outside it and silently fails to discover the
-add-on. The clone has to physically live under `/addons/local`.
+The add-on is a **pre-built image**, not a source checkout. Building from
+source on-device (`ha apps rebuild`, compiling Angular + Node) is heavy enough
+to OOM a Raspberry Pi 4 and can take Supervisor down with it. Instead, CI
+builds the image per architecture and pushes it to GHCR
+(`.github/workflows/build-addon.yml`, triggered whenever `config.yaml`'s
+`version` changes on `main`); the Pi only ever runs a `docker pull`. Because
+of that, nothing needs to be checked out on the Pi at all — the add-on
+directory under `/addons` holds a single file, `config.yaml`.
 
 One-time setup, via the Terminal & SSH add-on:
 
 ```bash
-mkdir -p /config/.ssh
-ssh-keygen -t ed25519 -f /config/.ssh/id_ed25519_smart_home_inventory -N "" -C "smart-home-inventory-deploy-key"
-cat /config/.ssh/id_ed25519_smart_home_inventory.pub
-# add the printed key as a read-only Deploy Key on the GitHub repo, then:
-GIT_SSH_COMMAND="ssh -i /config/.ssh/id_ed25519_smart_home_inventory -o IdentitiesOnly=yes" \
-  git clone git@github.com:jkopcsek/smart_home_inventory.git /addons/local/smart_home_inventory
-# optional: a pointer under /config for convenient Samba/File Editor access
-ln -s /addons/local/smart_home_inventory /config/git-repos/smart_home_inventory
-ha store reload
+mkdir -p /addons/local/smart_home_inventory
+```
+
+Then, on GitHub, make the `smart_home_inventory-aarch64` and
+`smart_home_inventory-amd64` packages public (Supervisor pulls without
+registry auth) — they only exist after the first CI run completes.
+
+Copy `config.yaml` over and register the add-on:
+
+```bash
+tools/deploy/update-ha.sh
 ha apps install local_smart_home_inventory
 ha apps start local_smart_home_inventory
 ```
 
-After that, pull and rebuild the latest commit from your own machine with:
+To ship a new version: bump `version` in `config.yaml`, push to `main`, wait
+for the "Build and publish add-on image" workflow to finish, then run:
 
 ```bash
 tools/deploy/update-ha.sh
 ```
 
-It SSHes to `homeassistant.local` (override with `HA_HOST`/`HA_USER`/`HA_PORT`
-env vars), runs `git pull --ff-only` against the deploy key above, then
-`ha apps rebuild local_smart_home_inventory` — no HA terminal needed.
+It scps `config.yaml` to `/addons/local/smart_home_inventory` (SSH target
+overridable with `HA_HOST`/`HA_USER`/`HA_PORT`), then runs `ha store reload`
+and `ha apps update local_smart_home_inventory` so Supervisor picks up the new
+version and pulls the matching image — no HA terminal, no deploy key, no git
+on the Pi.
 
 ## Environment variables
 
