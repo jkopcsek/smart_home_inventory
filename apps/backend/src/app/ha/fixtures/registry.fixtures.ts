@@ -1,11 +1,16 @@
-import { HaArea, HaDevice } from '../ha-registry.types';
+import { HaArea, HaDevice, HaFloor } from '../ha-registry.types';
+
+export const FIXTURE_FLOORS: HaFloor[] = [
+  { floor_id: 'eg', name: 'Erdgeschoss', level: 0 },
+  { floor_id: 'og', name: 'Obergeschoss', level: 1 },
+];
 
 export const FIXTURE_AREAS: HaArea[] = [
-  { area_id: 'wohnzimmer', name: 'Wohnzimmer' },
-  { area_id: 'kueche', name: 'Küche' },
-  { area_id: 'schlafzimmer', name: 'Schlafzimmer' },
-  { area_id: 'flur', name: 'Flur' },
-  { area_id: 'technikraum', name: 'Technikraum' },
+  { area_id: 'wohnzimmer', name: 'Wohnzimmer', floor_id: 'eg' },
+  { area_id: 'kueche', name: 'Küche', floor_id: 'eg' },
+  { area_id: 'schlafzimmer', name: 'Schlafzimmer', floor_id: 'og' },
+  { area_id: 'flur', name: 'Flur', floor_id: 'eg' },
+  { area_id: 'technikraum', name: 'Technikraum', floor_id: null },
 ];
 
 export const FIXTURE_DEVICES: HaDevice[] = [

@@ -22,7 +22,7 @@ npm run prisma:migrate      # create/update ./data/inventory.db
 npm run dev                 # backend on :8099, frontend dev server with /api proxy
 ```
 
-Open the frontend dev server URL it prints (usually http://localhost:4200).
+Open the frontend dev server URL it prints (http://localhost:4211).
 
 Without any HA configuration the backend runs in **mock** mode — "Sync from
 Home Assistant" in Settings imports built-in fixture areas/devices. To sync a

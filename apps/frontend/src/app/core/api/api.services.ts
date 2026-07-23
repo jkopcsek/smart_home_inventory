@@ -12,12 +12,14 @@ import {
   CreateConnectionDto,
   CreateDeviceDto,
   CreateDiagramDto,
+  CreateFloorDto,
   DeviceCapabilityDto,
   DeviceDetailDto,
   DeviceDto,
   DeviceQueryDto,
   DiagramContent,
   DiagramDto,
+  FloorDto,
   HaStatusDto,
   SetDeviceCapabilityDto,
   SyncResultDto,
@@ -26,6 +28,7 @@ import {
   UpdateConnectionDto,
   UpdateDeviceDto,
   UpdateDiagramDto,
+  UpdateFloorDto,
 } from '@smart-home-inventory/shared';
 
 function params(obj: Record<string, string | undefined>): HttpParams {
@@ -42,10 +45,28 @@ export function attachmentUrl(id: string, inline = true): string {
 }
 
 @Injectable({ providedIn: 'root' })
+export class FloorsApi {
+  private readonly http = inject(HttpClient);
+
+  list(): Observable<FloorDto[]> {
+    return this.http.get<FloorDto[]>('api/floors');
+  }
+  create(dto: CreateFloorDto): Observable<FloorDto> {
+    return this.http.post<FloorDto>('api/floors', dto);
+  }
+  update(id: string, dto: UpdateFloorDto): Observable<FloorDto> {
+    return this.http.patch<FloorDto>(`api/floors/${id}`, dto);
+  }
+  remove(id: string): Observable<void> {
+    return this.http.delete<void>(`api/floors/${id}`);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
 export class AreasApi {
   private readonly http = inject(HttpClient);
 
-  list(q?: { q?: string; floor?: string }): Observable<AreaDto[]> {
+  list(q?: { q?: string; floorId?: string }): Observable<AreaDto[]> {
     return this.http.get<AreaDto[]>('api/areas', { params: params(q ?? {}) });
   }
   get(id: string): Observable<AreaDto> {

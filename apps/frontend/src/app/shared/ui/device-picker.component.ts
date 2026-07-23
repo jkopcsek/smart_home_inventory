@@ -74,6 +74,8 @@ export class DevicePickerComponent {
   readonly placeholder = input('Search device…');
   /** Device ids to exclude from results (e.g. the other endpoint). */
   readonly exclude = input<string[]>([]);
+  /** Area id whose devices should be sorted to the top of the results. */
+  readonly currentAreaId = input<string | null>(null);
   readonly selected = output<DeviceDto>();
 
   protected readonly query = signal('');
@@ -88,9 +90,14 @@ export class DevicePickerComponent {
 
   protected search(q: string): void {
     this.devicesApi.list({ q: q || undefined }).subscribe((devices) => {
-      this.results.set(
-        devices.filter((d) => !this.exclude().includes(d.id)).slice(0, 8)
-      );
+      const areaId = this.currentAreaId();
+      const filtered = devices.filter((d) => !this.exclude().includes(d.id));
+      if (areaId) {
+        filtered.sort(
+          (a, b) => Number(b.areaId === areaId) - Number(a.areaId === areaId)
+        );
+      }
+      this.results.set(filtered.slice(0, 8));
       this.open.set(true);
     });
   }

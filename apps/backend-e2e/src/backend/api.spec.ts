@@ -8,10 +8,13 @@ describe('smart home inventory API (real server, temp DB)', () => {
   });
 
   it('runs the core area → device → connection flow', async () => {
+    const floor = (await axios.post('/api/floors', { name: 'UG', level: -1 })).data;
+
     const area = (
-      await axios.post('/api/areas', { name: 'Werkstatt', floor: 'UG' })
+      await axios.post('/api/areas', { name: 'Werkstatt', floorId: floor.id })
     ).data;
     expect(area.source).toBe('manual');
+    expect(area.floorName).toBe('UG');
 
     const device = (
       await axios.post('/api/devices', {

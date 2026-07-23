@@ -1,7 +1,17 @@
-import { LocalArea, LocalDevice, mergeRegistry } from './ha-sync.merge';
-import { HaArea, HaDevice } from './ha-registry.types';
+import { LocalArea, LocalDevice, LocalFloor, mergeRegistry } from './ha-sync.merge';
+import { HaArea, HaDevice, HaFloor } from './ha-registry.types';
 
-const remoteArea = (id: string, name: string): HaArea => ({ area_id: id, name });
+const remoteFloor = (id: string, name: string, level: number | null = null): HaFloor => ({
+  floor_id: id,
+  name,
+  level,
+});
+
+const remoteArea = (id: string, name: string, floorId: string | null = null): HaArea => ({
+  area_id: id,
+  name,
+  floor_id: floorId,
+});
 
 const remoteDevice = (overrides: Partial<HaDevice> & { id: string }): HaDevice => ({
   name: null,
@@ -13,10 +23,20 @@ const remoteDevice = (overrides: Partial<HaDevice> & { id: string }): HaDevice =
   ...overrides,
 });
 
+const localFloor = (overrides: Partial<LocalFloor> & { id: string }): LocalFloor => ({
+  name: overrides.id,
+  haFloorId: null,
+  haName: null,
+  haOrphaned: false,
+  ...overrides,
+});
+
 const localArea = (overrides: Partial<LocalArea> & { id: string }): LocalArea => ({
   name: overrides.id,
+  floorId: null,
   haAreaId: null,
   haName: null,
+  haFloorIdAtSync: null,
   haOrphaned: false,
   ...overrides,
 });
@@ -34,11 +54,12 @@ const localDevice = (overrides: Partial<LocalDevice> & { id: string }): LocalDev
 });
 
 describe('mergeRegistry', () => {
-  it('creates rooms and devices for new HA entities', () => {
+  it('creates floors, rooms and devices for new HA entities', () => {
     const result = mergeRegistry(
-      { areas: [], devices: [] },
+      { floors: [], areas: [], devices: [] },
       {
-        areas: [remoteArea('wz', 'Wohnzimmer')],
+        floors: [remoteFloor('eg', 'Erdgeschoss', 0)],
+        areas: [remoteArea('wz', 'Wohnzimmer', 'eg')],
         devices: [
           remoteDevice({
             id: 'd1',
@@ -50,7 +71,10 @@ describe('mergeRegistry', () => {
         ],
       }
     );
-    expect(result.areaCreates).toEqual([{ haAreaId: 'wz', name: 'Wohnzimmer' }]);
+    expect(result.floorCreates).toEqual([{ haFloorId: 'eg', name: 'Erdgeschoss', level: 0 }]);
+    expect(result.areaCreates).toEqual([
+      { haAreaId: 'wz', name: 'Wohnzimmer', haFloorRef: 'eg' },
+    ]);
     expect(result.deviceCreates).toEqual([
       {
         haDeviceId: 'd1',
@@ -65,7 +89,17 @@ describe('mergeRegistry', () => {
   it('is idempotent: no ops when local matches remote', () => {
     const result = mergeRegistry(
       {
-        areas: [localArea({ id: 'a1', name: 'Wohnzimmer', haAreaId: 'wz', haName: 'Wohnzimmer' })],
+        floors: [localFloor({ id: 'f1', name: 'Erdgeschoss', haFloorId: 'eg', haName: 'Erdgeschoss' })],
+        areas: [
+          localArea({
+            id: 'a1',
+            name: 'Wohnzimmer',
+            floorId: 'f1',
+            haAreaId: 'wz',
+            haName: 'Wohnzimmer',
+            haFloorIdAtSync: 'eg',
+          }),
+        ],
         devices: [
           localDevice({
             id: 'x1',
@@ -79,7 +113,8 @@ describe('mergeRegistry', () => {
         ],
       },
       {
-        areas: [remoteArea('wz', 'Wohnzimmer')],
+        floors: [remoteFloor('eg', 'Erdgeschoss', 0)],
+        areas: [remoteArea('wz', 'Wohnzimmer', 'eg')],
         devices: [
           remoteDevice({
             id: 'd1',
@@ -90,6 +125,8 @@ describe('mergeRegistry', () => {
         ],
       }
     );
+    expect(result.floorCreates).toHaveLength(0);
+    expect(result.floorUpdates).toHaveLength(0);
     expect(result.areaCreates).toHaveLength(0);
     expect(result.areaUpdates).toHaveLength(0);
     expect(result.deviceCreates).toHaveLength(0);
@@ -99,10 +136,11 @@ describe('mergeRegistry', () => {
   it('follows HA renames while the user has not renamed locally', () => {
     const result = mergeRegistry(
       {
+        floors: [],
         areas: [localArea({ id: 'a1', name: 'Wohnzimmer', haAreaId: 'wz', haName: 'Wohnzimmer' })],
         devices: [],
       },
-      { areas: [remoteArea('wz', 'Living room')], devices: [] }
+      { floors: [], areas: [remoteArea('wz', 'Living room')], devices: [] }
     );
     expect(result.areaUpdates).toEqual([
       { id: 'a1', data: { name: 'Living room', haName: 'Living room' } },
@@ -112,19 +150,35 @@ describe('mergeRegistry', () => {
   it('keeps the local name once the user renamed it', () => {
     const result = mergeRegistry(
       {
+        floors: [],
         areas: [localArea({ id: 'a1', name: 'Stube', haAreaId: 'wz', haName: 'Wohnzimmer' })],
         devices: [],
       },
-      { areas: [remoteArea('wz', 'Living room')], devices: [] }
+      { floors: [], areas: [remoteArea('wz', 'Living room')], devices: [] }
     );
     expect(result.areaUpdates).toEqual([
       { id: 'a1', data: { haName: 'Living room' } },
     ]);
   });
 
+  it('follows HA floor renames while the user has not renamed locally', () => {
+    const result = mergeRegistry(
+      {
+        floors: [localFloor({ id: 'f1', name: 'Erdgeschoss', haFloorId: 'eg', haName: 'Erdgeschoss' })],
+        areas: [],
+        devices: [],
+      },
+      { floors: [remoteFloor('eg', 'Ground floor')], areas: [], devices: [] }
+    );
+    expect(result.floorUpdates).toEqual([
+      { id: 'f1', data: { name: 'Ground floor', haName: 'Ground floor' } },
+    ]);
+  });
+
   it('never overwrites user-entered manufacturer/model', () => {
     const result = mergeRegistry(
       {
+        floors: [],
         areas: [],
         devices: [
           localDevice({
@@ -137,6 +191,7 @@ describe('mergeRegistry', () => {
         ],
       },
       {
+        floors: [],
         areas: [],
         devices: [
           remoteDevice({ id: 'd1', name: 'Lamp', manufacturer: 'Signify', model: 'LCA001' }),
@@ -156,6 +211,7 @@ describe('mergeRegistry', () => {
     // Device still where sync put it → follows the HA move.
     const follows = mergeRegistry(
       {
+        floors: [],
         areas,
         devices: [
           localDevice({
@@ -169,6 +225,7 @@ describe('mergeRegistry', () => {
         ],
       },
       {
+        floors: [],
         areas: [remoteArea('wz', 'WZ'), remoteArea('sz', 'SZ')],
         devices: [remoteDevice({ id: 'd1', name: 'Sensor', area_id: 'sz' })],
       }
@@ -180,6 +237,7 @@ describe('mergeRegistry', () => {
     // User moved the device to a2 themselves → HA move is NOT applied.
     const userMoved = mergeRegistry(
       {
+        floors: [],
         areas,
         devices: [
           localDevice({
@@ -193,6 +251,7 @@ describe('mergeRegistry', () => {
         ],
       },
       {
+        floors: [],
         areas: [remoteArea('wz', 'WZ'), remoteArea('sz', 'SZ')],
         devices: [remoteDevice({ id: 'd1', name: 'Sensor', area_id: 'flur' })],
       }
@@ -202,16 +261,76 @@ describe('mergeRegistry', () => {
     ]);
   });
 
+  it('follows HA floor moves until the user manually reassigns', () => {
+    const floors = [
+      localFloor({ id: 'f1', haFloorId: 'eg', haName: 'EG', name: 'EG' }),
+      localFloor({ id: 'f2', haFloorId: 'og', haName: 'OG', name: 'OG' }),
+    ];
+    // Area still where sync put it → follows the HA move.
+    const follows = mergeRegistry(
+      {
+        floors,
+        areas: [
+          localArea({
+            id: 'a1',
+            name: 'Flur',
+            haAreaId: 'flur',
+            haName: 'Flur',
+            floorId: 'f1',
+            haFloorIdAtSync: 'eg',
+          }),
+        ],
+        devices: [],
+      },
+      {
+        floors: [remoteFloor('eg', 'EG'), remoteFloor('og', 'OG')],
+        areas: [remoteArea('flur', 'Flur', 'og')],
+        devices: [],
+      }
+    );
+    expect(follows.areaUpdates).toEqual([
+      { id: 'a1', data: { haFloorIdAtSync: 'og' }, haFloorRef: 'og' },
+    ]);
+
+    // User moved the area to f2 themselves → HA move is NOT applied.
+    const userMoved = mergeRegistry(
+      {
+        floors,
+        areas: [
+          localArea({
+            id: 'a1',
+            name: 'Flur',
+            haAreaId: 'flur',
+            haName: 'Flur',
+            floorId: 'f2',
+            haFloorIdAtSync: 'eg',
+          }),
+        ],
+        devices: [],
+      },
+      {
+        floors: [remoteFloor('eg', 'EG'), remoteFloor('og', 'OG')],
+        areas: [remoteArea('flur', 'Flur', 'dachboden')],
+        devices: [],
+      }
+    );
+    expect(userMoved.areaUpdates).toEqual([
+      { id: 'a1', data: { haFloorIdAtSync: 'dachboden' } },
+    ]);
+  });
+
   it('flags disappeared entities as orphaned instead of deleting', () => {
     const result = mergeRegistry(
       {
+        floors: [localFloor({ id: 'f1', haFloorId: 'gone', haName: 'Gone', name: 'Gone' })],
         areas: [localArea({ id: 'a1', haAreaId: 'gone', haName: 'Gone', name: 'Gone' })],
         devices: [
           localDevice({ id: 'x1', name: 'Old', haDeviceId: 'gone-dev', haName: 'Old' }),
         ],
       },
-      { areas: [], devices: [] }
+      { floors: [], areas: [], devices: [] }
     );
+    expect(result.floorUpdates).toEqual([{ id: 'f1', data: { haOrphaned: true } }]);
     expect(result.areaUpdates).toEqual([{ id: 'a1', data: { haOrphaned: true } }]);
     expect(result.deviceUpdates).toEqual([{ id: 'x1', data: { haOrphaned: true } }]);
   });
@@ -219,12 +338,13 @@ describe('mergeRegistry', () => {
   it('clears the orphaned flag when the entity reappears', () => {
     const result = mergeRegistry(
       {
+        floors: [],
         areas: [
           localArea({ id: 'a1', haAreaId: 'wz', haName: 'WZ', name: 'WZ', haOrphaned: true }),
         ],
         devices: [],
       },
-      { areas: [remoteArea('wz', 'WZ')], devices: [] }
+      { floors: [], areas: [remoteArea('wz', 'WZ')], devices: [] }
     );
     expect(result.areaUpdates).toEqual([{ id: 'a1', data: { haOrphaned: false } }]);
   });
@@ -232,19 +352,22 @@ describe('mergeRegistry', () => {
   it('leaves purely local entities untouched', () => {
     const result = mergeRegistry(
       {
+        floors: [localFloor({ id: 'f1', name: 'Keller' })],
         areas: [localArea({ id: 'a1', name: 'Keller' })],
         devices: [localDevice({ id: 'x1', name: 'Sicherung F7' })],
       },
-      { areas: [], devices: [] }
+      { floors: [], areas: [], devices: [] }
     );
+    expect(result.floorUpdates).toHaveLength(0);
     expect(result.areaUpdates).toHaveLength(0);
     expect(result.deviceUpdates).toHaveLength(0);
   });
 
   it('skips HA service devices', () => {
     const result = mergeRegistry(
-      { areas: [], devices: [] },
+      { floors: [], areas: [], devices: [] },
       {
+        floors: [],
         areas: [],
         devices: [remoteDevice({ id: 'sun', name: 'Sun', entry_type: 'service' })],
       }

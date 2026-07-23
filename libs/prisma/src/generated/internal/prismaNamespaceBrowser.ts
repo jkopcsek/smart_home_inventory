@@ -51,6 +51,7 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  Floor: 'Floor',
   Area: 'Area',
   Device: 'Device',
   Attachment: 'Attachment',
@@ -73,13 +74,29 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const FloorScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  level: 'level',
+  haFloorId: 'haFloorId',
+  haName: 'haName',
+  haOrphaned: 'haOrphaned',
+  source: 'source',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FloorScalarFieldEnum = (typeof FloorScalarFieldEnum)[keyof typeof FloorScalarFieldEnum]
+
+
 export const AreaScalarFieldEnum = {
   id: 'id',
   name: 'name',
-  floor: 'floor',
+  floorId: 'floorId',
   notes: 'notes',
   haAreaId: 'haAreaId',
   haName: 'haName',
+  haFloorIdAtSync: 'haFloorIdAtSync',
   haOrphaned: 'haOrphaned',
   source: 'source',
   createdAt: 'createdAt',

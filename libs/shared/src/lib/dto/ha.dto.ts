@@ -8,6 +8,7 @@ export interface SyncCounts {
 }
 
 export interface SyncResultDto {
+  floors: SyncCounts;
   areas: SyncCounts;
   devices: SyncCounts;
   warnings: string[];

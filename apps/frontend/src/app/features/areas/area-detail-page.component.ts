@@ -40,8 +40,8 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
         <div>
           <h1>{{ a.name }}</h1>
           <span class="muted">
-            @if (a.floor) {
-              {{ a.floor }} ·
+            @if (a.floorName) {
+              {{ a.floorName }} ·
             }
             @if (a.source === 'ha') {
               synced from Home Assistant

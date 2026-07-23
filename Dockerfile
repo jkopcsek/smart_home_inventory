@@ -15,7 +15,7 @@ COPY package.json package-lock.json ./
 # runs slow enough that registry requests can trip the default timeout/retry
 # budget outright — widen it rather than let a slow emulated CPU fail the build.
 RUN apk add --no-cache --virtual .build python3 make g++ \
-  && npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000 --fetch-timeout=600000 \
+  && npm ci --fetch-retries=8 --fetch-retry-mintimeout=30000 --fetch-retry-maxtimeout=180000 --fetch-timeout=900000 \
   && apk del .build
 
 COPY nx.json tsconfig.base.json jest.preset.js eslint.config.mjs prisma.config.ts ./
@@ -36,7 +36,7 @@ ENV NODE_ENV=production \
 
 COPY package.json package-lock.json ./
 RUN apk add --no-cache --virtual .build python3 make g++ \
-  && npm ci --omit=dev --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000 --fetch-timeout=600000 \
+  && npm ci --omit=dev --fetch-retries=8 --fetch-retry-mintimeout=30000 --fetch-retry-maxtimeout=180000 --fetch-timeout=900000 \
   && apk del .build \
   && npm cache clean --force
 

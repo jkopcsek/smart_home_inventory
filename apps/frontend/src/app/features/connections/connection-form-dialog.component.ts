@@ -53,6 +53,7 @@ import { DevicePickerComponent } from '../../shared/ui/device-picker.component';
             <span>Other device *</span>
             <app-device-picker
               [exclude]="[fixed.id]"
+              [currentAreaId]="fixed.areaId"
               (selected)="otherDevice.set($event)"
             />
           </div>
@@ -61,6 +62,7 @@ import { DevicePickerComponent } from '../../shared/ui/device-picker.component';
             <span>From device (upstream) *</span>
             <app-device-picker
               [exclude]="otherDevice() ? [otherDevice()!.id] : []"
+              [currentAreaId]="otherDevice()?.areaId ?? null"
               (selected)="sourceDevice.set($event)"
             />
           </div>
@@ -68,6 +70,7 @@ import { DevicePickerComponent } from '../../shared/ui/device-picker.component';
             <span>To device *</span>
             <app-device-picker
               [exclude]="sourceDevice() ? [sourceDevice()!.id] : []"
+              [currentAreaId]="sourceDevice()?.areaId ?? null"
               (selected)="otherDevice.set($event)"
             />
           </div>

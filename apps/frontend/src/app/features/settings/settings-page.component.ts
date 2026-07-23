@@ -53,7 +53,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
       }
       <button class="btn" [disabled]="syncing()" (click)="sync()">
         <app-icon [path]="icons.sync" [size]="18" />
-        {{ syncing() ? 'Syncing…' : 'Sync areas & devices from Home Assistant' }}
+        {{ syncing() ? 'Syncing…' : 'Sync floors, areas & devices from Home Assistant' }}
       </button>
       @if (lastResult(); as r) {
         <table class="data result">
@@ -67,6 +67,13 @@ import { IconComponent } from '../../shared/ui/icon.component';
             </tr>
           </thead>
           <tbody>
+            <tr>
+              <td>Floors</td>
+              <td>{{ r.floors.created }}</td>
+              <td>{{ r.floors.updated }}</td>
+              <td>{{ r.floors.orphaned }}</td>
+              <td>{{ r.floors.unchanged }}</td>
+            </tr>
             <tr>
               <td>Areas</td>
               <td>{{ r.areas.created }}</td>
@@ -205,8 +212,8 @@ export class SettingsPageComponent implements OnInit {
         this.syncing.set(false);
         this.lastResult.set(result);
         this.toast.success(
-          `Synced: ${result.areas.created + result.devices.created} created, ` +
-            `${result.areas.updated + result.devices.updated} updated`
+          `Synced: ${result.floors.created + result.areas.created + result.devices.created} created, ` +
+            `${result.floors.updated + result.areas.updated + result.devices.updated} updated`
         );
       },
       error: () => this.syncing.set(false),

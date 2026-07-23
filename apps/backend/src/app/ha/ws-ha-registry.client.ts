@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import WebSocket from 'ws';
-import { HaArea, HaDevice, HaRegistryClient } from './ha-registry.types';
+import { HaArea, HaDevice, HaFloor, HaRegistryClient } from './ha-registry.types';
 
 interface HaWsResultMessage {
   id: number;
@@ -51,7 +51,20 @@ export class WsHaRegistryClient implements HaRegistryClient {
 
   async listAreas(): Promise<HaArea[]> {
     const result = await this.command('config/area_registry/list');
-    return (result as HaArea[]).map((a) => ({ area_id: a.area_id, name: a.name }));
+    return (result as HaArea[]).map((a) => ({
+      area_id: a.area_id,
+      name: a.name,
+      floor_id: a.floor_id ?? null,
+    }));
+  }
+
+  async listFloors(): Promise<HaFloor[]> {
+    const result = await this.command('config/floor_registry/list');
+    return (result as HaFloor[]).map((f) => ({
+      floor_id: f.floor_id,
+      name: f.name,
+      level: f.level ?? null,
+    }));
   }
 
   async listDevices(): Promise<HaDevice[]> {

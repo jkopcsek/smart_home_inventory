@@ -6,16 +6,20 @@ import {
   EntitySource,
   UpdateAreaDto,
 } from '@smart-home-inventory/shared';
-import { Area } from '@smart-home-inventory/prisma';
+import { Area, Floor } from '@smart-home-inventory/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 
-type AreaWithCounts = Area & { _count: { devices: number; diagrams: number } };
+type AreaWithCounts = Area & {
+  floor: Floor | null;
+  _count: { devices: number; diagrams: number };
+};
 
 export function toAreaDto(area: AreaWithCounts): AreaDto {
   return {
     id: area.id,
     name: area.name,
-    floor: area.floor,
+    floorId: area.floorId,
+    floorName: area.floor?.name ?? null,
     notes: area.notes,
     haAreaId: area.haAreaId,
     haOrphaned: area.haOrphaned,
@@ -27,7 +31,10 @@ export function toAreaDto(area: AreaWithCounts): AreaDto {
   };
 }
 
-const withCounts = { _count: { select: { devices: true, diagrams: true } } } as const;
+const withCounts = {
+  floor: true,
+  _count: { select: { devices: true, diagrams: true } },
+} as const;
 
 @Injectable()
 export class AreasService {
@@ -36,11 +43,11 @@ export class AreasService {
   async list(query: AreaQueryDto): Promise<AreaDto[]> {
     const areas = await this.prisma.area.findMany({
       where: {
-        ...(query.floor ? { floor: query.floor } : {}),
+        ...(query.floorId ? { floorId: query.floorId } : {}),
         ...(query.q ? { name: { contains: query.q } } : {}),
       },
       include: withCounts,
-      orderBy: [{ floor: 'asc' }, { name: 'asc' }],
+      orderBy: [{ floor: { level: 'asc' } }, { name: 'asc' }],
     });
     return areas.map(toAreaDto);
   }
@@ -58,7 +65,7 @@ export class AreasService {
     const area = await this.prisma.area.create({
       data: {
         name: dto.name,
-        floor: dto.floor ?? null,
+        floorId: dto.floorId ?? null,
         notes: dto.notes ?? null,
       },
       include: withCounts,
@@ -72,7 +79,7 @@ export class AreasService {
       where: { id },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
-        ...(dto.floor !== undefined ? { floor: dto.floor } : {}),
+        ...(dto.floorId !== undefined ? { floorId: dto.floorId } : {}),
         ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
       },
       include: withCounts,

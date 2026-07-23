@@ -108,6 +108,17 @@ import { DiagramCanvasComponent } from './diagram-canvas.component';
       .layout {
         grid-template-columns: 1fr;
       }
+      /* Stacking .list above .detail in DOM order pushes the diagram
+         canvas far below the fold, especially with a long diagram list —
+         show the selected diagram first and keep the list to a scrollable
+         strip underneath. */
+      .detail {
+        order: -1;
+      }
+      .list {
+        max-height: 180px;
+        overflow-y: auto;
+      }
     }
   `,
 })

@@ -34,9 +34,9 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
       </a>
     </div>
 
-    @for (group of grouped(); track group.floor) {
-      @if (group.floor) {
-        <h3 class="floor">{{ group.floor }}</h3>
+    @for (group of grouped(); track group.floorId) {
+      @if (group.floorName) {
+        <h3 class="floor">{{ group.floorName }}</h3>
       }
       <div class="grid">
         @for (area of group.areas; track area.id) {
@@ -144,13 +144,13 @@ export class AreaListPageComponent {
   };
 
   protected readonly grouped = computed(() => {
-    const groups = new Map<string, AreaDto[]>();
+    const groups = new Map<string, { floorName: string | null; areas: AreaDto[] }>();
     for (const area of this.areas()) {
-      const key = area.floor ?? '';
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)?.push(area);
+      const key = area.floorId ?? '';
+      if (!groups.has(key)) groups.set(key, { floorName: area.floorName, areas: [] });
+      groups.get(key)?.areas.push(area);
     }
-    return Array.from(groups.entries()).map(([floor, areas]) => ({ floor, areas }));
+    return Array.from(groups.entries()).map(([floorId, group]) => ({ floorId, ...group }));
   });
 
   constructor() {

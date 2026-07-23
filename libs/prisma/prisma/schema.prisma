@@ -74,13 +74,30 @@ enum EntitySource {
   ha
 }
 
+model Floor {
+  id         String   @id @default(cuid())
+  name       String
+  // HA's floor registry `level` (e.g. 0 = ground floor) — used for ordering.
+  level      Int?
+  haFloorId  String?  @unique
+  haName     String?
+  haOrphaned Boolean      @default(false)
+  source     EntitySource @default(manual)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  areas Area[]
+}
+
 model Area {
   id         String   @id @default(cuid())
   name       String
-  floor      String?
+  floorId    String?
+  floor      Floor?   @relation(fields: [floorId], references: [id], onDelete: SetNull)
   notes      String?
   haAreaId   String?  @unique
   haName     String?
+  haFloorIdAtSync String?
   haOrphaned Boolean      @default(false)
   source     EntitySource @default(manual)
   createdAt  DateTime @default(now())
@@ -89,6 +106,8 @@ model Area {
   devices     Device[]
   attachments Attachment[]
   diagrams    Diagram[]
+
+  @@index([floorId])
 }
 
 model Device {

@@ -4,6 +4,7 @@ import { AppConfig } from './config/app-config';
 import { AppConfigModule } from './config/config.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
+import { FloorsModule } from './floors/floors.module';
 import { AreasModule } from './areas/areas.module';
 import { DevicesModule } from './devices/devices.module';
 import { AttachmentsModule } from './attachments/attachments.module';
@@ -32,6 +33,7 @@ import { HaModule } from './ha/ha.module';
           : [],
     }),
     HealthModule,
+    FloorsModule,
     AreasModule,
     DevicesModule,
     AttachmentsModule,

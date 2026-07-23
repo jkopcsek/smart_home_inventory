@@ -72,14 +72,26 @@ export class HaSyncService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async doSync(): Promise<SyncResultDto> {
-    const [remoteAreas, remoteDevices] = await Promise.all([
+    const [remoteFloors, remoteAreas, remoteDevices] = await Promise.all([
+      this.client.listFloors(),
       this.client.listAreas(),
       this.client.listDevices(),
     ]);
 
     const result = await this.prisma.$transaction(async (tx) => {
+      const localFloors = await tx.floor.findMany({
+        select: { id: true, name: true, haFloorId: true, haName: true, haOrphaned: true },
+      });
       const localAreas = await tx.area.findMany({
-        select: { id: true, name: true, haAreaId: true, haName: true, haOrphaned: true },
+        select: {
+          id: true,
+          name: true,
+          floorId: true,
+          haAreaId: true,
+          haName: true,
+          haFloorIdAtSync: true,
+          haOrphaned: true,
+        },
       });
       const localDevices = await tx.device.findMany({
         select: {
@@ -96,9 +108,33 @@ export class HaSyncService implements OnModuleInit, OnModuleDestroy {
       });
 
       const merge = mergeRegistry(
-        { areas: localAreas, devices: localDevices },
-        { areas: remoteAreas, devices: remoteDevices }
+        { floors: localFloors, areas: localAreas, devices: localDevices },
+        { floors: remoteFloors, areas: remoteAreas, devices: remoteDevices }
       );
+
+      for (const op of merge.floorCreates) {
+        await tx.floor.create({
+          data: {
+            name: op.name,
+            level: op.level,
+            haFloorId: op.haFloorId,
+            haName: op.name,
+            source: 'ha',
+          },
+        });
+      }
+      for (const op of merge.floorUpdates) {
+        await tx.floor.update({ where: { id: op.id }, data: op.data });
+      }
+
+      // Resolve HA floor ids to local floor ids (including freshly created ones).
+      const floorsNow = await tx.floor.findMany({
+        where: { haFloorId: { not: null } },
+        select: { id: true, haFloorId: true },
+      });
+      const floorIdByHaId = new Map(floorsNow.map((f) => [f.haFloorId as string, f.id]));
+      const resolveFloor = (haFloorRef: string | null): string | null =>
+        haFloorRef ? floorIdByHaId.get(haFloorRef) ?? null : null;
 
       for (const op of merge.areaCreates) {
         await tx.area.create({
@@ -106,12 +142,20 @@ export class HaSyncService implements OnModuleInit, OnModuleDestroy {
             name: op.name,
             haAreaId: op.haAreaId,
             haName: op.name,
+            haFloorIdAtSync: op.haFloorRef,
+            floorId: resolveFloor(op.haFloorRef),
             source: 'ha',
           },
         });
       }
       for (const op of merge.areaUpdates) {
-        await tx.area.update({ where: { id: op.id }, data: op.data });
+        await tx.area.update({
+          where: { id: op.id },
+          data: {
+            ...op.data,
+            ...(op.haFloorRef !== undefined ? { floorId: resolveFloor(op.haFloorRef) } : {}),
+          },
+        });
       }
 
       // Resolve HA area ids to local area ids (including freshly created ones).
@@ -149,12 +193,20 @@ export class HaSyncService implements OnModuleInit, OnModuleDestroy {
         });
       }
 
+      const floorUpdated = merge.floorUpdates.filter((u) => !u.data.haOrphaned).length;
+      const floorOrphaned = merge.floorUpdates.filter((u) => u.data.haOrphaned).length;
       const areaUpdated = merge.areaUpdates.filter((u) => !u.data.haOrphaned).length;
       const areaOrphaned = merge.areaUpdates.filter((u) => u.data.haOrphaned).length;
       const deviceUpdated = merge.deviceUpdates.filter((u) => !u.data.haOrphaned).length;
       const deviceOrphaned = merge.deviceUpdates.filter((u) => u.data.haOrphaned).length;
 
       const syncResult: SyncResultDto = {
+        floors: {
+          created: merge.floorCreates.length,
+          updated: floorUpdated,
+          orphaned: floorOrphaned,
+          unchanged: remoteFloors.length - merge.floorCreates.length - floorUpdated,
+        },
         areas: {
           created: merge.areaCreates.length,
           updated: areaUpdated,
@@ -179,7 +231,8 @@ export class HaSyncService implements OnModuleInit, OnModuleDestroy {
     this.lastSyncAt = new Date();
     this.lastSyncResult = result;
     this.logger.log(
-      `HA sync done: areas +${result.areas.created}/~${result.areas.updated}, ` +
+      `HA sync done: floors +${result.floors.created}/~${result.floors.updated}, ` +
+        `areas +${result.areas.created}/~${result.areas.updated}, ` +
         `devices +${result.devices.created}/~${result.devices.updated}`
     );
     return result;

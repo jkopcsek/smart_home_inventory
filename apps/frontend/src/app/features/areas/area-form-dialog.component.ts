@@ -10,8 +10,9 @@ import {
   ElementRef,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AreaDto } from '@smart-home-inventory/shared';
-import { AreasApi } from '../../core/api/api.services';
+import { Observable, map, of } from 'rxjs';
+import { AreaDto, FloorDto } from '@smart-home-inventory/shared';
+import { AreasApi, FloorsApi } from '../../core/api/api.services';
 import { ToastService } from '../../core/toast/toast.service';
 
 @Component({
@@ -28,7 +29,18 @@ import { ToastService } from '../../core/toast/toast.service';
         </label>
         <label class="field">
           <span>Floor</span>
-          <input class="text" name="floor" [(ngModel)]="floor" placeholder="e.g. EG, 1. OG" />
+          <input
+            class="text"
+            name="floor"
+            list="floor-options"
+            [(ngModel)]="floorName"
+            placeholder="e.g. EG, 1. OG"
+          />
+          <datalist id="floor-options">
+            @for (f of floors(); track f.id) {
+              <option [value]="f.name"></option>
+            }
+          </datalist>
         </label>
         <label class="field">
           <span>Notes</span>
@@ -56,6 +68,7 @@ import { ToastService } from '../../core/toast/toast.service';
 })
 export class AreaFormDialogComponent {
   private readonly api = inject(AreasApi);
+  private readonly floorsApi = inject(FloorsApi);
   private readonly toast = inject(ToastService);
   private readonly dlg = viewChild.required<ElementRef<HTMLDialogElement>>('dlg');
 
@@ -66,8 +79,9 @@ export class AreaFormDialogComponent {
   readonly saved = output<AreaDto>();
 
   protected name = '';
-  protected floor = '';
+  protected floorName = '';
   protected notes = '';
+  protected readonly floors = signal<FloorDto[]>([]);
   protected readonly saving = signal(false);
 
   constructor() {
@@ -76,8 +90,9 @@ export class AreaFormDialogComponent {
       if (this.open()) {
         const area = this.area();
         this.name = area?.name ?? '';
-        this.floor = area?.floor ?? '';
+        this.floorName = area?.floorName ?? '';
         this.notes = area?.notes ?? '';
+        this.floorsApi.list().subscribe((floors) => this.floors.set(floors));
         if (!el.open) el.showModal();
       } else if (el.open) {
         el.close();
@@ -85,21 +100,35 @@ export class AreaFormDialogComponent {
     });
   }
 
+  /** Resolves the typed floor name to an existing floor's id, creating one if it's new. */
+  private resolveFloorId(): Observable<string | null> {
+    const name = this.floorName.trim();
+    if (!name) return of(null);
+    const existing = this.floors().find((f) => f.name.toLowerCase() === name.toLowerCase());
+    if (existing) return of(existing.id);
+    return this.floorsApi.create({ name }).pipe(map((f) => f.id));
+  }
+
   protected save(): void {
     if (!this.name.trim()) return;
     this.saving.set(true);
-    const dto = {
-      name: this.name.trim(),
-      floor: this.floor.trim() || null,
-      notes: this.notes.trim() || null,
-    };
-    const area = this.area();
-    const req = area ? this.api.update(area.id, dto) : this.api.create(dto);
-    req.subscribe({
-      next: (saved) => {
-        this.saving.set(false);
-        this.toast.success(area ? 'Area updated' : 'Area created');
-        this.saved.emit(saved);
+    this.resolveFloorId().subscribe({
+      next: (floorId) => {
+        const dto = {
+          name: this.name.trim(),
+          floorId,
+          notes: this.notes.trim() || null,
+        };
+        const area = this.area();
+        const req = area ? this.api.update(area.id, dto) : this.api.create(dto);
+        req.subscribe({
+          next: (saved) => {
+            this.saving.set(false);
+            this.toast.success(area ? 'Area updated' : 'Area created');
+            this.saved.emit(saved);
+          },
+          error: () => this.saving.set(false),
+        });
       },
       error: () => this.saving.set(false),
     });

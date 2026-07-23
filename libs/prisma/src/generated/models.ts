@@ -8,6 +8,7 @@
  *
  * 🟢 You can import this file directly.
  */
+export type * from './models/Floor'
 export type * from './models/Area'
 export type * from './models/Device'
 export type * from './models/Attachment'

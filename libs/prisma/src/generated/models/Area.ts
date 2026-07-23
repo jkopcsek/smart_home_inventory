@@ -27,10 +27,11 @@ export type AggregateArea = {
 export type AreaMinAggregateOutputType = {
   id: string | null
   name: string | null
-  floor: string | null
+  floorId: string | null
   notes: string | null
   haAreaId: string | null
   haName: string | null
+  haFloorIdAtSync: string | null
   haOrphaned: boolean | null
   source: $Enums.EntitySource | null
   createdAt: Date | null
@@ -40,10 +41,11 @@ export type AreaMinAggregateOutputType = {
 export type AreaMaxAggregateOutputType = {
   id: string | null
   name: string | null
-  floor: string | null
+  floorId: string | null
   notes: string | null
   haAreaId: string | null
   haName: string | null
+  haFloorIdAtSync: string | null
   haOrphaned: boolean | null
   source: $Enums.EntitySource | null
   createdAt: Date | null
@@ -53,10 +55,11 @@ export type AreaMaxAggregateOutputType = {
 export type AreaCountAggregateOutputType = {
   id: number
   name: number
-  floor: number
+  floorId: number
   notes: number
   haAreaId: number
   haName: number
+  haFloorIdAtSync: number
   haOrphaned: number
   source: number
   createdAt: number
@@ -68,10 +71,11 @@ export type AreaCountAggregateOutputType = {
 export type AreaMinAggregateInputType = {
   id?: true
   name?: true
-  floor?: true
+  floorId?: true
   notes?: true
   haAreaId?: true
   haName?: true
+  haFloorIdAtSync?: true
   haOrphaned?: true
   source?: true
   createdAt?: true
@@ -81,10 +85,11 @@ export type AreaMinAggregateInputType = {
 export type AreaMaxAggregateInputType = {
   id?: true
   name?: true
-  floor?: true
+  floorId?: true
   notes?: true
   haAreaId?: true
   haName?: true
+  haFloorIdAtSync?: true
   haOrphaned?: true
   source?: true
   createdAt?: true
@@ -94,10 +99,11 @@ export type AreaMaxAggregateInputType = {
 export type AreaCountAggregateInputType = {
   id?: true
   name?: true
-  floor?: true
+  floorId?: true
   notes?: true
   haAreaId?: true
   haName?: true
+  haFloorIdAtSync?: true
   haOrphaned?: true
   source?: true
   createdAt?: true
@@ -180,10 +186,11 @@ export type AreaGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
 export type AreaGroupByOutputType = {
   id: string
   name: string
-  floor: string | null
+  floorId: string | null
   notes: string | null
   haAreaId: string | null
   haName: string | null
+  haFloorIdAtSync: string | null
   haOrphaned: boolean
   source: $Enums.EntitySource
   createdAt: Date
@@ -214,14 +221,16 @@ export type AreaWhereInput = {
   NOT?: Prisma.AreaWhereInput | Prisma.AreaWhereInput[]
   id?: Prisma.StringFilter<"Area"> | string
   name?: Prisma.StringFilter<"Area"> | string
-  floor?: Prisma.StringNullableFilter<"Area"> | string | null
+  floorId?: Prisma.StringNullableFilter<"Area"> | string | null
   notes?: Prisma.StringNullableFilter<"Area"> | string | null
   haAreaId?: Prisma.StringNullableFilter<"Area"> | string | null
   haName?: Prisma.StringNullableFilter<"Area"> | string | null
+  haFloorIdAtSync?: Prisma.StringNullableFilter<"Area"> | string | null
   haOrphaned?: Prisma.BoolFilter<"Area"> | boolean
   source?: Prisma.EnumEntitySourceFilter<"Area"> | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFilter<"Area"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Area"> | Date | string
+  floor?: Prisma.XOR<Prisma.FloorNullableScalarRelationFilter, Prisma.FloorWhereInput> | null
   devices?: Prisma.DeviceListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
   diagrams?: Prisma.DiagramListRelationFilter
@@ -230,14 +239,16 @@ export type AreaWhereInput = {
 export type AreaOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  floor?: Prisma.SortOrderInput | Prisma.SortOrder
+  floorId?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   haAreaId?: Prisma.SortOrderInput | Prisma.SortOrder
   haName?: Prisma.SortOrderInput | Prisma.SortOrder
+  haFloorIdAtSync?: Prisma.SortOrderInput | Prisma.SortOrder
   haOrphaned?: Prisma.SortOrder
   source?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  floor?: Prisma.FloorOrderByWithRelationInput
   devices?: Prisma.DeviceOrderByRelationAggregateInput
   attachments?: Prisma.AttachmentOrderByRelationAggregateInput
   diagrams?: Prisma.DiagramOrderByRelationAggregateInput
@@ -250,13 +261,15 @@ export type AreaWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.AreaWhereInput[]
   NOT?: Prisma.AreaWhereInput | Prisma.AreaWhereInput[]
   name?: Prisma.StringFilter<"Area"> | string
-  floor?: Prisma.StringNullableFilter<"Area"> | string | null
+  floorId?: Prisma.StringNullableFilter<"Area"> | string | null
   notes?: Prisma.StringNullableFilter<"Area"> | string | null
   haName?: Prisma.StringNullableFilter<"Area"> | string | null
+  haFloorIdAtSync?: Prisma.StringNullableFilter<"Area"> | string | null
   haOrphaned?: Prisma.BoolFilter<"Area"> | boolean
   source?: Prisma.EnumEntitySourceFilter<"Area"> | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFilter<"Area"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Area"> | Date | string
+  floor?: Prisma.XOR<Prisma.FloorNullableScalarRelationFilter, Prisma.FloorWhereInput> | null
   devices?: Prisma.DeviceListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
   diagrams?: Prisma.DiagramListRelationFilter
@@ -265,10 +278,11 @@ export type AreaWhereUniqueInput = Prisma.AtLeast<{
 export type AreaOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  floor?: Prisma.SortOrderInput | Prisma.SortOrder
+  floorId?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   haAreaId?: Prisma.SortOrderInput | Prisma.SortOrder
   haName?: Prisma.SortOrderInput | Prisma.SortOrder
+  haFloorIdAtSync?: Prisma.SortOrderInput | Prisma.SortOrder
   haOrphaned?: Prisma.SortOrder
   source?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -284,10 +298,11 @@ export type AreaScalarWhereWithAggregatesInput = {
   NOT?: Prisma.AreaScalarWhereWithAggregatesInput | Prisma.AreaScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Area"> | string
   name?: Prisma.StringWithAggregatesFilter<"Area"> | string
-  floor?: Prisma.StringNullableWithAggregatesFilter<"Area"> | string | null
+  floorId?: Prisma.StringNullableWithAggregatesFilter<"Area"> | string | null
   notes?: Prisma.StringNullableWithAggregatesFilter<"Area"> | string | null
   haAreaId?: Prisma.StringNullableWithAggregatesFilter<"Area"> | string | null
   haName?: Prisma.StringNullableWithAggregatesFilter<"Area"> | string | null
+  haFloorIdAtSync?: Prisma.StringNullableWithAggregatesFilter<"Area"> | string | null
   haOrphaned?: Prisma.BoolWithAggregatesFilter<"Area"> | boolean
   source?: Prisma.EnumEntitySourceWithAggregatesFilter<"Area"> | $Enums.EntitySource
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Area"> | Date | string
@@ -297,14 +312,15 @@ export type AreaScalarWhereWithAggregatesInput = {
 export type AreaCreateInput = {
   id?: string
   name: string
-  floor?: string | null
   notes?: string | null
   haAreaId?: string | null
   haName?: string | null
+  haFloorIdAtSync?: string | null
   haOrphaned?: boolean
   source?: $Enums.EntitySource
   createdAt?: Date | string
   updatedAt?: Date | string
+  floor?: Prisma.FloorCreateNestedOneWithoutAreasInput
   devices?: Prisma.DeviceCreateNestedManyWithoutAreaInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutAreaInput
   diagrams?: Prisma.DiagramCreateNestedManyWithoutAreaInput
@@ -313,10 +329,11 @@ export type AreaCreateInput = {
 export type AreaUncheckedCreateInput = {
   id?: string
   name: string
-  floor?: string | null
+  floorId?: string | null
   notes?: string | null
   haAreaId?: string | null
   haName?: string | null
+  haFloorIdAtSync?: string | null
   haOrphaned?: boolean
   source?: $Enums.EntitySource
   createdAt?: Date | string
@@ -329,14 +346,15 @@ export type AreaUncheckedCreateInput = {
 export type AreaUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  floor?: Prisma.FloorUpdateOneWithoutAreasNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutAreaNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutAreaNestedInput
   diagrams?: Prisma.DiagramUpdateManyWithoutAreaNestedInput
@@ -345,10 +363,11 @@ export type AreaUpdateInput = {
 export type AreaUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  floorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -361,10 +380,11 @@ export type AreaUncheckedUpdateInput = {
 export type AreaCreateManyInput = {
   id?: string
   name: string
-  floor?: string | null
+  floorId?: string | null
   notes?: string | null
   haAreaId?: string | null
   haName?: string | null
+  haFloorIdAtSync?: string | null
   haOrphaned?: boolean
   source?: $Enums.EntitySource
   createdAt?: Date | string
@@ -374,10 +394,10 @@ export type AreaCreateManyInput = {
 export type AreaUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -387,23 +407,35 @@ export type AreaUpdateManyMutationInput = {
 export type AreaUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  floorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type AreaListRelationFilter = {
+  every?: Prisma.AreaWhereInput
+  some?: Prisma.AreaWhereInput
+  none?: Prisma.AreaWhereInput
+}
+
+export type AreaOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
+}
+
 export type AreaCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  floor?: Prisma.SortOrder
+  floorId?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   haAreaId?: Prisma.SortOrder
   haName?: Prisma.SortOrder
+  haFloorIdAtSync?: Prisma.SortOrder
   haOrphaned?: Prisma.SortOrder
   source?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -413,10 +445,11 @@ export type AreaCountOrderByAggregateInput = {
 export type AreaMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  floor?: Prisma.SortOrder
+  floorId?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   haAreaId?: Prisma.SortOrder
   haName?: Prisma.SortOrder
+  haFloorIdAtSync?: Prisma.SortOrder
   haOrphaned?: Prisma.SortOrder
   source?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -426,10 +459,11 @@ export type AreaMaxOrderByAggregateInput = {
 export type AreaMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  floor?: Prisma.SortOrder
+  floorId?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   haAreaId?: Prisma.SortOrder
   haName?: Prisma.SortOrder
+  haFloorIdAtSync?: Prisma.SortOrder
   haOrphaned?: Prisma.SortOrder
   source?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -441,24 +475,46 @@ export type AreaNullableScalarRelationFilter = {
   isNot?: Prisma.AreaWhereInput | null
 }
 
-export type StringFieldUpdateOperationsInput = {
-  set?: string
+export type AreaCreateNestedManyWithoutFloorInput = {
+  create?: Prisma.XOR<Prisma.AreaCreateWithoutFloorInput, Prisma.AreaUncheckedCreateWithoutFloorInput> | Prisma.AreaCreateWithoutFloorInput[] | Prisma.AreaUncheckedCreateWithoutFloorInput[]
+  connectOrCreate?: Prisma.AreaCreateOrConnectWithoutFloorInput | Prisma.AreaCreateOrConnectWithoutFloorInput[]
+  createMany?: Prisma.AreaCreateManyFloorInputEnvelope
+  connect?: Prisma.AreaWhereUniqueInput | Prisma.AreaWhereUniqueInput[]
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
+export type AreaUncheckedCreateNestedManyWithoutFloorInput = {
+  create?: Prisma.XOR<Prisma.AreaCreateWithoutFloorInput, Prisma.AreaUncheckedCreateWithoutFloorInput> | Prisma.AreaCreateWithoutFloorInput[] | Prisma.AreaUncheckedCreateWithoutFloorInput[]
+  connectOrCreate?: Prisma.AreaCreateOrConnectWithoutFloorInput | Prisma.AreaCreateOrConnectWithoutFloorInput[]
+  createMany?: Prisma.AreaCreateManyFloorInputEnvelope
+  connect?: Prisma.AreaWhereUniqueInput | Prisma.AreaWhereUniqueInput[]
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
+export type AreaUpdateManyWithoutFloorNestedInput = {
+  create?: Prisma.XOR<Prisma.AreaCreateWithoutFloorInput, Prisma.AreaUncheckedCreateWithoutFloorInput> | Prisma.AreaCreateWithoutFloorInput[] | Prisma.AreaUncheckedCreateWithoutFloorInput[]
+  connectOrCreate?: Prisma.AreaCreateOrConnectWithoutFloorInput | Prisma.AreaCreateOrConnectWithoutFloorInput[]
+  upsert?: Prisma.AreaUpsertWithWhereUniqueWithoutFloorInput | Prisma.AreaUpsertWithWhereUniqueWithoutFloorInput[]
+  createMany?: Prisma.AreaCreateManyFloorInputEnvelope
+  set?: Prisma.AreaWhereUniqueInput | Prisma.AreaWhereUniqueInput[]
+  disconnect?: Prisma.AreaWhereUniqueInput | Prisma.AreaWhereUniqueInput[]
+  delete?: Prisma.AreaWhereUniqueInput | Prisma.AreaWhereUniqueInput[]
+  connect?: Prisma.AreaWhereUniqueInput | Prisma.AreaWhereUniqueInput[]
+  update?: Prisma.AreaUpdateWithWhereUniqueWithoutFloorInput | Prisma.AreaUpdateWithWhereUniqueWithoutFloorInput[]
+  updateMany?: Prisma.AreaUpdateManyWithWhereWithoutFloorInput | Prisma.AreaUpdateManyWithWhereWithoutFloorInput[]
+  deleteMany?: Prisma.AreaScalarWhereInput | Prisma.AreaScalarWhereInput[]
 }
 
-export type EnumEntitySourceFieldUpdateOperationsInput = {
-  set?: $Enums.EntitySource
-}
-
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
+export type AreaUncheckedUpdateManyWithoutFloorNestedInput = {
+  create?: Prisma.XOR<Prisma.AreaCreateWithoutFloorInput, Prisma.AreaUncheckedCreateWithoutFloorInput> | Prisma.AreaCreateWithoutFloorInput[] | Prisma.AreaUncheckedCreateWithoutFloorInput[]
+  connectOrCreate?: Prisma.AreaCreateOrConnectWithoutFloorInput | Prisma.AreaCreateOrConnectWithoutFloorInput[]
+  upsert?: Prisma.AreaUpsertWithWhereUniqueWithoutFloorInput | Prisma.AreaUpsertWithWhereUniqueWithoutFloorInput[]
+  createMany?: Prisma.AreaCreateManyFloorInputEnvelope
+  set?: Prisma.AreaWhereUniqueInput | Prisma.AreaWhereUniqueInput[]
+  disconnect?: Prisma.AreaWhereUniqueInput | Prisma.AreaWhereUniqueInput[]
+  delete?: Prisma.AreaWhereUniqueInput | Prisma.AreaWhereUniqueInput[]
+  connect?: Prisma.AreaWhereUniqueInput | Prisma.AreaWhereUniqueInput[]
+  update?: Prisma.AreaUpdateWithWhereUniqueWithoutFloorInput | Prisma.AreaUpdateWithWhereUniqueWithoutFloorInput[]
+  updateMany?: Prisma.AreaUpdateManyWithWhereWithoutFloorInput | Prisma.AreaUpdateManyWithWhereWithoutFloorInput[]
+  deleteMany?: Prisma.AreaScalarWhereInput | Prisma.AreaScalarWhereInput[]
 }
 
 export type AreaCreateNestedOneWithoutDevicesInput = {
@@ -509,17 +565,92 @@ export type AreaUpdateOneWithoutDiagramsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AreaUpdateToOneWithWhereWithoutDiagramsInput, Prisma.AreaUpdateWithoutDiagramsInput>, Prisma.AreaUncheckedUpdateWithoutDiagramsInput>
 }
 
-export type AreaCreateWithoutDevicesInput = {
+export type AreaCreateWithoutFloorInput = {
   id?: string
   name: string
-  floor?: string | null
   notes?: string | null
   haAreaId?: string | null
   haName?: string | null
+  haFloorIdAtSync?: string | null
   haOrphaned?: boolean
   source?: $Enums.EntitySource
   createdAt?: Date | string
   updatedAt?: Date | string
+  devices?: Prisma.DeviceCreateNestedManyWithoutAreaInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutAreaInput
+  diagrams?: Prisma.DiagramCreateNestedManyWithoutAreaInput
+}
+
+export type AreaUncheckedCreateWithoutFloorInput = {
+  id?: string
+  name: string
+  notes?: string | null
+  haAreaId?: string | null
+  haName?: string | null
+  haFloorIdAtSync?: string | null
+  haOrphaned?: boolean
+  source?: $Enums.EntitySource
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  devices?: Prisma.DeviceUncheckedCreateNestedManyWithoutAreaInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutAreaInput
+  diagrams?: Prisma.DiagramUncheckedCreateNestedManyWithoutAreaInput
+}
+
+export type AreaCreateOrConnectWithoutFloorInput = {
+  where: Prisma.AreaWhereUniqueInput
+  create: Prisma.XOR<Prisma.AreaCreateWithoutFloorInput, Prisma.AreaUncheckedCreateWithoutFloorInput>
+}
+
+export type AreaCreateManyFloorInputEnvelope = {
+  data: Prisma.AreaCreateManyFloorInput | Prisma.AreaCreateManyFloorInput[]
+}
+
+export type AreaUpsertWithWhereUniqueWithoutFloorInput = {
+  where: Prisma.AreaWhereUniqueInput
+  update: Prisma.XOR<Prisma.AreaUpdateWithoutFloorInput, Prisma.AreaUncheckedUpdateWithoutFloorInput>
+  create: Prisma.XOR<Prisma.AreaCreateWithoutFloorInput, Prisma.AreaUncheckedCreateWithoutFloorInput>
+}
+
+export type AreaUpdateWithWhereUniqueWithoutFloorInput = {
+  where: Prisma.AreaWhereUniqueInput
+  data: Prisma.XOR<Prisma.AreaUpdateWithoutFloorInput, Prisma.AreaUncheckedUpdateWithoutFloorInput>
+}
+
+export type AreaUpdateManyWithWhereWithoutFloorInput = {
+  where: Prisma.AreaScalarWhereInput
+  data: Prisma.XOR<Prisma.AreaUpdateManyMutationInput, Prisma.AreaUncheckedUpdateManyWithoutFloorInput>
+}
+
+export type AreaScalarWhereInput = {
+  AND?: Prisma.AreaScalarWhereInput | Prisma.AreaScalarWhereInput[]
+  OR?: Prisma.AreaScalarWhereInput[]
+  NOT?: Prisma.AreaScalarWhereInput | Prisma.AreaScalarWhereInput[]
+  id?: Prisma.StringFilter<"Area"> | string
+  name?: Prisma.StringFilter<"Area"> | string
+  floorId?: Prisma.StringNullableFilter<"Area"> | string | null
+  notes?: Prisma.StringNullableFilter<"Area"> | string | null
+  haAreaId?: Prisma.StringNullableFilter<"Area"> | string | null
+  haName?: Prisma.StringNullableFilter<"Area"> | string | null
+  haFloorIdAtSync?: Prisma.StringNullableFilter<"Area"> | string | null
+  haOrphaned?: Prisma.BoolFilter<"Area"> | boolean
+  source?: Prisma.EnumEntitySourceFilter<"Area"> | $Enums.EntitySource
+  createdAt?: Prisma.DateTimeFilter<"Area"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Area"> | Date | string
+}
+
+export type AreaCreateWithoutDevicesInput = {
+  id?: string
+  name: string
+  notes?: string | null
+  haAreaId?: string | null
+  haName?: string | null
+  haFloorIdAtSync?: string | null
+  haOrphaned?: boolean
+  source?: $Enums.EntitySource
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  floor?: Prisma.FloorCreateNestedOneWithoutAreasInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutAreaInput
   diagrams?: Prisma.DiagramCreateNestedManyWithoutAreaInput
 }
@@ -527,10 +658,11 @@ export type AreaCreateWithoutDevicesInput = {
 export type AreaUncheckedCreateWithoutDevicesInput = {
   id?: string
   name: string
-  floor?: string | null
+  floorId?: string | null
   notes?: string | null
   haAreaId?: string | null
   haName?: string | null
+  haFloorIdAtSync?: string | null
   haOrphaned?: boolean
   source?: $Enums.EntitySource
   createdAt?: Date | string
@@ -558,14 +690,15 @@ export type AreaUpdateToOneWithWhereWithoutDevicesInput = {
 export type AreaUpdateWithoutDevicesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  floor?: Prisma.FloorUpdateOneWithoutAreasNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutAreaNestedInput
   diagrams?: Prisma.DiagramUpdateManyWithoutAreaNestedInput
 }
@@ -573,10 +706,11 @@ export type AreaUpdateWithoutDevicesInput = {
 export type AreaUncheckedUpdateWithoutDevicesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  floorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -588,14 +722,15 @@ export type AreaUncheckedUpdateWithoutDevicesInput = {
 export type AreaCreateWithoutAttachmentsInput = {
   id?: string
   name: string
-  floor?: string | null
   notes?: string | null
   haAreaId?: string | null
   haName?: string | null
+  haFloorIdAtSync?: string | null
   haOrphaned?: boolean
   source?: $Enums.EntitySource
   createdAt?: Date | string
   updatedAt?: Date | string
+  floor?: Prisma.FloorCreateNestedOneWithoutAreasInput
   devices?: Prisma.DeviceCreateNestedManyWithoutAreaInput
   diagrams?: Prisma.DiagramCreateNestedManyWithoutAreaInput
 }
@@ -603,10 +738,11 @@ export type AreaCreateWithoutAttachmentsInput = {
 export type AreaUncheckedCreateWithoutAttachmentsInput = {
   id?: string
   name: string
-  floor?: string | null
+  floorId?: string | null
   notes?: string | null
   haAreaId?: string | null
   haName?: string | null
+  haFloorIdAtSync?: string | null
   haOrphaned?: boolean
   source?: $Enums.EntitySource
   createdAt?: Date | string
@@ -634,14 +770,15 @@ export type AreaUpdateToOneWithWhereWithoutAttachmentsInput = {
 export type AreaUpdateWithoutAttachmentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  floor?: Prisma.FloorUpdateOneWithoutAreasNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutAreaNestedInput
   diagrams?: Prisma.DiagramUpdateManyWithoutAreaNestedInput
 }
@@ -649,10 +786,11 @@ export type AreaUpdateWithoutAttachmentsInput = {
 export type AreaUncheckedUpdateWithoutAttachmentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  floorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -664,14 +802,15 @@ export type AreaUncheckedUpdateWithoutAttachmentsInput = {
 export type AreaCreateWithoutDiagramsInput = {
   id?: string
   name: string
-  floor?: string | null
   notes?: string | null
   haAreaId?: string | null
   haName?: string | null
+  haFloorIdAtSync?: string | null
   haOrphaned?: boolean
   source?: $Enums.EntitySource
   createdAt?: Date | string
   updatedAt?: Date | string
+  floor?: Prisma.FloorCreateNestedOneWithoutAreasInput
   devices?: Prisma.DeviceCreateNestedManyWithoutAreaInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutAreaInput
 }
@@ -679,10 +818,11 @@ export type AreaCreateWithoutDiagramsInput = {
 export type AreaUncheckedCreateWithoutDiagramsInput = {
   id?: string
   name: string
-  floor?: string | null
+  floorId?: string | null
   notes?: string | null
   haAreaId?: string | null
   haName?: string | null
+  haFloorIdAtSync?: string | null
   haOrphaned?: boolean
   source?: $Enums.EntitySource
   createdAt?: Date | string
@@ -710,14 +850,15 @@ export type AreaUpdateToOneWithWhereWithoutDiagramsInput = {
 export type AreaUpdateWithoutDiagramsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  floor?: Prisma.FloorUpdateOneWithoutAreasNestedInput
   devices?: Prisma.DeviceUpdateManyWithoutAreaNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutAreaNestedInput
 }
@@ -725,16 +866,75 @@ export type AreaUpdateWithoutDiagramsInput = {
 export type AreaUncheckedUpdateWithoutDiagramsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  floorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   devices?: Prisma.DeviceUncheckedUpdateManyWithoutAreaNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutAreaNestedInput
+}
+
+export type AreaCreateManyFloorInput = {
+  id?: string
+  name: string
+  notes?: string | null
+  haAreaId?: string | null
+  haName?: string | null
+  haFloorIdAtSync?: string | null
+  haOrphaned?: boolean
+  source?: $Enums.EntitySource
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type AreaUpdateWithoutFloorInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  devices?: Prisma.DeviceUpdateManyWithoutAreaNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutAreaNestedInput
+  diagrams?: Prisma.DiagramUpdateManyWithoutAreaNestedInput
+}
+
+export type AreaUncheckedUpdateWithoutFloorInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  devices?: Prisma.DeviceUncheckedUpdateManyWithoutAreaNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutAreaNestedInput
+  diagrams?: Prisma.DiagramUncheckedUpdateManyWithoutAreaNestedInput
+}
+
+export type AreaUncheckedUpdateManyWithoutFloorInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haAreaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haFloorIdAtSync?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  haOrphaned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  source?: Prisma.EnumEntitySourceFieldUpdateOperationsInput | $Enums.EntitySource
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -789,14 +989,16 @@ export type AreaCountOutputTypeCountDiagramsArgs<ExtArgs extends runtime.Types.E
 export type AreaSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  floor?: boolean
+  floorId?: boolean
   notes?: boolean
   haAreaId?: boolean
   haName?: boolean
+  haFloorIdAtSync?: boolean
   haOrphaned?: boolean
   source?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  floor?: boolean | Prisma.Area$floorArgs<ExtArgs>
   devices?: boolean | Prisma.Area$devicesArgs<ExtArgs>
   attachments?: boolean | Prisma.Area$attachmentsArgs<ExtArgs>
   diagrams?: boolean | Prisma.Area$diagramsArgs<ExtArgs>
@@ -806,55 +1008,66 @@ export type AreaSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
 export type AreaSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  floor?: boolean
+  floorId?: boolean
   notes?: boolean
   haAreaId?: boolean
   haName?: boolean
+  haFloorIdAtSync?: boolean
   haOrphaned?: boolean
   source?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  floor?: boolean | Prisma.Area$floorArgs<ExtArgs>
 }, ExtArgs["result"]["area"]>
 
 export type AreaSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
-  floor?: boolean
+  floorId?: boolean
   notes?: boolean
   haAreaId?: boolean
   haName?: boolean
+  haFloorIdAtSync?: boolean
   haOrphaned?: boolean
   source?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  floor?: boolean | Prisma.Area$floorArgs<ExtArgs>
 }, ExtArgs["result"]["area"]>
 
 export type AreaSelectScalar = {
   id?: boolean
   name?: boolean
-  floor?: boolean
+  floorId?: boolean
   notes?: boolean
   haAreaId?: boolean
   haName?: boolean
+  haFloorIdAtSync?: boolean
   haOrphaned?: boolean
   source?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AreaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "floor" | "notes" | "haAreaId" | "haName" | "haOrphaned" | "source" | "createdAt" | "updatedAt", ExtArgs["result"]["area"]>
+export type AreaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "floorId" | "notes" | "haAreaId" | "haName" | "haFloorIdAtSync" | "haOrphaned" | "source" | "createdAt" | "updatedAt", ExtArgs["result"]["area"]>
 export type AreaInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  floor?: boolean | Prisma.Area$floorArgs<ExtArgs>
   devices?: boolean | Prisma.Area$devicesArgs<ExtArgs>
   attachments?: boolean | Prisma.Area$attachmentsArgs<ExtArgs>
   diagrams?: boolean | Prisma.Area$diagramsArgs<ExtArgs>
   _count?: boolean | Prisma.AreaCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type AreaIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type AreaIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type AreaIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  floor?: boolean | Prisma.Area$floorArgs<ExtArgs>
+}
+export type AreaIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  floor?: boolean | Prisma.Area$floorArgs<ExtArgs>
+}
 
 export type $AreaPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Area"
   objects: {
+    floor: Prisma.$FloorPayload<ExtArgs> | null
     devices: Prisma.$DevicePayload<ExtArgs>[]
     attachments: Prisma.$AttachmentPayload<ExtArgs>[]
     diagrams: Prisma.$DiagramPayload<ExtArgs>[]
@@ -862,10 +1075,11 @@ export type $AreaPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     name: string
-    floor: string | null
+    floorId: string | null
     notes: string | null
     haAreaId: string | null
     haName: string | null
+    haFloorIdAtSync: string | null
     haOrphaned: boolean
     source: $Enums.EntitySource
     createdAt: Date
@@ -1264,6 +1478,7 @@ readonly fields: AreaFieldRefs;
  */
 export interface Prisma__AreaClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  floor<T extends Prisma.Area$floorArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Area$floorArgs<ExtArgs>>): Prisma.Prisma__FloorClient<runtime.Types.Result.GetResult<Prisma.$FloorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   devices<T extends Prisma.Area$devicesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Area$devicesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   attachments<T extends Prisma.Area$attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Area$attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   diagrams<T extends Prisma.Area$diagramsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Area$diagramsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DiagramPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1298,10 +1513,11 @@ export interface Prisma__AreaClient<T, Null = never, ExtArgs extends runtime.Typ
 export interface AreaFieldRefs {
   readonly id: Prisma.FieldRef<"Area", 'String'>
   readonly name: Prisma.FieldRef<"Area", 'String'>
-  readonly floor: Prisma.FieldRef<"Area", 'String'>
+  readonly floorId: Prisma.FieldRef<"Area", 'String'>
   readonly notes: Prisma.FieldRef<"Area", 'String'>
   readonly haAreaId: Prisma.FieldRef<"Area", 'String'>
   readonly haName: Prisma.FieldRef<"Area", 'String'>
+  readonly haFloorIdAtSync: Prisma.FieldRef<"Area", 'String'>
   readonly haOrphaned: Prisma.FieldRef<"Area", 'Boolean'>
   readonly source: Prisma.FieldRef<"Area", 'EntitySource'>
   readonly createdAt: Prisma.FieldRef<"Area", 'DateTime'>
@@ -1558,6 +1774,10 @@ export type AreaCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions
    * The data used to create many Areas.
    */
   data: Prisma.AreaCreateManyInput | Prisma.AreaCreateManyInput[]
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AreaIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1628,6 +1848,10 @@ export type AreaUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions
    * Limit how many Areas to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AreaIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1694,6 +1918,25 @@ export type AreaDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Areas to delete.
    */
   limit?: number
+}
+
+/**
+ * Area.floor
+ */
+export type Area$floorArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Floor
+   */
+  select?: Prisma.FloorSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Floor
+   */
+  omit?: Prisma.FloorOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FloorInclude<ExtArgs> | null
+  where?: Prisma.FloorWhereInput
 }
 
 /**

@@ -668,8 +668,13 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
       position: relative;
       /* A definite height, not min-height: percentage heights on children
          (ng-diagram, ng-diagram-minimap panels) only resolve against a
-         definite parent height — min-height alone doesn't count. */
+         definite parent height — min-height alone doesn't count.
+         dvh (not vh) so mobile browser chrome collapsing/expanding doesn't
+         leave the canvas measured against a viewport taller than what's
+         actually visible. */
       height: calc(100vh - 160px);
+      height: calc(100dvh - 160px);
+      min-height: 320px;
       border-radius: var(--ha-card-border-radius);
       overflow: hidden;
       border: 1px solid var(--ha-card-border-color);
@@ -835,6 +840,13 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
     @media (max-width: 640px) {
       .panel {
         width: calc(100vw - 48px);
+      }
+      .canvas-wrap {
+        /* The header wraps to multiple lines at this width, eating into the
+           160px budget above — give the canvas a fixed, generous floor
+           instead of trusting the desktop-tuned offset. */
+        height: 70dvh;
+        min-height: 280px;
       }
     }
   `,
@@ -1134,6 +1146,13 @@ export class DiagramCanvasComponent implements OnDestroy {
     return { x: v.x + (this.addCount % 5) * 30, y: v.y + Math.floor(this.addCount / 5) * 30 };
   }
 
+  /** crypto.randomUUID() only exists in secure contexts (HTTPS/localhost) — fall back on plain HTTP LAN access. */
+  private generateId(): string {
+    return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 15)}`;
+  }
+
   /** Updates a node's data and, if it's the current selection, refreshes the panel to match. */
   private updateSelectedNodeData(nodeId: string, data: NodeData): void {
     this.modelService.updateNodeData(nodeId, data);
@@ -1150,12 +1169,12 @@ export class DiagramCanvasComponent implements OnDestroy {
             shape,
             label: 'Switch box',
             ports: [
-              { id: crypto.randomUUID(), label: 'In 1', direction: 'in' },
-              { id: crypto.randomUUID(), label: 'Out 1', direction: 'out' },
+              { id: this.generateId(), label: 'In 1', direction: 'in' },
+              { id: this.generateId(), label: 'Out 1', direction: 'out' },
             ],
           }
         : { shape, label: shape === 'dot' ? 'Marker' : 'Box', color: '#03a9f4' };
-    this.modelService.addNodes([{ id: crypto.randomUUID(), type: shape, position: this.nextPosition(), data }]);
+    this.modelService.addNodes([{ id: this.generateId(), type: shape, position: this.nextPosition(), data }]);
   }
 
   protected setShape(nodeId: string, shape: Shape, data: NodeData): void {
@@ -1172,7 +1191,7 @@ export class DiagramCanvasComponent implements OnDestroy {
   }
 
   protected addPort(nodeId: string, data: BoxPortsNodeData, direction: PortDirection): void {
-    const port: NodePort = { id: crypto.randomUUID(), label: '', direction };
+    const port: NodePort = { id: this.generateId(), label: '', direction };
     this.updateSelectedNodeData(nodeId, { ...data, ports: [...data.ports, port] });
   }
 
@@ -1241,7 +1260,7 @@ export class DiagramCanvasComponent implements OnDestroy {
   }
 
   private addBackgroundImageNode(attachment: AttachmentDto): void {
-    const id = crypto.randomUUID();
+    const id = this.generateId();
     this.modelService.addNodes([
       {
         id,

@@ -18,6 +18,11 @@ export { Prisma }
 export * as $Enums from './enums'
 export * from './enums';
 /**
+ * Model Floor
+ * 
+ */
+export type Floor = Prisma.FloorModel
+/**
  * Model Area
  * 
  */
