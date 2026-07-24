@@ -42,10 +42,17 @@ describe('DiagramContentSchema', () => {
             shape: 'box-ports' as const,
             label: 'Hallway switch box',
             ports: [
-              { id: 'p1', label: 'L1 in', direction: 'in' as const },
+              { id: 'p1', label: 'L1 in', direction: 'in' as const, wireType: 'L1' as const },
               { id: 'p2', label: 'Lamp 1', direction: 'out' as const },
+              { id: 'p3', label: '+12V', direction: 'in' as const, wireType: 'DC+' as const },
             ],
           },
+        },
+        {
+          id: 'n6',
+          type: 'box' as const,
+          position: { x: 1000, y: 0 },
+          data: { shape: 'box' as const, link: { kind: 'connection' as const, connectionId: 'conn1' } },
         },
       ],
       edges: [
@@ -54,7 +61,11 @@ describe('DiagramContentSchema', () => {
           source: 'n1',
           target: 'n2',
           sourcePort: 'p2',
-          data: { connectionId: 'conn1', label: '230V' },
+          type: 'wire',
+          points: [{ x: 120, y: 30 }, { x: 160, y: 30 }, { x: 160, y: 0 }, { x: 200, y: 0 }],
+          routing: 'orthogonal',
+          routingMode: 'manual' as const,
+          data: { connectionId: 'conn1', label: '230V', color: '#8b5a2b', wireType: 'L1' as const },
         },
       ],
     };
@@ -82,6 +93,32 @@ describe('DiagramContentSchema', () => {
   it('rejects an unsupported schemaVersion', () => {
     expect(
       DiagramContentSchema.safeParse({ schemaVersion: 2, nodes: [], edges: [] }).success
+    ).toBe(false);
+  });
+
+  it('rejects an edge with an invalid routingMode', () => {
+    expect(
+      DiagramContentSchema.safeParse({
+        schemaVersion: 1,
+        nodes: [],
+        edges: [{ id: 'e1', source: 'n1', target: 'n2', routingMode: 'sometimes' }],
+      }).success
+    ).toBe(false);
+  });
+
+  it('rejects an unknown wire type on an edge or a port', () => {
+    expect(
+      DiagramContentSchema.safeParse({
+        schemaVersion: 1,
+        nodes: [],
+        edges: [{ id: 'e1', source: 'n1', target: 'n2', data: { wireType: 'L4' } }],
+      }).success
+    ).toBe(false);
+    expect(
+      NodeDataSchema.safeParse({
+        shape: 'box-ports',
+        ports: [{ id: 'p1', label: 'x', direction: 'in', wireType: 'L4' }],
+      }).success
     ).toBe(false);
   });
 });

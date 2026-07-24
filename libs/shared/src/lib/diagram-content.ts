@@ -16,16 +16,27 @@ export const NodeLinkSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('device'), deviceId: z.string().min(1) }),
   z.object({ kind: z.literal('diagram'), diagramId: z.string().min(1) }),
   z.object({ kind: z.literal('image'), attachmentId: z.string().min(1) }),
+  z.object({ kind: z.literal('connection'), connectionId: z.string().min(1) }),
 ]);
 export type NodeLink = z.infer<typeof NodeLinkSchema>;
 
 export const PortDirectionSchema = z.enum(['in', 'out']);
 export type PortDirection = z.infer<typeof PortDirectionSchema>;
 
+/** German/European AC conductor designations (DIN VDE 0293-308 / IEC 60446-3),
+ *  plus the red/black DC+/DC- convention common for low-voltage (12V/24V)
+ *  wiring — an industry convention (LED strips, alarms, batteries), not a
+ *  formal DIN/IEC code the way the AC ones are. */
+export const WireTypeSchema = z.enum(['L1', 'L2', 'L3', 'N', 'PE', 'DC+', 'DC-']);
+export type WireType = z.infer<typeof WireTypeSchema>;
+
 export const NodePortSchema = z.object({
   id: z.string().min(1),
   label: z.string().max(60),
   direction: PortDirectionSchema,
+  /** Setting this applies the type's standard color to the port pin once —
+   *  same one-shot convenience as an edge's wireType. */
+  wireType: WireTypeSchema.optional(),
 });
 export type NodePort = z.infer<typeof NodePortSchema>;
 
@@ -34,9 +45,6 @@ const NodeDataBase = z.object({
   color: z.string().optional(),
   borderColor: z.string().optional(),
   link: NodeLinkSchema.optional(),
-  /** true = used as a backdrop: locked, sent to back, excluded from click-selection.
-   *  Only meaningful for a box linked to an image. */
-  background: z.boolean().optional(),
 });
 
 /** A small labeled marker. */
@@ -56,10 +64,19 @@ export const BoxPortsNodeDataSchema = NodeDataBase.extend({
 });
 export type BoxPortsNodeData = z.infer<typeof BoxPortsNodeDataSchema>;
 
+/** A full-bleed backdrop image (e.g. a floor plan) — no ports, sent to the
+ *  back of the stack. Usually locked (not draggable/resizable) so it doesn't
+ *  get bumped while working on the diagram; unlock it to reposition/resize. */
+export const BackgroundImageNodeDataSchema = NodeDataBase.extend({
+  shape: z.literal('background-image'),
+});
+export type BackgroundImageNodeData = z.infer<typeof BackgroundImageNodeDataSchema>;
+
 export const NodeDataSchema = z.discriminatedUnion('shape', [
   DotNodeDataSchema,
   BoxNodeDataSchema,
   BoxPortsNodeDataSchema,
+  BackgroundImageNodeDataSchema,
 ]);
 export type NodeData = z.infer<typeof NodeDataSchema>;
 
@@ -68,6 +85,9 @@ export const EdgeDataSchema = z.object({
   connectionId: z.string().min(1).optional(),
   label: z.string().max(200).optional(),
   color: z.string().optional(),
+  /** Setting this applies the type's standard color once — color can then be
+   *  changed independently without affecting or clearing the type. */
+  wireType: WireTypeSchema.optional(),
 });
 export type EdgeData = z.infer<typeof EdgeDataSchema>;
 
@@ -76,7 +96,7 @@ const Size = z.object({ width: z.number(), height: z.number() });
 
 export const DiagramNodeSchema = z.object({
   id: z.string().min(1),
-  type: z.enum(['dot', 'box', 'box-ports']).optional(),
+  type: z.enum(['dot', 'box', 'box-ports', 'background-image']).optional(),
   position: Point,
   size: Size.optional(),
   autoSize: z.boolean().optional(),
@@ -97,9 +117,21 @@ export const DiagramEdgeSchema = z.object({
   /** Arrowhead marker id shown at that end, if any — see the registered 'arrow' marker. */
   sourceArrowhead: z.string().optional(),
   targetArrowhead: z.string().optional(),
+  /** Edge template key — 'wire' selects the custom (colorable) edge template. */
+  type: z.string().optional(),
+  /** Routed path; present once ng-diagram (or a manual reshape) has computed one. */
+  points: z.array(Point).optional(),
+  /** Routing algorithm name (e.g. 'orthogonal'). */
+  routing: z.string().optional(),
+  /** 'manual' after the user drags a segment — the route is then taken as-is
+   *  instead of recomputed by the routing algorithm on every change. */
+  routingMode: z.enum(['manual', 'auto']).optional(),
   data: EdgeDataSchema.optional(),
 });
 export type DiagramEdge = z.infer<typeof DiagramEdgeSchema>;
+
+export const DiagramViewportSchema = z.object({ x: z.number(), y: z.number(), scale: z.number() });
+export type DiagramViewport = z.infer<typeof DiagramViewportSchema>;
 
 // Named `schemaVersion`, not `version` — the row-level optimistic-concurrency
 // counter on Diagram already owns the name `version` in payloads that carry both.
@@ -107,6 +139,9 @@ export const DiagramContentSchema = z.object({
   schemaVersion: z.literal(1),
   nodes: z.array(DiagramNodeSchema),
   edges: z.array(DiagramEdgeSchema),
+  /** Last pan/zoom the user left the canvas at — restored on reopen instead
+   *  of defaulting to zoomToFit(). Absent on older content / a brand-new diagram. */
+  viewport: DiagramViewportSchema.optional(),
 });
 export type DiagramContent = z.infer<typeof DiagramContentSchema>;
 

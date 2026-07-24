@@ -26,8 +26,8 @@
   --warning-color: #ffa600;
   --success-color: #43a047;
   --info-color: #039be5;
-  --app-header-background-color: #03a9f4;
-  --app-header-text-color: #ffffff;
+  --app-header-background-color: var(--card-background-color);
+  --app-header-text-color: var(--primary-text-color);
   --ha-card-border-radius: 12px;
   --ha-card-border-color: var(--divider-color);
   --input-fill-color: #f5f5f5;
@@ -50,8 +50,8 @@
   --warning-color: #ffa600;
   --success-color: #43a047;
   --info-color: #039be5;
-  --app-header-background-color: #101e24;
-  --app-header-text-color: #e1e1e1;
+  --app-header-background-color: var(--card-background-color);
+  --app-header-text-color: var(--primary-text-color);
   --ha-card-border-radius: 12px;
   --ha-card-border-color: var(--divider-color);
   --input-fill-color: #2b2b2b;

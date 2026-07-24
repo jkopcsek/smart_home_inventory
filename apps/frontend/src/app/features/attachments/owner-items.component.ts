@@ -165,14 +165,25 @@ export class OwnerItemsComponent {
       thumbnailUrl: d.previewAttachmentId ? attachmentUrl(d.previewAttachmentId, true) : null,
       typeIcon: mdiChartTimelineVariant,
     }));
-    const attachmentTiles: Tile[] = this.attachments().map((a) => ({
-      kind: 'attachment',
-      id: a.id,
-      title: a.title ?? a.originalName,
-      subtitle: this.formatSize(a.sizeBytes),
-      thumbnailUrl: a.mimeType.startsWith('image/') ? attachmentUrl(a.id, true) : null,
-      typeIcon: this.iconFor(a),
-    }));
+    // A diagram's preview is a generated snapshot managed by that diagram (see
+    // diagram-canvas.component.ts#capturePreview) — it's already shown as the
+    // diagram tile's own thumbnail above, so it shouldn't also show up as a
+    // separate, seemingly-manageable attachment tile here.
+    const previewIds = new Set(
+      this.diagrams()
+        .map((d) => d.previewAttachmentId)
+        .filter((id): id is string => !!id)
+    );
+    const attachmentTiles: Tile[] = this.attachments()
+      .filter((a) => !previewIds.has(a.id))
+      .map((a) => ({
+        kind: 'attachment',
+        id: a.id,
+        title: a.title ?? a.originalName,
+        subtitle: this.formatSize(a.sizeBytes),
+        thumbnailUrl: a.mimeType.startsWith('image/') ? attachmentUrl(a.id, true) : null,
+        typeIcon: this.iconFor(a),
+      }));
     return [...diagramTiles, ...attachmentTiles].sort((x, y) => x.title.localeCompare(y.title));
   });
 

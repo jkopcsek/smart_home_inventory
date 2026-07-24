@@ -126,8 +126,18 @@ export class DiagramsService {
   }
 
   async remove(id: string): Promise<void> {
-    await this.get(id);
+    const existing = await this.getEntity(id);
     await this.prisma.diagram.delete({ where: { id } });
+    // Same cleanup as update()'s preview replacement — the preview is a
+    // generated artifact with no gallery of its own, so it'd otherwise be
+    // orphaned (DB row and file on disk) once its owning diagram is gone.
+    if (existing.previewAttachmentId) {
+      await this.attachments.remove(existing.previewAttachmentId).catch((err) => {
+        logger.warn(
+          `Failed to remove preview attachment ${existing.previewAttachmentId} for deleted diagram ${id}: ${err}`
+        );
+      });
+    }
   }
 
   private async getEntity(id: string): Promise<Diagram> {

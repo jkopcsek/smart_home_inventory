@@ -25,6 +25,7 @@ import {
   ModelAdapter,
   NgDiagramBackgroundComponent,
   NgDiagramComponent,
+  NgDiagramEdgeTemplateMap,
   NgDiagramMarkerComponent,
   NgDiagramMinimapComponent,
   NgDiagramModelService,
@@ -34,8 +35,11 @@ import {
   NgDiagramSelectionService,
   NgDiagramViewportService,
   Node as NgNode,
+  NodeDragEndedEvent,
   provideNgDiagram,
   SelectionChangedEvent,
+  SelectionMovedEvent,
+  ViewportChangedEvent,
 } from 'ng-diagram';
 import {
   AreaDto,
@@ -46,10 +50,14 @@ import {
   DiagramContent,
   DiagramDto,
   DiagramNode,
+  DiagramViewport,
   EdgeData,
   NodeData,
   NodePort,
   PortDirection,
+  WIRE_TYPE_COLORS,
+  WIRE_TYPES,
+  WireType,
 } from '@smart-home-inventory/shared';
 import {
   attachmentUrl,
@@ -66,10 +74,16 @@ import { DevicePickerComponent } from '../../shared/ui/device-picker.component';
 import { DotNodeComponent } from './nodes/dot-node.component';
 import { BoxNodeComponent } from './nodes/box-node.component';
 import { BoxPortsNodeComponent } from './nodes/box-ports-node.component';
+import { BackgroundImageNodeComponent } from './nodes/background-image-node.component';
+import { WireEdgeComponent } from './edges/wire-edge.component';
 import { AreaPickerDialogComponent } from './pickers/area-picker-dialog.component';
 import { AttachmentPickerDialogComponent } from './pickers/attachment-picker-dialog.component';
 import { DiagramLinkPickerDialogComponent } from './pickers/diagram-link-picker-dialog.component';
 import { ConnectionPickerDialogComponent } from './pickers/connection-picker-dialog.component';
+import { EdgeReshapeOverlayComponent } from './edge-reshaping/edge-reshape-overlay.component';
+import { EdgeCommandDispatcher } from './edge-reshaping/commands';
+import { EdgeReshapeHandler } from './edge-reshaping/handlers/edge-reshape.handler';
+import { applyEdgeStretchOnSelectionMoved } from './edge-reshaping/middleware/edge-stretch-on-move';
 import {
   mdiChevronDown,
   mdiChevronUp,
@@ -80,7 +94,6 @@ import {
   mdiDevices,
   mdiElectricSwitch,
   mdiFloorPlan,
-  mdiImageOutline,
   mdiImagePlus,
   mdiLinkVariant,
   mdiLock,
@@ -88,6 +101,7 @@ import {
   mdiOpenInNew,
   mdiPencil,
   mdiShapeOutline,
+  mdiTransitConnectionVariant,
   mdiTune,
 } from '@mdi/js';
 
@@ -142,12 +156,15 @@ type PickerTarget =
   | { kind: 'link-device'; nodeId: string }
   | { kind: 'link-diagram'; nodeId: string }
   | { kind: 'link-image'; nodeId: string }
+  | { kind: 'link-connection'; nodeId: string }
   | { kind: 'set-diagram-background' }
   | { kind: 'edge-connection'; edgeId: string };
 
-function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
+
+function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport): DiagramContent {
   return {
     schemaVersion: 1,
+    viewport,
     nodes: nodes.map((n) => ({
       id: n.id,
       type: n.type as DiagramNode['type'],
@@ -166,6 +183,10 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
       targetPort: e.targetPort,
       sourceArrowhead: e.sourceArrowhead,
       targetArrowhead: e.targetArrowhead,
+      type: e.type,
+      points: e.points,
+      routing: e.routing,
+      routingMode: e.routingMode,
       data: (e.data ?? {}) as EdgeData,
     })),
   };
@@ -183,7 +204,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
  */
 @Component({
   selector: 'app-diagram-canvas',
-  providers: [provideNgDiagram()],
+  providers: [provideNgDiagram(), EdgeCommandDispatcher, EdgeReshapeHandler],
   imports: [
     NgDiagramComponent,
     NgDiagramBackgroundComponent,
@@ -195,6 +216,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
     AttachmentPickerDialogComponent,
     DiagramLinkPickerDialogComponent,
     ConnectionPickerDialogComponent,
+    EdgeReshapeOverlayComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -204,9 +226,13 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
           #canvasEl
           [model]="m"
           [nodeTemplateMap]="nodeTemplateMap"
+          [edgeTemplateMap]="edgeTemplateMap"
           (diagramInit)="onDiagramInit()"
           (selectionChanged)="onSelectionChanged($event)"
           (edgeDrawEnded)="onEdgeDrawEnded($event)"
+          (selectionMoved)="onSelectionMoved($event)"
+          (nodeDragEnded)="onNodeDragEnded($event)"
+          (viewportChanged)="onViewportChanged($event)"
         >
           <ng-diagram-background type="dots" />
           <ng-diagram-marker>
@@ -220,6 +246,12 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
           </ng-diagram-marker>
         </ng-diagram>
         <ng-diagram-minimap position="bottom-right" [width]="180" [height]="130" [showZoomControls]="true" />
+        <div class="overlay zoom-reset-overlay">
+          <button class="btn secondary" title="Reset zoom to 100%" (click)="resetZoom()">100%</button>
+        </div>
+        @if (!readOnly()) {
+          <app-edge-reshape-overlay />
+        }
       }
 
       @if (!readOnly()) {
@@ -289,6 +321,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
                 <button class="btn secondary" (click)="openPicker({ kind: 'link-image', nodeId: bg.id })">
                   Replace
                 </button>
+                <button class="btn secondary" (click)="unlockBackground(bg)">Unlock to move/resize</button>
                 <button class="btn secondary" (click)="removeBackground(bg)">Remove</button>
               </div>
             } @else {
@@ -310,7 +343,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
       @if (selection(); as sel) {
         <div class="overlay panel selection-overlay card">
           @if (sel.kind === 'node') {
-            <h3>{{ sel.data.shape }}</h3>
+            <h3>{{ sel.data.shape === 'background-image' ? 'Background image' : sel.data.shape }}</h3>
             @if (readOnly()) {
               @if (sel.data.label) {
                 <div class="field">
@@ -330,18 +363,20 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
             }
 
             @if (readOnly()) {
-              <div class="fields-inline">
-                <div class="field">
-                  <span>Color</span>
-                  <span class="swatch" [style.background]="sel.data.color ?? '#03a9f4'"></span>
-                </div>
-                @if (sel.data.shape === 'box') {
+              @if (sel.data.shape !== 'background-image') {
+                <div class="fields-inline">
                   <div class="field">
-                    <span>Border color</span>
-                    <span class="swatch" [style.background]="sel.data.borderColor ?? '#03a9f4'"></span>
+                    <span>Color</span>
+                    <span class="swatch" [style.background]="sel.data.color ?? '#03a9f4'"></span>
                   </div>
-                }
-              </div>
+                  @if (sel.data.shape === 'box') {
+                    <div class="field">
+                      <span>Border color</span>
+                      <span class="swatch" [style.background]="sel.data.borderColor ?? '#03a9f4'"></span>
+                    </div>
+                  }
+                </div>
+              }
             } @else if (sel.data.shape === 'box') {
               <div class="fields-inline">
                 <label class="field">
@@ -361,7 +396,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
                   />
                 </label>
               </div>
-            } @else {
+            } @else if (sel.data.shape !== 'background-image') {
               <label class="field">
                 <span>Color</span>
                 <input
@@ -372,74 +407,60 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
               </label>
             }
 
-            @if (!readOnly()) {
-              <div class="shape-toggle">
-                <button
-                  class="btn secondary"
-                  [class.active-toggle]="sel.data.shape === 'dot'"
-                  [disabled]="sel.data.shape === 'box-ports'"
-                  title="Dot marker"
-                  (click)="setShape(sel.id, 'dot', sel.data)"
-                >
-                  <app-icon [path]="icons.dot" [size]="16" />
-                </button>
-                <button
-                  class="btn secondary"
-                  [class.active-toggle]="sel.data.shape === 'box'"
-                  [disabled]="sel.data.shape === 'box-ports'"
-                  title="Box"
-                  (click)="setShape(sel.id, 'box', sel.data)"
-                >
-                  <app-icon [path]="icons.shape" [size]="16" />
-                </button>
-                <button
-                  class="btn secondary"
-                  [class.active-toggle]="sel.data.shape === 'box-ports'"
-                  [disabled]="sel.data.shape !== 'box-ports'"
-                  title="Box with ports (set when creating the node — can't be converted, it would lose its port configuration)"
-                  (click)="setShape(sel.id, 'box-ports', sel.data)"
-                >
-                  <app-icon [path]="icons.ports" [size]="16" />
-                </button>
-              </div>
-            }
-
             @if (sel.data.shape === 'box-ports') {
               <div class="ports-editor">
                 <span class="ports-group-label">Inputs</span>
                 @for (port of sel.data.ports; track port.id) {
                   @if (port.direction === 'in') {
                     @if (readOnly()) {
-                      <div class="port-view-row">{{ port.label || '—' }}</div>
+                      <div class="port-view-row">
+                        {{ port.label || '—' }}
+                        @if (port.wireType) {
+                          <span class="port-type-badge" [style.color]="portTypeColor(port)">{{ port.wireType }}</span>
+                        }
+                      </div>
                     } @else {
                       <div class="port-edit-row">
-                        <input
-                          class="text"
-                          placeholder="Label"
-                          [value]="port.label"
-                          (change)="updatePortLabel(sel.id, sel.data, port.id, $event)"
-                        />
-                        <button
-                          class="btn icon-only"
-                          title="Move up"
-                          (click)="movePort(sel.id, sel.data, port.id, -1)"
-                        >
-                          <app-icon [path]="icons.up" [size]="14" />
-                        </button>
-                        <button
-                          class="btn icon-only"
-                          title="Move down"
-                          (click)="movePort(sel.id, sel.data, port.id, 1)"
-                        >
-                          <app-icon [path]="icons.down" [size]="14" />
-                        </button>
-                        <button
-                          class="btn icon-only"
-                          title="Remove port"
-                          (click)="removePort(sel.id, sel.data, port.id)"
-                        >
-                          <app-icon [path]="icons.delete" [size]="14" />
-                        </button>
+                        <div class="port-fields">
+                          <input
+                            class="text"
+                            placeholder="Label"
+                            [value]="port.label"
+                            (change)="updatePortLabel(sel.id, sel.data, port.id, $event)"
+                          />
+                          <select
+                            class="text port-type-select"
+                            (change)="setPortWireType(sel.id, sel.data, port.id, $event)"
+                          >
+                            <option value="" [selected]="!port.wireType">—</option>
+                            @for (t of wireTypes; track t) {
+                              <option [value]="t" [selected]="port.wireType === t">{{ t }}</option>
+                            }
+                          </select>
+                        </div>
+                        <div class="port-actions">
+                          <button
+                            class="btn icon-only"
+                            title="Move up"
+                            (click)="movePort(sel.id, sel.data, port.id, -1)"
+                          >
+                            <app-icon [path]="icons.up" [size]="14" />
+                          </button>
+                          <button
+                            class="btn icon-only"
+                            title="Move down"
+                            (click)="movePort(sel.id, sel.data, port.id, 1)"
+                          >
+                            <app-icon [path]="icons.down" [size]="14" />
+                          </button>
+                          <button
+                            class="btn icon-only"
+                            title="Remove port"
+                            (click)="removePort(sel.id, sel.data, port.id)"
+                          >
+                            <app-icon [path]="icons.delete" [size]="14" />
+                          </button>
+                        </div>
                       </div>
                     }
                   }
@@ -452,36 +473,54 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
                 @for (port of sel.data.ports; track port.id) {
                   @if (port.direction === 'out') {
                     @if (readOnly()) {
-                      <div class="port-view-row">{{ port.label || '—' }}</div>
+                      <div class="port-view-row">
+                        {{ port.label || '—' }}
+                        @if (port.wireType) {
+                          <span class="port-type-badge" [style.color]="portTypeColor(port)">{{ port.wireType }}</span>
+                        }
+                      </div>
                     } @else {
                       <div class="port-edit-row">
-                        <input
-                          class="text"
-                          placeholder="Label"
-                          [value]="port.label"
-                          (change)="updatePortLabel(sel.id, sel.data, port.id, $event)"
-                        />
-                        <button
-                          class="btn icon-only"
-                          title="Move up"
-                          (click)="movePort(sel.id, sel.data, port.id, -1)"
-                        >
-                          <app-icon [path]="icons.up" [size]="14" />
-                        </button>
-                        <button
-                          class="btn icon-only"
-                          title="Move down"
-                          (click)="movePort(sel.id, sel.data, port.id, 1)"
-                        >
-                          <app-icon [path]="icons.down" [size]="14" />
-                        </button>
-                        <button
-                          class="btn icon-only"
-                          title="Remove port"
-                          (click)="removePort(sel.id, sel.data, port.id)"
-                        >
-                          <app-icon [path]="icons.delete" [size]="14" />
-                        </button>
+                        <div class="port-fields">
+                          <input
+                            class="text"
+                            placeholder="Label"
+                            [value]="port.label"
+                            (change)="updatePortLabel(sel.id, sel.data, port.id, $event)"
+                          />
+                          <select
+                            class="text port-type-select"
+                            (change)="setPortWireType(sel.id, sel.data, port.id, $event)"
+                          >
+                            <option value="" [selected]="!port.wireType">—</option>
+                            @for (t of wireTypes; track t) {
+                              <option [value]="t" [selected]="port.wireType === t">{{ t }}</option>
+                            }
+                          </select>
+                        </div>
+                        <div class="port-actions">
+                          <button
+                            class="btn icon-only"
+                            title="Move up"
+                            (click)="movePort(sel.id, sel.data, port.id, -1)"
+                          >
+                            <app-icon [path]="icons.up" [size]="14" />
+                          </button>
+                          <button
+                            class="btn icon-only"
+                            title="Move down"
+                            (click)="movePort(sel.id, sel.data, port.id, 1)"
+                          >
+                            <app-icon [path]="icons.down" [size]="14" />
+                          </button>
+                          <button
+                            class="btn icon-only"
+                            title="Remove port"
+                            (click)="removePort(sel.id, sel.data, port.id)"
+                          >
+                            <app-icon [path]="icons.delete" [size]="14" />
+                          </button>
+                        </div>
                       </div>
                     }
                   }
@@ -492,72 +531,83 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
               </div>
             }
 
-            <div class="link-section">
-              @if (sel.data.link; as link) {
-                @if (link.kind === 'area') {
-                  <div class="linked-preview">
-                    <app-icon [path]="icons.area" [size]="16" />
-                    <span>{{ areaName(link.areaId) }}</span>
-                  </div>
-                  <button class="btn secondary" (click)="openArea(link.areaId)">
-                    <app-icon [path]="icons.open" [size]="16" /> Open area
+            @if (sel.data.shape !== 'background-image') {
+              <div class="link-section">
+                @if (sel.data.link; as link) {
+                  @if (link.kind === 'area') {
+                    <div class="linked-preview">
+                      <app-icon [path]="icons.area" [size]="16" />
+                      <span>{{ areaName(link.areaId) }}</span>
+                    </div>
+                    <button class="btn secondary" (click)="openArea(link.areaId)">
+                      <app-icon [path]="icons.open" [size]="16" /> Open area
+                    </button>
+                  }
+                  @if (link.kind === 'device') {
+                    <div class="linked-preview">
+                      <app-icon [path]="icons.device" [size]="16" />
+                      <span>{{ deviceName(link.deviceId) }}</span>
+                    </div>
+                    <button class="btn secondary" (click)="openDevice(link.deviceId)">
+                      <app-icon [path]="icons.open" [size]="16" /> Open device
+                    </button>
+                  }
+                  @if (link.kind === 'diagram') {
+                    <div class="linked-preview">
+                      <app-icon [path]="icons.link" [size]="16" />
+                      <span>{{ diagramTitle(link.diagramId) }}</span>
+                    </div>
+                    <button class="btn secondary" (click)="openDiagram(link.diagramId)">
+                      <app-icon [path]="icons.open" [size]="16" /> Open diagram
+                    </button>
+                  }
+                  @if (link.kind === 'image') {
+                    <img
+                      class="link-thumb"
+                      [src]="linkImageUrl(link.attachmentId)"
+                      alt=""
+                      title="Open image"
+                      (click)="openImage(link.attachmentId)"
+                    />
+                  }
+                  @if (link.kind === 'connection') {
+                    <div class="linked-preview">
+                      <app-icon [path]="icons.connection" [size]="16" />
+                      <span>{{ connectionLabel(link.connectionId) }}</span>
+                    </div>
+                    <button class="btn secondary" (click)="openConnectionDevice(link.connectionId)">
+                      <app-icon [path]="icons.open" [size]="16" /> Open connection
+                    </button>
+                  }
+                  @if (!readOnly()) {
+                    <button class="btn secondary" (click)="openPicker(pickerFor(link.kind, sel.id))">
+                      Change {{ link.kind }} link
+                    </button>
+                    <button class="btn secondary" (click)="removeLink(sel.id, sel.data)">Remove link</button>
+                  }
+                } @else if (!readOnly()) {
+                  <button class="btn secondary" (click)="openPicker({ kind: 'link-area', nodeId: sel.id })">
+                    <app-icon [path]="icons.area" [size]="16" /> Link to area
                   </button>
-                }
-                @if (link.kind === 'device') {
-                  <div class="linked-preview">
-                    <app-icon [path]="icons.device" [size]="16" />
-                    <span>{{ deviceName(link.deviceId) }}</span>
-                  </div>
-                  <button class="btn secondary" (click)="openDevice(link.deviceId)">
-                    <app-icon [path]="icons.open" [size]="16" /> Open device
+                  <button class="btn secondary" (click)="openPicker({ kind: 'link-device', nodeId: sel.id })">
+                    <app-icon [path]="icons.device" [size]="16" /> Link to device
                   </button>
-                }
-                @if (link.kind === 'diagram') {
-                  <div class="linked-preview">
-                    <app-icon [path]="icons.link" [size]="16" />
-                    <span>{{ diagramTitle(link.diagramId) }}</span>
-                  </div>
-                  <button class="btn secondary" (click)="openDiagram(link.diagramId)">
-                    <app-icon [path]="icons.open" [size]="16" /> Open diagram
+                  <button class="btn secondary" (click)="openPicker({ kind: 'link-image', nodeId: sel.id })">
+                    <app-icon [path]="icons.image" [size]="16" /> Link to image
                   </button>
-                }
-                @if (link.kind === 'image') {
-                  <img
-                    class="link-thumb"
-                    [src]="linkImageUrl(link.attachmentId)"
-                    alt=""
-                    title="Open image"
-                    (click)="openImage(link.attachmentId)"
-                  />
-                }
-                @if (!readOnly()) {
-                  <button class="btn secondary" (click)="openPicker(pickerFor(link.kind, sel.id))">
-                    Change {{ link.kind }} link
-                  </button>
-                  <button class="btn secondary" (click)="removeLink(sel.id, sel.data)">Remove link</button>
-                  @if (link.kind === 'image' && sel.data.shape === 'box' && !sel.data.background) {
-                    <button class="btn secondary" (click)="useAsBackground(sel.id, sel.data)">
-                      <app-icon [path]="icons.background" [size]="16" /> Use as background
+                  @if (siblingDiagrams().length > 0) {
+                    <button class="btn secondary" (click)="openPicker({ kind: 'link-diagram', nodeId: sel.id })">
+                      <app-icon [path]="icons.link" [size]="16" /> Link to diagram
+                    </button>
+                  }
+                  @if (connections().length > 0) {
+                    <button class="btn secondary" (click)="openPicker({ kind: 'link-connection', nodeId: sel.id })">
+                      <app-icon [path]="icons.connection" [size]="16" /> Link to connection
                     </button>
                   }
                 }
-              } @else if (!readOnly()) {
-                <button class="btn secondary" (click)="openPicker({ kind: 'link-area', nodeId: sel.id })">
-                  <app-icon [path]="icons.area" [size]="16" /> Link to area
-                </button>
-                <button class="btn secondary" (click)="openPicker({ kind: 'link-device', nodeId: sel.id })">
-                  <app-icon [path]="icons.device" [size]="16" /> Link to device
-                </button>
-                <button class="btn secondary" (click)="openPicker({ kind: 'link-image', nodeId: sel.id })">
-                  <app-icon [path]="icons.image" [size]="16" /> Link to image
-                </button>
-                @if (siblingDiagrams().length > 0) {
-                  <button class="btn secondary" (click)="openPicker({ kind: 'link-diagram', nodeId: sel.id })">
-                    <app-icon [path]="icons.link" [size]="16" /> Link to diagram
-                  </button>
-                }
-              }
-            </div>
+              </div>
+            }
 
             @if (!readOnly()) {
               <button class="btn secondary" (click)="toggleLocked(sel.id, sel.locked)">
@@ -609,6 +659,56 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
                 <span>Arrow at end</span>
               </label>
             }
+            @if (readOnly()) {
+              @if (sel.data.wireType) {
+                <div class="field">
+                  <span>Wire type</span>
+                  <div class="value">{{ sel.data.wireType }}</div>
+                </div>
+              }
+              @if (sel.data.color) {
+                <div class="field">
+                  <span>Color</span>
+                  <span class="swatch" [style.background]="sel.data.color"></span>
+                </div>
+              }
+            } @else {
+              <label class="field">
+                <span>Wire type</span>
+                <select
+                  class="text"
+                  [value]="sel.data.wireType ?? ''"
+                  (change)="setEdgeWireType(sel.id, $event)"
+                >
+                  <option value="">—</option>
+                  @for (t of wireTypes; track t) {
+                    <option [value]="t">{{ t }}</option>
+                  }
+                </select>
+              </label>
+              <div class="field">
+                <span>Color</span>
+                <div class="wire-color-row">
+                  <input
+                    type="color"
+                    class="wire-color-input"
+                    [value]="sel.data.color || '#9e9e9e'"
+                    (change)="setEdgeColorFromInput(sel.id, $event)"
+                    title="Custom color"
+                  />
+                  @if (sel.data.color) {
+                    <button
+                      type="button"
+                      class="btn icon-only"
+                      title="Clear color"
+                      (click)="setEdgeColor(sel.id, undefined)"
+                    >
+                      <app-icon [path]="icons.close" [size]="14" />
+                    </button>
+                  }
+                </div>
+              </div>
+            }
             @if (sel.data.connectionId) {
               <span class="muted">{{ connectionLabel(sel.data.connectionId) }}</span>
               <button class="btn secondary" (click)="openConnectionDevice(sel.data.connectionId)">
@@ -618,6 +718,11 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
             @if (!readOnly() && connections().length > 0) {
               <button class="btn secondary" (click)="openPicker({ kind: 'edge-connection', edgeId: sel.id })">
                 {{ sel.data.connectionId ? 'Change connection' : 'Link to connection' }}
+              </button>
+            }
+            @if (!readOnly() && sel.routingMode === 'manual') {
+              <button class="btn secondary" (click)="resetEdgeRouting(sel.id)">
+                Reset routing
               </button>
             }
           }
@@ -654,7 +759,9 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
       (picked)="onDiagramLinkPicked($event)"
     />
     <app-connection-picker-dialog
-      [open]="pickerTarget()?.kind === 'edge-connection'"
+      [open]="
+        pickerTarget()?.kind === 'edge-connection' || pickerTarget()?.kind === 'link-connection'
+      "
       [connections]="connections()"
       (closed)="pickerTarget.set(null)"
       (picked)="onConnectionPicked($event)"
@@ -709,6 +816,10 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
       align-items: center;
       gap: 8px;
     }
+    .zoom-reset-overlay {
+      bottom: 12px;
+      left: 12px;
+    }
     .dirty-dot {
       width: 8px;
       height: 8px;
@@ -744,22 +855,21 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
     .panel-head h3 {
       margin: 0;
     }
-    .shape-toggle,
     .layout-toggle {
       display: flex;
       gap: 4px;
     }
-    .shape-toggle .btn,
     .layout-toggle .btn {
       flex: 1;
       justify-content: center;
     }
     .row-buttons {
       display: flex;
+      flex-wrap: wrap;
       gap: 6px;
     }
     .row-buttons .btn {
-      flex: 1;
+      flex: 1 1 auto;
     }
     .active-toggle {
       background: color-mix(in srgb, var(--primary-color) 15%, transparent);
@@ -792,16 +902,33 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
     }
     .port-edit-row {
       display: flex;
+      flex-direction: column;
       gap: 4px;
-      align-items: center;
     }
-    .port-edit-row .text {
-      flex: 1;
+    .port-fields {
+      display: flex;
+      gap: 4px;
+    }
+    .port-fields .text {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .port-actions {
+      display: flex;
+      gap: 4px;
+      justify-content: flex-end;
     }
     .port-view-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-size: 13px;
       color: var(--primary-text-color);
       padding: 2px 0;
+    }
+    .port-type-badge {
+      font-size: 11px;
+      font-weight: 600;
     }
     .value {
       font-size: 13px;
@@ -816,6 +943,20 @@ function toContent(nodes: NgNode[], edges: NgEdge[]): DiagramContent {
       height: 28px;
       border-radius: 6px;
       border: 1px solid var(--divider-color);
+    }
+    .wire-color-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .wire-color-input {
+      width: 28px;
+      height: 22px;
+      padding: 0;
+      border: none;
+      background: none;
+      cursor: pointer;
     }
     .linked-preview {
       display: flex;
@@ -879,7 +1020,10 @@ export class DiagramCanvasComponent implements OnDestroy {
     ['dot', DotNodeComponent],
     ['box', BoxNodeComponent],
     ['box-ports', BoxPortsNodeComponent],
+    ['background-image', BackgroundImageNodeComponent],
   ]);
+  protected readonly edgeTemplateMap = new NgDiagramEdgeTemplateMap([['wire', WireEdgeComponent]]);
+  protected readonly wireTypes = WIRE_TYPES;
   protected readonly model = signal<ModelAdapter | null>(null);
   /** Diagrams open read-only; "Edit" unlocks dragging/resizing/linking and the
    *  editing toolbar, "Save" persists and locks it back down. Clicking a
@@ -902,19 +1046,23 @@ export class DiagramCanvasComponent implements OnDestroy {
   protected readonly areas = signal<AreaDto[]>([]);
   protected readonly selection = signal<
     | { kind: 'node'; id: string; data: NodeData; locked: boolean }
-    | { kind: 'edge'; id: string; data: EdgeData; sourceArrowhead?: string; targetArrowhead?: string }
+    | {
+        kind: 'edge';
+        id: string;
+        data: EdgeData;
+        sourceArrowhead?: string;
+        targetArrowhead?: string;
+        routingMode?: 'manual' | 'auto';
+      }
     | null
   >(null);
 
-  /** A locked, back-of-stack box-linked-to-image acts as a backdrop and can't
-   *  be clicked/selected directly — its settings live in Diagram properties. */
+  /** While locked (the default), a background-image node can't be clicked/selected
+   *  directly on canvas — its settings live in Diagram properties instead. */
   protected readonly backgroundImage = computed(() =>
     this.modelService
       .nodes()
-      .find((n) => {
-        const data = n.data as NodeData;
-        return data.shape === 'box' && data.link?.kind === 'image' && data.background;
-      }) as NgNode<NodeData> | undefined
+      .find((n) => (n.data as NodeData).shape === 'background-image') as NgNode<NodeData> | undefined
   );
 
   protected readonly icons = {
@@ -923,6 +1071,7 @@ export class DiagramCanvasComponent implements OnDestroy {
     ports: mdiElectricSwitch,
     area: mdiFloorPlan,
     device: mdiDevices,
+    connection: mdiTransitConnectionVariant,
     link: mdiLinkVariant,
     image: mdiImagePlus,
     delete: mdiDelete,
@@ -931,7 +1080,6 @@ export class DiagramCanvasComponent implements OnDestroy {
     open: mdiOpenInNew,
     locked: mdiLock,
     unlocked: mdiLockOpenVariantOutline,
-    background: mdiImageOutline,
     properties: mdiTune,
     close: mdiClose,
     up: mdiChevronUp,
@@ -951,6 +1099,9 @@ export class DiagramCanvasComponent implements OnDestroy {
    */
   private currentModel: ModelAdapter | null = null;
   private unregisterReadOnlyGuard: (() => void) | null = null;
+  /** Viewport to restore once <ng-diagram> mounts and fires diagramInit — set by load(), consumed there. */
+  private pendingViewport: DiagramViewport | null = null;
+  private viewportSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.devicesApi.list().subscribe((devices) => this.devices.set(devices));
@@ -988,16 +1139,21 @@ export class DiagramCanvasComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.currentModel?.destroy();
     this.unregisterReadOnlyGuard?.();
+    if (this.viewportSaveTimer) clearTimeout(this.viewportSaveTimer);
   }
 
   protected hasImageSource(): boolean {
     return this.imageAttachments().length > 0;
   }
 
-  protected pickerFor(linkKind: 'area' | 'device' | 'diagram' | 'image', nodeId: string): PickerTarget {
+  protected pickerFor(
+    linkKind: 'area' | 'device' | 'diagram' | 'image' | 'connection',
+    nodeId: string
+  ): PickerTarget {
     if (linkKind === 'area') return { kind: 'link-area', nodeId };
     if (linkKind === 'device') return { kind: 'link-device', nodeId };
     if (linkKind === 'diagram') return { kind: 'link-diagram', nodeId };
+    if (linkKind === 'connection') return { kind: 'link-connection', nodeId };
     return { kind: 'link-image', nodeId };
   }
 
@@ -1029,6 +1185,7 @@ export class DiagramCanvasComponent implements OnDestroy {
       if (isInitialOpen && d.content.nodes.length === 0) {
         this.readOnly.set(false);
       }
+      this.pendingViewport = d.content.viewport ?? null;
       queueMicrotask(() => {
         const readOnly = this.readOnly();
         const m = initializeModel(
@@ -1036,7 +1193,7 @@ export class DiagramCanvasComponent implements OnDestroy {
             nodes: d.content.nodes.map((n) =>
               readOnly ? { ...n, draggable: false, resizable: false } : n
             ),
-            edges: d.content.edges.map((e) => ({ ...e, data: e.data ?? {} })),
+            edges: d.content.edges.map((e) => ({ ...e, type: e.type ?? 'wire', data: e.data ?? {} })),
           },
           this.injector
         );
@@ -1064,22 +1221,58 @@ export class DiagramCanvasComponent implements OnDestroy {
     } satisfies Middleware<'read-only-guard'>);
     this.diagramService.updateConfig({
       nodeDraggingEnabled: !this.readOnly(),
-      linking: { validateConnection: () => !this.readOnly() },
+      linking: {
+        validateConnection: () => !this.readOnly(),
+        // Every hand-drawn edge gets the colorable 'wire' template — matches
+        // loaded edges, which default to it too (see load()). Arrowheads are
+        // opt-in (see setEdgeArrowhead()) — clear whatever the library
+        // defaults a freshly drawn edge to.
+        finalEdgeDataBuilder: (edge: NgEdge) => ({
+          ...edge,
+          type: 'wire',
+          sourceArrowhead: undefined,
+          targetArrowhead: undefined,
+        }),
+      },
     });
 
-    if ((this.model()?.getNodes().length ?? 0) > 0) {
+    if (this.pendingViewport) {
+      const { x, y, scale } = this.pendingViewport;
+      this.viewportService.setViewport(x, y, scale);
+      this.pendingViewport = null;
+    } else if ((this.model()?.getNodes().length ?? 0) > 0) {
       this.viewportService.zoomToFit();
     }
-    this.model()?.onChange(() => this.dirty.set(true));
+    this.model()?.onChange(() => {
+      this.dirty.set(true);
+      // Reshaping (and any other direct model write) bypasses this component's
+      // own setters, so the property panel's snapshot of the selected edge
+      // (routingMode in particular — it gates the "Reset routing" button)
+      // would otherwise go stale until the user deselects and reselects it.
+      const sel = this.selection();
+      if (sel?.kind === 'edge') {
+        const live = this.modelService.getEdgeById(sel.id);
+        if (live) {
+          this.selection.set({
+            kind: 'edge',
+            id: live.id,
+            data: (live.data ?? {}) as EdgeData,
+            sourceArrowhead: live.sourceArrowhead,
+            targetArrowhead: live.targetArrowhead,
+            routingMode: live.routingMode,
+          });
+        }
+      }
+    });
   }
 
   protected onSelectionChanged(event: SelectionChangedEvent): void {
     if (event.selectedNodes.length === 1 && event.selectedEdges.length === 0) {
       const n = event.selectedNodes[0];
       const data = n.data as NodeData;
-      if (data.shape === 'box' && data.link?.kind === 'image' && data.background) {
-        // A backdrop image isn't meant to be clickable — bounce the selection
-        // away; its settings live in the Diagram properties panel instead.
+      if (data.shape === 'background-image' && n.draggable === false) {
+        // A locked backdrop image isn't meant to be clickable — bounce the
+        // selection away; unlock it from the Diagram properties panel instead.
         this.selectionService.deselect([n.id]);
         this.selection.set(null);
         return;
@@ -1093,10 +1286,23 @@ export class DiagramCanvasComponent implements OnDestroy {
         data: (e.data ?? {}) as EdgeData,
         sourceArrowhead: e.sourceArrowhead,
         targetArrowhead: e.targetArrowhead,
+        routingMode: e.routingMode,
       });
     } else {
       this.selection.set(null);
     }
+  }
+
+  /** A node/edge drag re-anchors any manually-reshaped wire touching a moved
+   *  node — auto-routed wires are already re-routed by ng-diagram itself. Mid-drag
+   *  (no merge) so the route isn't simplified before the user drops it. */
+  protected onSelectionMoved(event: SelectionMovedEvent): void {
+    applyEdgeStretchOnSelectionMoved(this.modelService, new Set(event.nodes.map((n) => n.id)), false);
+  }
+
+  /** On drop: fold whatever bends the drag left collinear, once. */
+  protected onNodeDragEnded(event: NodeDragEndedEvent): void {
+    applyEdgeStretchOnSelectionMoved(this.modelService, new Set(event.nodes.map((n) => n.id)), true);
   }
 
   protected openImage(attachmentId: string): void {
@@ -1121,6 +1327,7 @@ export class DiagramCanvasComponent implements OnDestroy {
    */
   protected onEdgeDrawEnded(event: EdgeDrawEndedEvent): void {
     if (!event.success || !event.edge || !event.target) return;
+    this.propagateWireTypeOnDraw(event);
     const sourceData = event.source.data as NodeData;
     const targetData = event.target.data as NodeData;
     if (sourceData.link?.kind !== 'device' || targetData.link?.kind !== 'device') return;
@@ -1138,6 +1345,70 @@ export class DiagramCanvasComponent implements OnDestroy {
       });
       this.toast.info(`Linked to connection ${match.fromDeviceName} → ${match.toDeviceName}`);
     }
+  }
+
+  /** Drawing a wire from a typed port with no wire type yet copies the port's
+   *  type onto the wire; dropping it on a typed-less port then copies the
+   *  (possibly just-set) wire type onto that port. Existing types are never
+   *  overwritten — this only fills gaps at creation time. */
+  private propagateWireTypeOnDraw(event: EdgeDrawEndedEvent): void {
+    if (!event.edge || !event.target) return;
+    const sourcePort = this.findPort(event.source.data as NodeData, event.sourcePort);
+    const targetPort = this.findPort(event.target.data as NodeData, event.targetPort);
+    let wireType = (event.edge.data as EdgeData | undefined)?.wireType;
+    if (!wireType && sourcePort?.wireType) {
+      wireType = sourcePort.wireType;
+      this.modelService.updateEdgeData(event.edge.id, {
+        ...(event.edge.data as EdgeData),
+        wireType,
+        color: WIRE_TYPE_COLORS[wireType],
+      });
+    }
+    if (targetPort && !targetPort.wireType && wireType) {
+      const targetData = event.target.data as BoxPortsNodeData;
+      this.modelService.updateNodeData(event.target.id, {
+        ...targetData,
+        ports: targetData.ports.map((p) => (p.id === targetPort.id ? { ...p, wireType } : p)),
+      });
+    }
+  }
+
+  private findPort(data: NodeData, portId: string | undefined): NodePort | undefined {
+    if (!portId || data.shape !== 'box-ports') return undefined;
+    return data.ports.find((p) => p.id === portId);
+  }
+
+  /** Resets scale to 100% — x/y are the viewport center's own coordinates (per
+   *  ng-diagram's Viewport type), so keeping them as-is keeps the same point centered. */
+  protected resetZoom(): void {
+    const v = this.viewportService.viewport();
+    this.viewportService.setViewport(v.x, v.y, 1);
+  }
+
+  /** In read-only (view) mode there's no edit/save flow to piggyback on, so pan/zoom
+   *  is persisted directly, debounced, straight from the current (unedited) model —
+   *  safe since nothing else could be inadvertently committed while merely viewing.
+   *  In edit mode the viewport rides along with the next explicit Save instead
+   *  (see saveAndExitEditMode()), so an in-progress edit is never silently committed. */
+  protected onViewportChanged(event: ViewportChangedEvent): void {
+    if (!this.readOnly()) return;
+    if (this.viewportSaveTimer) clearTimeout(this.viewportSaveTimer);
+    const viewport = event.viewport;
+    this.viewportSaveTimer = setTimeout(() => this.persistViewport(viewport), 800);
+  }
+
+  private persistViewport(viewport: DiagramViewport): void {
+    const model = this.model();
+    if (!model) return;
+    const content = toContent(model.getNodes(), model.getEdges(), viewport);
+    this.api.putContent(this.diagramId(), this.version, content).subscribe({
+      next: (updated) => {
+        this.version = updated.version;
+      },
+      error: () => {
+        // Best-effort — a missed viewport save isn't worth surfacing to the user.
+      },
+    });
   }
 
   private nextPosition() {
@@ -1177,19 +1448,6 @@ export class DiagramCanvasComponent implements OnDestroy {
     this.modelService.addNodes([{ id: this.generateId(), type: shape, position: this.nextPosition(), data }]);
   }
 
-  protected setShape(nodeId: string, shape: Shape, data: NodeData): void {
-    const base = { label: data.label, color: data.color, borderColor: data.borderColor, link: data.link };
-    const newData: NodeData =
-      shape === 'box-ports'
-        ? { ...base, shape, ports: data.shape === 'box-ports' ? data.ports : [] }
-        : { ...base, shape };
-    this.modelService.updateNode(nodeId, { type: shape, data: newData });
-    const sel = this.selection();
-    if (sel?.kind === 'node' && sel.id === nodeId) {
-      this.selection.set({ ...sel, data: newData });
-    }
-  }
-
   protected addPort(nodeId: string, data: BoxPortsNodeData, direction: PortDirection): void {
     const port: NodePort = { id: this.generateId(), label: '', direction };
     this.updateSelectedNodeData(nodeId, { ...data, ports: [...data.ports, port] });
@@ -1205,6 +1463,118 @@ export class DiagramCanvasComponent implements OnDestroy {
       ...data,
       ports: data.ports.map((p) => (p.id === portId ? { ...p, label } : p)),
     });
+  }
+
+  /** Setting a port's wire type colors its pin once — same one-shot
+   *  convenience as an edge's wire type (see setEdgeWireType()). Also cascades
+   *  to whatever's connected (see cascadeWireTypeFromPort()). */
+  protected setPortWireType(nodeId: string, data: BoxPortsNodeData, portId: string, event: Event): void {
+    const value = (event.target as HTMLSelectElement).value as WireType | '';
+    const wireType = value || undefined;
+    const oldType = data.ports.find((p) => p.id === portId)?.wireType;
+    this.updateSelectedNodeData(nodeId, {
+      ...data,
+      ports: data.ports.map((p) => (p.id === portId ? { ...p, wireType } : p)),
+    });
+    this.cascadeWireTypeFromPort(nodeId, portId, oldType, wireType);
+    this.refreshSelectionIfNode(nodeId);
+  }
+
+  /** A cascade can touch a port on the currently-selected node other than the
+   *  one just edited (e.g. two of its ports are connected to each other) —
+   *  re-sync the panel's snapshot from the model so it doesn't show stale data. */
+  private refreshSelectionIfNode(nodeId: string): void {
+    const sel = this.selection();
+    if (sel?.kind !== 'node' || sel.id !== nodeId) return;
+    const fresh = this.modelService.getNodeById<NodeData>(nodeId);
+    if (fresh) this.selection.set({ ...sel, data: fresh.data });
+  }
+
+  protected portTypeColor(port: NodePort): string | null {
+    return port.wireType ? WIRE_TYPE_COLORS[port.wireType] : null;
+  }
+
+  /**
+   * A port/wire type change cascades through directly-connected wires/ports
+   * that shared the OLD value, so a matching chain stays in sync — e.g.
+   * given `L --- L ---> N` (a mismatch at the receiving end), changing either
+   * L updates the other L too, but the mismatched N is left alone since it
+   * never matched in the first place. Stops at the first mismatch in each
+   * direction rather than forcing every connected element to one value.
+   */
+  private cascadeWireTypeFromPort(
+    nodeId: string,
+    portId: string,
+    oldType: WireType | undefined,
+    newType: WireType | undefined
+  ): void {
+    if (oldType === newType) return;
+    this.propagateFromPort(nodeId, portId, oldType, newType, new Set([`${nodeId}:${portId}`]), new Set());
+  }
+
+  private cascadeWireTypeFromEdge(
+    edgeId: string,
+    oldType: WireType | undefined,
+    newType: WireType | undefined
+  ): void {
+    if (oldType === newType) return;
+    this.propagateFromEdge(edgeId, oldType, newType, new Set(), new Set([edgeId]));
+  }
+
+  private propagateFromPort(
+    nodeId: string,
+    portId: string,
+    oldType: WireType | undefined,
+    newType: WireType | undefined,
+    visitedPorts: Set<string>,
+    visitedEdges: Set<string>
+  ): void {
+    for (const edge of this.modelService.edges()) {
+      if (visitedEdges.has(edge.id)) continue;
+      const touchesPort =
+        (edge.source === nodeId && edge.sourcePort === portId) ||
+        (edge.target === nodeId && edge.targetPort === portId);
+      if (!touchesPort) continue;
+      const edgeData = edge.data as EdgeData;
+      if (edgeData.wireType !== oldType) continue;
+      visitedEdges.add(edge.id);
+      this.modelService.updateEdgeData(edge.id, {
+        ...edgeData,
+        wireType: newType,
+        ...(newType ? { color: WIRE_TYPE_COLORS[newType] } : {}),
+      });
+      this.propagateFromEdge(edge.id, oldType, newType, visitedPorts, visitedEdges);
+    }
+  }
+
+  private propagateFromEdge(
+    edgeId: string,
+    oldType: WireType | undefined,
+    newType: WireType | undefined,
+    visitedPorts: Set<string>,
+    visitedEdges: Set<string>
+  ): void {
+    const edge = this.modelService.getEdgeById<EdgeData>(edgeId);
+    if (!edge) return;
+    const ends: Array<{ nodeId: string; portId: string | undefined }> = [
+      { nodeId: edge.source, portId: edge.sourcePort },
+      { nodeId: edge.target, portId: edge.targetPort },
+    ];
+    for (const { nodeId, portId } of ends) {
+      if (!portId) continue;
+      const key = `${nodeId}:${portId}`;
+      if (visitedPorts.has(key)) continue;
+      const node = this.modelService.getNodeById<NodeData>(nodeId);
+      if (!node || node.data.shape !== 'box-ports') continue;
+      const port = node.data.ports.find((p) => p.id === portId);
+      if (!port || port.wireType !== oldType) continue;
+      visitedPorts.add(key);
+      this.modelService.updateNodeData(nodeId, {
+        ...node.data,
+        ports: node.data.ports.map((p) => (p.id === portId ? { ...p, wireType: newType } : p)),
+      });
+      this.propagateFromPort(nodeId, portId, oldType, newType, visitedPorts, visitedEdges);
+    }
   }
 
   protected movePort(nodeId: string, data: BoxPortsNodeData, portId: string, delta: -1 | 1): void {
@@ -1245,48 +1615,39 @@ export class DiagramCanvasComponent implements OnDestroy {
     this.pickerTarget.set(null);
   }
 
-  /** Turns a box linked to an image into a locked, back-of-stack backdrop. */
-  protected useAsBackground(nodeId: string, data: NodeData): void {
-    this.nodeService.sendToBack([nodeId]);
-    this.modelService.updateNode(nodeId, {
-      draggable: false,
-      resizable: false,
-      autoSize: false,
-      size: { width: 900, height: 650 },
-      position: { x: 0, y: 0 },
-      data: { ...data, background: true },
-    });
-    this.selection.set(null);
-  }
-
   private addBackgroundImageNode(attachment: AttachmentDto): void {
     const id = this.generateId();
     this.modelService.addNodes([
       {
         id,
-        type: 'box',
+        type: 'background-image',
         position: { x: 0, y: 0 },
-        size: { width: 900, height: 650 },
+        size: { width: 1400, height: 1000 },
         autoSize: false,
         draggable: false,
         resizable: false,
         data: {
-          shape: 'box',
+          shape: 'background-image',
           label: attachment.title ?? attachment.originalName,
           link: { kind: 'image', attachmentId: attachment.id },
-          background: true,
         },
       },
     ]);
     this.nodeService.sendToBack([id]);
   }
 
+  /** Unlocks the backdrop and selects it so its own panel (with the Lock
+   *  button) takes over — from there it can be dragged/resized like any
+   *  other node, then locked again once positioned. */
+  protected unlockBackground(node: NgNode<NodeData>): void {
+    this.modelService.updateNode(node.id, { draggable: true, resizable: true });
+    this.selection.set({ kind: 'node', id: node.id, data: node.data, locked: false });
+    this.propertiesOpen.set(false);
+  }
+
   protected removeBackground(node: NgNode<NodeData>): void {
-    this.modelService.updateNode(node.id, {
-      draggable: true,
-      resizable: true,
-      data: { ...node.data, background: false },
-    });
+    this.modelService.deleteNodes([node.id]);
+    if (this.selection()?.id === node.id) this.selection.set(null);
   }
 
   protected backgroundImageUrl(node: NgNode<NodeData>): string {
@@ -1368,10 +1729,23 @@ export class DiagramCanvasComponent implements OnDestroy {
 
   protected onConnectionPicked(connection: ConnectionDto): void {
     const target = this.pickerTarget();
-    if (!target || target.kind !== 'edge-connection') return;
-    const current = this.selection();
-    const label = current?.kind === 'edge' ? current.data.label : undefined;
-    this.modelService.updateEdgeData(target.edgeId, { connectionId: connection.id, label });
+    if (!target) return;
+    if (target.kind === 'edge-connection') {
+      const current = this.selection();
+      const label = current?.kind === 'edge' ? current.data.label : undefined;
+      this.modelService.updateEdgeData(target.edgeId, { connectionId: connection.id, label });
+    } else if (target.kind === 'link-connection') {
+      const existing = this.modelService.getNodeById<NodeData>(target.nodeId)?.data;
+      if (existing) {
+        this.updateSelectedNodeData(target.nodeId, {
+          ...existing,
+          link: { kind: 'connection', connectionId: connection.id },
+          label: existing.label || this.connectionLabel(connection.id),
+        });
+      }
+    } else {
+      return;
+    }
     this.pickerTarget.set(null);
   }
 
@@ -1410,6 +1784,46 @@ export class DiagramCanvasComponent implements OnDestroy {
     const key = end === 'source' ? 'sourceArrowhead' : 'targetArrowhead';
     this.modelService.updateEdge(edgeId, { [key]: arrowhead });
     this.selection.set({ ...sel, [key]: arrowhead });
+  }
+
+  protected setEdgeColor(edgeId: string, color: string | undefined): void {
+    const sel = this.selection();
+    if (sel?.kind !== 'edge') return;
+    const data = { ...sel.data, color };
+    this.modelService.updateEdgeData(edgeId, data);
+    this.selection.set({ ...sel, data });
+  }
+
+  protected setEdgeColorFromInput(edgeId: string, event: Event): void {
+    this.setEdgeColor(edgeId, (event.target as HTMLInputElement).value);
+  }
+
+  /** Setting a wire type applies its standard color once; clearing the type
+   *  leaves whatever color is already set untouched. Either way, the color
+   *  can still be changed independently afterward — see setEdgeColor(). */
+  protected setEdgeWireType(edgeId: string, event: Event): void {
+    const value = (event.target as HTMLSelectElement).value as WireType | '';
+    const sel = this.selection();
+    if (sel?.kind !== 'edge') return;
+    const wireType = value || undefined;
+    const oldType = sel.data.wireType;
+    const data: EdgeData = {
+      ...sel.data,
+      wireType,
+      ...(wireType ? { color: WIRE_TYPE_COLORS[wireType] } : {}),
+    };
+    this.modelService.updateEdgeData(edgeId, data);
+    this.selection.set({ ...sel, data });
+    this.cascadeWireTypeFromEdge(edgeId, oldType, wireType);
+  }
+
+  /** Drops any manually reshaped route and reverts to auto-routing. */
+  protected resetEdgeRouting(edgeId: string): void {
+    this.modelService.updateEdge(edgeId, { points: undefined, routingMode: 'auto' });
+    const sel = this.selection();
+    if (sel?.kind === 'edge' && sel.id === edgeId) {
+      this.selection.set({ ...sel, routingMode: undefined });
+    }
   }
 
   protected openDevice(deviceId: string): void {
@@ -1480,7 +1894,7 @@ export class DiagramCanvasComponent implements OnDestroy {
     const model = this.model();
     if (!model) return;
     this.saving.set(true);
-    const content = toContent(model.getNodes(), model.getEdges());
+    const content = toContent(model.getNodes(), model.getEdges(), this.viewportService.viewport());
     this.api.putContent(this.diagramId(), this.version, content).subscribe({
       next: async (updated) => {
         this.version = updated.version;

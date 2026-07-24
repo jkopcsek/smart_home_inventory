@@ -23,7 +23,6 @@ import { ConfirmDialogComponent } from './core/confirm/confirm-dialog.component'
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header>
-      <span class="title">Smart Home Inventory</span>
       <nav>
         <a routerLink="/areas" routerLinkActive="active">
           <app-icon [path]="icons.areas" [size]="18" /> Areas
@@ -53,44 +52,47 @@ import { ConfirmDialogComponent } from './core/confirm/confirm-dialog.component'
     }
     header {
       display: flex;
-      align-items: center;
-      gap: 24px;
+      align-items: stretch;
       background: var(--app-header-background-color);
       color: var(--app-header-text-color);
-      padding: 0 16px;
+      border-bottom: 1px solid var(--divider-color);
       min-height: 56px;
-      flex-wrap: wrap;
-    }
-    .title {
-      font-size: 18px;
-      font-weight: 400;
-      white-space: nowrap;
+      overflow: hidden;
     }
     nav {
       display: flex;
-      gap: 4px;
-      align-self: stretch;
-      flex-wrap: wrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar {
+      display: none;
     }
     nav a {
       display: inline-flex;
       align-items: center;
+      flex: 0 0 auto;
       gap: 6px;
-      color: var(--app-header-text-color);
-      opacity: 0.75;
-      padding: 0 12px;
+      color: var(--secondary-text-color);
+      padding: 0 16px;
       border-bottom: 3px solid transparent;
       text-decoration: none;
+      white-space: nowrap;
       font-weight: 500;
       font-size: 14px;
     }
     nav a:hover {
-      opacity: 1;
+      color: var(--primary-text-color);
       text-decoration: none;
     }
     nav a.active {
-      opacity: 1;
-      border-bottom-color: var(--app-header-text-color);
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    @media (max-width: 480px) {
+      nav a {
+        padding: 0 10px;
+        font-size: 13px;
+      }
     }
     main {
       flex: 1;

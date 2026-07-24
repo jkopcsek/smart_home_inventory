@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Node as NgNode, NgDiagramNodeTemplate, NgDiagramPortComponent } from 'ng-diagram';
-import { BoxPortsNodeData, NodePort } from '@smart-home-inventory/shared';
+import { BoxPortsNodeData, NodePort, WIRE_TYPE_COLORS } from '@smart-home-inventory/shared';
 
 /**
  * The "Box with ports" shape: a user-configurable number of named
@@ -22,18 +22,26 @@ import { BoxPortsNodeData, NodePort } from '@smart-home-inventory/shared';
           @for (port of inputPorts(); track port.id; let last = $last) {
             <div class="port-row" [class.port-row--last]="last">
               <ng-diagram-port [id]="port.id" side="left" type="both" class="port">
-                <div class="port-shape port-shape--input"></div>
+                <div
+                  class="port-shape port-shape--input"
+                  [style.background]="portColor(port)"
+                  [style.border-color]="portColor(port)"
+                ></div>
               </ng-diagram-port>
-              <span class="label">{{ port.label }}</span>
+              <span class="label">{{ portDisplayLabel(port) }}</span>
             </div>
           }
         </div>
         <div class="column align-right">
           @for (port of outputPorts(); track port.id; let last = $last) {
             <div class="port-row" [class.port-row--last]="last">
-              <span class="label">{{ port.label }}</span>
+              <span class="label">{{ portDisplayLabel(port) }}</span>
               <ng-diagram-port [id]="port.id" side="right" type="both" class="port">
-                <div class="port-shape port-shape--output"></div>
+                <div
+                  class="port-shape port-shape--output"
+                  [style.background]="portColor(port)"
+                  [style.border-color]="portColor(port)"
+                ></div>
               </ng-diagram-port>
             </div>
           }
@@ -51,11 +59,12 @@ import { BoxPortsNodeData, NodePort } from '@smart-home-inventory/shared';
     }
     .header {
       color: #fff;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 500;
-      padding: 6px 10px;
+      padding: 10px 14px;
       border-radius: 6px 6px 0 0;
       text-align: center;
+      letter-spacing: 0.02em;
     }
     .columns {
       display: flex;
@@ -65,7 +74,7 @@ import { BoxPortsNodeData, NodePort } from '@smart-home-inventory/shared';
       flex-direction: column;
       flex: 1 1 50%;
       min-width: 0;
-      padding: 4px 0;
+      padding: 8px 0;
     }
     .column:first-child {
       border-right: 1px solid var(--divider-color);
@@ -95,15 +104,21 @@ import { BoxPortsNodeData, NodePort } from '@smart-home-inventory/shared';
       --ngd-port-size: 0;
       --ngd-port-background-color: transparent;
       --ngd-port-border-size: 0;
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
+      /* ng-diagram-port ships its own :host.left/.right + origin-* positioning
+       * CSS (auto-centers on the whole node's edge) that can win the cascade
+       * over these same-specificity rules — !important forces our per-row
+       * centering to always apply instead. */
+      position: absolute !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
     }
     .column:not(.align-right) .port {
-      left: -9px;
+      left: -9px !important;
+      right: auto !important;
     }
     .align-right .port {
-      right: -9px;
+      left: auto !important;
+      right: -9px !important;
     }
     .port-shape {
       width: 9px;
@@ -143,5 +158,14 @@ export class BoxPortsNodeComponent implements NgDiagramNodeTemplate<BoxPortsNode
 
   private portsByDirection(direction: NodePort['direction']): NodePort[] {
     return this.data().ports.filter((p) => p.direction === direction);
+  }
+
+  protected portColor(port: NodePort): string | null {
+    return port.wireType ? WIRE_TYPE_COLORS[port.wireType] : null;
+  }
+
+  protected portDisplayLabel(port: NodePort): string {
+    if (port.label && port.wireType) return `${port.label} (${port.wireType})`;
+    return port.label || port.wireType || '';
   }
 }

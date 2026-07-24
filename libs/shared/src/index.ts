@@ -1,5 +1,6 @@
 export * from './lib/enums';
 export * from './lib/diagram-content';
+export * from './lib/wire-colors';
 export * from './lib/dto/floor.dto';
 export * from './lib/dto/area.dto';
 export * from './lib/dto/device.dto';
