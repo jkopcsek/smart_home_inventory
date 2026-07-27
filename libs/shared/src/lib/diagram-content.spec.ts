@@ -42,9 +42,10 @@ describe('DiagramContentSchema', () => {
             shape: 'box-ports' as const,
             label: 'Hallway switch box',
             ports: [
-              { id: 'p1', label: 'L1 in', direction: 'in' as const, wireType: 'L1' as const },
+              { id: 'p1', label: 'L1 in', direction: 'in' as const, type: 'L1' as const },
               { id: 'p2', label: 'Lamp 1', direction: 'out' as const },
-              { id: 'p3', label: '+12V', direction: 'in' as const, wireType: 'DC+' as const },
+              { id: 'p3', label: '+12V', direction: 'in' as const, type: 'DC+' as const },
+              { id: 'p4', label: 'Sensor bus', direction: 'in' as const, type: 'dc_24v' as const },
             ],
           },
         },
@@ -65,7 +66,7 @@ describe('DiagramContentSchema', () => {
           points: [{ x: 120, y: 30 }, { x: 160, y: 30 }, { x: 160, y: 0 }, { x: 200, y: 0 }],
           routing: 'orthogonal',
           routingMode: 'manual' as const,
-          data: { connectionId: 'conn1', label: '230V', color: '#8b5a2b', wireType: 'L1' as const },
+          data: { connectionId: 'conn1', label: '230V', color: '#8b5a2b', type: 'L1' as const },
         },
       ],
     };
@@ -106,18 +107,18 @@ describe('DiagramContentSchema', () => {
     ).toBe(false);
   });
 
-  it('rejects an unknown wire type on an edge or a port', () => {
+  it('rejects a type that is neither a known wire type nor a known connection type', () => {
     expect(
       DiagramContentSchema.safeParse({
         schemaVersion: 1,
         nodes: [],
-        edges: [{ id: 'e1', source: 'n1', target: 'n2', data: { wireType: 'L4' } }],
+        edges: [{ id: 'e1', source: 'n1', target: 'n2', data: { type: 'L4' } }],
       }).success
     ).toBe(false);
     expect(
       NodeDataSchema.safeParse({
         shape: 'box-ports',
-        ports: [{ id: 'p1', label: 'x', direction: 'in', wireType: 'L4' }],
+        ports: [{ id: 'p1', label: 'x', direction: 'in', type: 'L4' }],
       }).success
     ).toBe(false);
   });

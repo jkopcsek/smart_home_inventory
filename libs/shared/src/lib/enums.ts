@@ -40,20 +40,44 @@ export const ATTACHMENT_KINDS = [
 export const AttachmentKindSchema = z.enum(ATTACHMENT_KINDS);
 export type AttachmentKind = z.infer<typeof AttachmentKindSchema>;
 
+/** The physical/protocol medium a connection runs over. The wired-power
+ *  values (mains_230v/dc_24v/dc_12v/usb) are a cable-level granularity —
+ *  coarser than picking out individual conductors (see WireType in
+ *  diagram-content.ts) but specific enough to tell cables apart at a glance;
+ *  the same enum is reused for that purpose on diagram ports/edges. */
 export const CONNECTION_TYPES = [
-  'electrical',
+  'mains_230v',
+  'dc_24v',
+  'dc_12v',
+  'usb',
+  'ethernet',
+  'wifi',
   'zigbee_binding',
   'zigbee_network',
   'zwave_network',
   'matter_fabric',
   'thread',
-  'ethernet',
-  'wifi',
   'knx',
   'other',
 ] as const;
 export const ConnectionTypeSchema = z.enum(CONNECTION_TYPES);
 export type ConnectionType = z.infer<typeof ConnectionTypeSchema>;
+
+export const CONNECTION_TYPE_LABELS: Record<ConnectionType, string> = {
+  mains_230v: '230V mains',
+  dc_24v: '24V DC',
+  dc_12v: '12V DC',
+  usb: 'USB',
+  ethernet: 'Ethernet',
+  wifi: 'Wi-Fi',
+  zigbee_binding: 'Zigbee binding',
+  zigbee_network: 'Zigbee network',
+  zwave_network: 'Z-Wave network',
+  matter_fabric: 'Matter fabric',
+  thread: 'Thread',
+  knx: 'KNX',
+  other: 'Other',
+};
 
 export const CAPABILITY_CATEGORIES = [
   'protocol',

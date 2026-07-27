@@ -30,7 +30,7 @@ describe('smart home inventory API (real server, temp DB)', () => {
     ).data;
     const connection = (
       await axios.post('/api/connections', {
-        type: 'electrical',
+        type: 'mains_230v',
         fromDeviceId: breaker.id,
         toDeviceId: device.id,
         label: 'L1 / F3',

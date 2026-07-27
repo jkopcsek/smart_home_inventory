@@ -16,7 +16,7 @@ import { attachmentUrl } from '../../../core/api/api.services';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-diagram-node-resize-adornment>
-      <img [src]="imageUrl()" [alt]="data().label || 'Background image'" />
+      <img [src]="imageUrl()" [alt]="data().label || 'Background image'" crossorigin="anonymous" />
     </ng-diagram-node-resize-adornment>
   `,
   styles: `

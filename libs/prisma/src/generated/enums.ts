@@ -53,7 +53,10 @@ export type AttachmentKind = (typeof AttachmentKind)[keyof typeof AttachmentKind
 
 
 export const ConnectionType = {
-  electrical: 'electrical',
+  mains_230v: 'mains_230v',
+  dc_24v: 'dc_24v',
+  dc_12v: 'dc_12v',
+  usb: 'usb',
   zigbee_binding: 'zigbee_binding',
   zigbee_network: 'zigbee_network',
   zwave_network: 'zwave_network',

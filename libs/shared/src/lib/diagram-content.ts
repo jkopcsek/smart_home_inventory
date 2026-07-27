@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ConnectionTypeSchema } from './enums';
 
 /**
  * Structural node/edge fields (id, position, size, source, target, ...) are
@@ -30,13 +31,25 @@ export type PortDirection = z.infer<typeof PortDirectionSchema>;
 export const WireTypeSchema = z.enum(['L1', 'L2', 'L3', 'N', 'PE', 'DC+', 'DC-']);
 export type WireType = z.infer<typeof WireTypeSchema>;
 
+/**
+ * A single field spanning two granularities: an individual conductor
+ * (WireType: L1/L2/L3/N/PE/DC+/DC-) or a whole cable (ConnectionType: 230V
+ * mains, 24V/12V DC, USB, Ethernet, Zigbee, ...) — the same enum used for a
+ * real Connection's type. The UI presents these as one picker (grouped into
+ * Wire/Wired/Wireless/Other), so this stays one field rather than two —
+ * two separate optional fields meant "pick one, not both" had to be kept in
+ * sync by hand and could silently end up both set.
+ */
+export const WireOrCableTypeSchema = z.union([WireTypeSchema, ConnectionTypeSchema]);
+export type WireOrCableType = z.infer<typeof WireOrCableTypeSchema>;
+
 export const NodePortSchema = z.object({
   id: z.string().min(1),
   label: z.string().max(60),
   direction: PortDirectionSchema,
   /** Setting this applies the type's standard color to the port pin once —
-   *  same one-shot convenience as an edge's wireType. */
-  wireType: WireTypeSchema.optional(),
+   *  same one-shot convenience as an edge's type. */
+  type: WireOrCableTypeSchema.optional(),
 });
 export type NodePort = z.infer<typeof NodePortSchema>;
 
@@ -86,8 +99,9 @@ export const EdgeDataSchema = z.object({
   label: z.string().max(200).optional(),
   color: z.string().optional(),
   /** Setting this applies the type's standard color once — color can then be
-   *  changed independently without affecting or clearing the type. */
-  wireType: WireTypeSchema.optional(),
+   *  changed independently without affecting or clearing the type. See
+   *  NodePort.type — same field, same reasoning. */
+  type: WireOrCableTypeSchema.optional(),
 });
 export type EdgeData = z.infer<typeof EdgeDataSchema>;
 

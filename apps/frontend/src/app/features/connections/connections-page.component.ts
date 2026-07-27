@@ -8,7 +8,10 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
-  CONNECTION_TYPES,
+  CONNECTION_TYPE_COLORS,
+  CONNECTION_TYPE_GROUPS,
+  CONNECTION_TYPE_LABELS,
+  CONNECTION_TYPES_ORDERED,
   ConnectionDto,
   ConnectionType,
 } from '@smart-home-inventory/shared';
@@ -40,20 +43,27 @@ import { ConnectionFormDialogComponent } from './connection-form-dialog.componen
       <button class="chip" [class.active]="!typeFilter()" (click)="typeFilter.set(null)">
         all
       </button>
-      @for (t of types; track t) {
-        <button
-          class="chip"
-          [class.active]="typeFilter() === t"
-          (click)="typeFilter.set(typeFilter() === t ? null : t)"
-        >
-          {{ t }}
-        </button>
+      @for (group of typeGroups; track group.label) {
+        <span class="chip-group-label">{{ group.label }}</span>
+        @for (t of group.types; track t) {
+          <button
+            class="chip"
+            [class.active]="typeFilter() === t"
+            (click)="typeFilter.set(typeFilter() === t ? null : t)"
+          >
+            <span class="type-dot" [style.background]="typeColors[t]"></span>
+            {{ typeLabels[t] }}
+          </button>
+        }
       }
     </div>
 
     @for (group of grouped(); track group.type) {
       <div class="card section">
-        <h3>{{ group.type }}</h3>
+        <h3>
+          <span class="type-dot" [style.background]="typeColors[group.type]"></span>
+          {{ typeLabels[group.type] }}
+        </h3>
         <table class="data">
           <tbody>
             @for (conn of group.connections; track conn.id) {
@@ -106,9 +116,32 @@ import { ConnectionFormDialogComponent } from './connection-form-dialog.componen
     }
     .chips {
       display: flex;
+      align-items: center;
       gap: 4px;
       flex-wrap: wrap;
       margin-bottom: 16px;
+    }
+    .chip-group-label {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      margin: 0 2px 0 8px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .type-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
     .section {
       margin-bottom: 16px;
@@ -126,7 +159,9 @@ export class ConnectionsPageComponent implements OnInit {
   protected readonly typeFilter = signal<ConnectionType | null>(null);
   protected readonly loaded = signal(false);
   protected readonly dialogOpen = signal(false);
-  protected readonly types = CONNECTION_TYPES;
+  protected readonly typeGroups = CONNECTION_TYPE_GROUPS;
+  protected readonly typeLabels = CONNECTION_TYPE_LABELS;
+  protected readonly typeColors = CONNECTION_TYPE_COLORS;
 
   protected readonly icons = {
     plus: mdiPlus,
@@ -138,14 +173,14 @@ export class ConnectionsPageComponent implements OnInit {
   protected readonly grouped = computed(() => {
     const filter = this.typeFilter();
     const visible = this.connections().filter((c) => !filter || c.type === filter);
-    const groups = new Map<string, ConnectionDto[]>();
+    const groups = new Map<ConnectionType, ConnectionDto[]>();
     for (const conn of visible) {
       if (!groups.has(conn.type)) groups.set(conn.type, []);
       groups.get(conn.type)?.push(conn);
     }
-    return Array.from(groups.entries()).map(([type, connections]) => ({
+    return CONNECTION_TYPES_ORDERED.filter((type) => groups.has(type)).map((type) => ({
       type,
-      connections,
+      connections: groups.get(type) as ConnectionDto[],
     }));
   });
 
@@ -162,7 +197,7 @@ export class ConnectionsPageComponent implements OnInit {
 
   protected async remove(conn: ConnectionDto): Promise<void> {
     const confirmed = await this.confirm.ask(
-      `Delete the ${conn.type} connection between "${conn.fromDeviceName}" and "${conn.toDeviceName}"?`,
+      `Delete the ${this.typeLabels[conn.type]} connection between "${conn.fromDeviceName}" and "${conn.toDeviceName}"?`,
       { confirmLabel: 'Delete' }
     );
     if (!confirmed) return;

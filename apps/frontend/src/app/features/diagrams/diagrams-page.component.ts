@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DiagramDto } from '@smart-home-inventory/shared';
-import { mdiArrowLeft, mdiChartTimelineVariant } from '@mdi/js';
+import { mdiArrowLeft, mdiChartTimelineVariant, mdiChevronDown } from '@mdi/js';
 import { DiagramsApi } from '../../core/api/api.services';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
@@ -20,7 +20,11 @@ import { DiagramCanvasComponent } from './diagram-canvas.component';
     </div>
 
     <div class="layout">
-      <div class="list card">
+      <button type="button" class="list-toggle" (click)="listOpen.set(!listOpen())">
+        <span>{{ diagrams().length }} diagram{{ diagrams().length === 1 ? '' : 's' }}</span>
+        <app-icon [path]="icons.chevron" [size]="18" [class.flipped]="listOpen()" />
+      </button>
+      <div class="list card" [class.list-open]="listOpen()">
         @for (diagram of diagrams(); track diagram.id) {
           <button
             class="item"
@@ -72,6 +76,9 @@ import { DiagramCanvasComponent } from './diagram-canvas.component';
       gap: 16px;
       align-items: start;
     }
+    .list-toggle {
+      display: none;
+    }
     .list {
       display: flex;
       flex-direction: column;
@@ -108,16 +115,37 @@ import { DiagramCanvasComponent } from './diagram-canvas.component';
       .layout {
         grid-template-columns: 1fr;
       }
-      /* Stacking .list above .detail in DOM order pushes the diagram
-         canvas far below the fold, especially with a long diagram list —
-         show the selected diagram first and keep the list to a scrollable
-         strip underneath. */
+      /* The diagram itself matters far more than the list of other diagrams
+         on a narrow screen — show it first, and keep the list collapsed
+         behind a toggle instead of always eating into the canvas's space. */
       .detail {
         order: -1;
       }
+      .list-toggle {
+        order: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        font: inherit;
+        background: none;
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+        color: inherit;
+      }
+      .list-toggle app-icon.flipped {
+        transform: rotate(180deg);
+      }
       .list {
-        max-height: 180px;
+        display: none;
+        order: 0;
+        max-height: 240px;
         overflow-y: auto;
+      }
+      .list.list-open {
+        display: flex;
       }
     }
   `,
@@ -132,10 +160,14 @@ export class DiagramsPageComponent implements OnInit {
   protected readonly areaId = signal<string | null>(null);
   protected readonly deviceId = signal<string | null>(null);
   protected readonly standalone = signal(false);
+  /** Only meaningful below the mobile breakpoint — the list is always
+   *  visible in the side-by-side desktop layout regardless of this. */
+  protected readonly listOpen = signal(false);
 
   protected readonly icons = {
     back: mdiArrowLeft,
     diagram: mdiChartTimelineVariant,
+    chevron: mdiChevronDown,
   };
 
   ngOnInit(): void {

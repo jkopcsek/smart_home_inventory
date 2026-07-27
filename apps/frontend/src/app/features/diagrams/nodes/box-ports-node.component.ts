@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Node as NgNode, NgDiagramNodeTemplate, NgDiagramPortComponent } from 'ng-diagram';
-import { BoxPortsNodeData, NodePort, WIRE_TYPE_COLORS } from '@smart-home-inventory/shared';
+import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '@smart-home-inventory/shared';
 
 /**
  * The "Box with ports" shape: a user-configurable number of named
  * input/output ports — modeled on ng-diagram's AV-schematic demo's
  * device-node component (inputs left, outputs right; a row per port with a
- * small rectangular pin nudged past the card's edge).
+ * small rectangular pin nudged past the card's edge). Deliberately not
+ * resizable — its size is a function of how many ports it has, not something
+ * to set independently (add/remove a port and the box should just fit).
  */
 @Component({
   selector: 'app-box-ports-node',
@@ -161,11 +163,12 @@ export class BoxPortsNodeComponent implements NgDiagramNodeTemplate<BoxPortsNode
   }
 
   protected portColor(port: NodePort): string | null {
-    return port.wireType ? WIRE_TYPE_COLORS[port.wireType] : null;
+    return wireOrCableColor(port.type);
   }
 
   protected portDisplayLabel(port: NodePort): string {
-    if (port.label && port.wireType) return `${port.label} (${port.wireType})`;
-    return port.label || port.wireType || '';
+    const type = wireOrCableLabel(port.type);
+    if (port.label && type) return `${port.label} (${type})`;
+    return port.label || type || '';
   }
 }

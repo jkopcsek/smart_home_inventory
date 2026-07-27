@@ -18,7 +18,7 @@ import { attachmentUrl } from '../../../core/api/api.services';
     <ng-diagram-base-node-template [node]="node()" [style.--ngd-node-border-color]="data().borderColor">
       <div class="content">
         @if (imageUrl(); as url) {
-          <img [src]="url" [alt]="data().label || 'Image'" />
+          <img [src]="url" [alt]="data().label || 'Image'" crossorigin="anonymous" />
           @if (data().label) {
             <div class="image-label">{{ data().label }}</div>
           }

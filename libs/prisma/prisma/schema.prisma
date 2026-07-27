@@ -50,7 +50,10 @@ enum AttachmentKind {
 }
 
 enum ConnectionType {
-  electrical
+  mains_230v
+  dc_24v
+  dc_12v
+  usb
   zigbee_binding
   zigbee_network
   zwave_network
