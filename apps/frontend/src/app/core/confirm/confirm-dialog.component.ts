@@ -17,7 +17,7 @@ import { ConfirmService } from './confirm.service';
         <h3>{{ req.title }}</h3>
         <p>{{ req.message }}</p>
         <div class="actions">
-          <button class="btn secondary" (click)="confirm.answer(false)">Cancel</button>
+          <button class="btn secondary" (click)="confirm.answer(false)">{{ req.cancelLabel }}</button>
           <button
             class="btn"
             [class.danger]="req.danger"

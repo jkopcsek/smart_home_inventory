@@ -16,7 +16,7 @@ import { DotNodeData } from '@smart-home-inventory/shared';
         <ng-diagram-port id="bottom" type="both" side="bottom" class="port-marker port-bottom" />
         <ng-diagram-port id="left" type="both" side="left" class="port-marker port-left" />
       </span>
-      <span class="label">{{ node().data.label }}</span>
+      <span class="label">{{ node().data.label || 'Marker' }}</span>
     </div>
   `,
   styles: `

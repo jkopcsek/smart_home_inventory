@@ -4,6 +4,7 @@ interface ConfirmRequest {
   title: string;
   message: string;
   confirmLabel: string;
+  cancelLabel: string;
   danger: boolean;
   resolve: (confirmed: boolean) => void;
 }
@@ -14,13 +15,14 @@ export class ConfirmService {
 
   ask(
     message: string,
-    opts: { title?: string; confirmLabel?: string; danger?: boolean } = {}
+    opts: { title?: string; confirmLabel?: string; cancelLabel?: string; danger?: boolean } = {}
   ): Promise<boolean> {
     return new Promise((resolve) => {
       this.current.set({
         title: opts.title ?? 'Are you sure?',
         message,
         confirmLabel: opts.confirmLabel ?? 'Confirm',
+        cancelLabel: opts.cancelLabel ?? 'Cancel',
         danger: opts.danger ?? true,
         resolve,
       });

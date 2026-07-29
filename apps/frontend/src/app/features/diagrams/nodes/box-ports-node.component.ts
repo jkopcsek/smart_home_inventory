@@ -30,14 +30,28 @@ import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '
                   [style.border-color]="portColor(port)"
                 ></div>
               </ng-diagram-port>
-              <span class="label">{{ portDisplayLabel(port) }}</span>
+              <div class="port-labels">
+                @if (port.label) {
+                  <span class="label">{{ port.label }}</span>
+                }
+                @if (wireOrCableLabel(port.type); as type) {
+                  <span class="type">{{ type }}</span>
+                }
+              </div>
             </div>
           }
         </div>
         <div class="column align-right">
           @for (port of outputPorts(); track port.id; let last = $last) {
             <div class="port-row" [class.port-row--last]="last">
-              <span class="label">{{ portDisplayLabel(port) }}</span>
+              <div class="port-labels">
+                @if (port.label) {
+                  <span class="label">{{ port.label }}</span>
+                }
+                @if (wireOrCableLabel(port.type); as type) {
+                  <span class="type">{{ type }}</span>
+                }
+              </div>
               <ng-diagram-port [id]="port.id" side="right" type="both" class="port">
                 <div
                   class="port-shape port-shape--output"
@@ -56,14 +70,14 @@ import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '
       background: var(--card-background-color);
       border: 2px solid;
       border-radius: 8px;
-      min-width: 170px;
+      min-width: 210px;
       overflow: visible;
     }
     .header {
       color: #fff;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
-      padding: 10px 14px;
+      padding: 12px 16px;
       border-radius: 6px 6px 0 0;
       text-align: center;
       letter-spacing: 0.02em;
@@ -76,7 +90,7 @@ import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '
       flex-direction: column;
       flex: 1 1 50%;
       min-width: 0;
-      padding: 8px 0;
+      padding: 10px 0;
     }
     .column:first-child {
       border-right: 1px solid var(--divider-color);
@@ -88,11 +102,11 @@ import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '
       position: relative;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       width: 100%;
       box-sizing: border-box;
-      min-height: 32px;
-      padding: 6px 12px;
+      min-height: 36px;
+      padding: 6px 14px;
       border-bottom: 1px solid var(--divider-color);
     }
     .port-row--last {
@@ -123,8 +137,8 @@ import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '
       right: -9px !important;
     }
     .port-shape {
-      width: 9px;
-      height: 14px;
+      width: 10px;
+      height: 16px;
       background: var(--card-background-color);
       border: 1px solid var(--secondary-text-color);
       transition:
@@ -142,12 +156,32 @@ import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '
     .port-row:hover .port-shape {
       background: var(--secondary-text-color);
     }
+    .port-labels {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 0;
+      line-height: 1.3;
+    }
+    .align-right .port-labels {
+      align-items: flex-end;
+    }
     .label {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--primary-text-color);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .type {
+      font-size: 10px;
+      /* a bit darker than .label, regardless of light/dark theme */
+      color: color-mix(in srgb, var(--primary-text-color) 75%, black);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
     }
   `,
 })
@@ -157,6 +191,7 @@ export class BoxPortsNodeComponent implements NgDiagramNodeTemplate<BoxPortsNode
   protected readonly data = computed(() => this.node().data);
   protected readonly inputPorts = computed(() => this.portsByDirection('in'));
   protected readonly outputPorts = computed(() => this.portsByDirection('out'));
+  protected readonly wireOrCableLabel = wireOrCableLabel;
 
   private portsByDirection(direction: NodePort['direction']): NodePort[] {
     return this.data().ports.filter((p) => p.direction === direction);
@@ -164,11 +199,5 @@ export class BoxPortsNodeComponent implements NgDiagramNodeTemplate<BoxPortsNode
 
   protected portColor(port: NodePort): string | null {
     return wireOrCableColor(port.type);
-  }
-
-  protected portDisplayLabel(port: NodePort): string {
-    const type = wireOrCableLabel(port.type);
-    if (port.label && type) return `${port.label} (${type})`;
-    return port.label || type || '';
   }
 }

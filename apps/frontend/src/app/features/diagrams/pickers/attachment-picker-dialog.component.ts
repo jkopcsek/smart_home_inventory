@@ -34,7 +34,7 @@ import { mdiImageOffOutline } from '@mdi/js';
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 10px;
-      max-height: 360px;
+      max-height: min(65vh, 480px);
       overflow: auto;
     }
     .tile {

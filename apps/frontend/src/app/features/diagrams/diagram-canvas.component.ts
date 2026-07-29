@@ -4,6 +4,7 @@ import {
   computed,
   effect,
   ElementRef,
+  HostListener,
   inject,
   input,
   Injector,
@@ -48,6 +49,7 @@ import {
   CONNECTION_TYPE_GROUPS,
   CONNECTION_TYPE_LABELS,
   ConnectionDto,
+  ConnectionType,
   DeviceDto,
   DiagramContent,
   DiagramDto,
@@ -55,11 +57,11 @@ import {
   DiagramViewport,
   EdgeData,
   NodeData,
+  NodeLink,
   NodePort,
   PortDirection,
   WIRE_TYPES,
   wireOrCableColor,
-  wireOrCableLabel,
   WireOrCableType,
 } from '@smart-home-inventory/shared';
 import {
@@ -343,18 +345,11 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
         </div>
       }
 
-      @if (selection(); as sel) {
-        <div class="overlay panel selection-overlay card">
-          @if (sel.kind === 'node') {
-            <h3>{{ sel.data.shape === 'background-image' ? 'Background image' : sel.data.shape }}</h3>
-            @if (readOnly()) {
-              @if (sel.data.label) {
-                <div class="field">
-                  <span>Label</span>
-                  <div class="value">{{ sel.data.label }}</div>
-                </div>
-              }
-            } @else {
+      @if (!readOnly()) {
+        @if (selection(); as sel) {
+          <div class="overlay panel selection-overlay card">
+            @if (sel.kind === 'node') {
+              <h3>{{ sel.data.shape === 'background-image' ? 'Background image' : sel.data.shape }}</h3>
               <label class="field">
                 <span>Label</span>
                 <input
@@ -363,25 +358,27 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                   (change)="setNodeLabel(sel.id, sel.data, $event)"
                 />
               </label>
-            }
 
-            @if (readOnly()) {
-              @if (sel.data.shape !== 'background-image') {
+              @if (sel.data.shape === 'box') {
                 <div class="fields-inline">
-                  <div class="field">
+                  <label class="field">
                     <span>Color</span>
-                    <span class="swatch" [style.background]="sel.data.color ?? '#03a9f4'"></span>
-                  </div>
-                  @if (sel.data.shape === 'box') {
-                    <div class="field">
-                      <span>Border color</span>
-                      <span class="swatch" [style.background]="sel.data.borderColor ?? '#03a9f4'"></span>
-                    </div>
-                  }
+                    <input
+                      type="color"
+                      [value]="sel.data.color ?? '#03a9f4'"
+                      (change)="setNodeColor(sel.id, sel.data, $event)"
+                    />
+                  </label>
+                  <label class="field">
+                    <span>Border color</span>
+                    <input
+                      type="color"
+                      [value]="sel.data.borderColor ?? '#03a9f4'"
+                      (change)="setNodeBorderColor(sel.id, sel.data, $event)"
+                    />
+                  </label>
                 </div>
-              }
-            } @else if (sel.data.shape === 'box') {
-              <div class="fields-inline">
+              } @else if (sel.data.shape !== 'background-image') {
                 <label class="field">
                   <span>Color</span>
                   <input
@@ -390,41 +387,13 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                     (change)="setNodeColor(sel.id, sel.data, $event)"
                   />
                 </label>
-                <label class="field">
-                  <span>Border color</span>
-                  <input
-                    type="color"
-                    [value]="sel.data.borderColor ?? '#03a9f4'"
-                    (change)="setNodeBorderColor(sel.id, sel.data, $event)"
-                  />
-                </label>
-              </div>
-            } @else if (sel.data.shape !== 'background-image') {
-              <label class="field">
-                <span>Color</span>
-                <input
-                  type="color"
-                  [value]="sel.data.color ?? '#03a9f4'"
-                  (change)="setNodeColor(sel.id, sel.data, $event)"
-                />
-              </label>
-            }
+              }
 
-            @if (sel.data.shape === 'box-ports') {
-              <div class="ports-editor">
-                <span class="ports-group-label">Inputs</span>
-                @for (port of sel.data.ports; track port.id) {
-                  @if (port.direction === 'in') {
-                    @if (readOnly()) {
-                      <div class="port-view-row">
-                        {{ port.label || '—' }}
-                        @if (port.type) {
-                          <span class="port-type-badge" [style.color]="wireOrCableColor(port.type)">{{
-                            wireOrCableLabel(port.type)
-                          }}</span>
-                        }
-                      </div>
-                    } @else {
+              @if (sel.data.shape === 'box-ports') {
+                <div class="ports-editor">
+                  <span class="ports-group-label">Inputs</span>
+                  @for (port of sel.data.ports; track port.id) {
+                    @if (port.direction === 'in') {
                       <div class="port-edit-row">
                         <div class="port-fields">
                           <input
@@ -478,24 +447,11 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                       </div>
                     }
                   }
-                }
-                @if (!readOnly()) {
                   <button class="btn secondary" (click)="addPort(sel.id, sel.data, 'in')">+ Input port</button>
-                }
 
-                <span class="ports-group-label">Outputs</span>
-                @for (port of sel.data.ports; track port.id) {
-                  @if (port.direction === 'out') {
-                    @if (readOnly()) {
-                      <div class="port-view-row">
-                        {{ port.label || '—' }}
-                        @if (port.type) {
-                          <span class="port-type-badge" [style.color]="wireOrCableColor(port.type)">{{
-                            wireOrCableLabel(port.type)
-                          }}</span>
-                        }
-                      </div>
-                    } @else {
+                  <span class="ports-group-label">Outputs</span>
+                  @for (port of sel.data.ports; track port.id) {
+                    @if (port.direction === 'out') {
                       <div class="port-edit-row">
                         <div class="port-fields">
                           <input
@@ -549,118 +505,75 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                       </div>
                     }
                   }
-                }
-                @if (!readOnly()) {
                   <button class="btn secondary" (click)="addPort(sel.id, sel.data, 'out')">+ Output port</button>
-                }
-              </div>
-            }
+                </div>
+              }
 
-            @if (sel.data.shape !== 'background-image') {
-              <div class="link-section">
-                @if (sel.data.link; as link) {
-                  @if (link.kind === 'area') {
-                    <div class="linked-preview">
-                      <app-icon [path]="icons.area" [size]="16" />
-                      <span>{{ areaName(link.areaId) }}</span>
-                    </div>
-                    <button class="btn secondary" (click)="openArea(link.areaId)">
-                      <app-icon [path]="icons.open" [size]="16" /> Open area
+              @if (sel.data.shape !== 'background-image') {
+                <div class="link-section">
+                  @if (sel.data.link; as link) {
+                    @if (link.kind === 'image') {
+                      <div class="link-image">
+                        <img
+                          class="link-thumb"
+                          [src]="linkImageUrl(link.attachmentId)"
+                          alt=""
+                          title="Open image"
+                          (click)="openImage(link.attachmentId)"
+                        />
+                        <button
+                          type="button"
+                          class="link-image-remove"
+                          title="Remove link"
+                          (click)="removeLink(sel.id, sel.data)"
+                        >
+                          <app-icon [path]="icons.close" [size]="14" />
+                        </button>
+                      </div>
+                    } @else {
+                      <div class="link-chip">
+                        <button type="button" class="link-chip-main" (click)="openLinkedEntity(link)">
+                          <app-icon [path]="linkIcon(link.kind)" [size]="16" />
+                          <span>{{ linkedEntityName(link) }}</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="link-chip-remove"
+                          title="Remove link"
+                          (click)="removeLink(sel.id, sel.data)"
+                        >
+                          <app-icon [path]="icons.close" [size]="14" />
+                        </button>
+                      </div>
+                    }
+                  } @else {
+                    <button class="btn secondary" (click)="openPicker({ kind: 'link-area', nodeId: sel.id })">
+                      <app-icon [path]="icons.area" [size]="16" /> Link to area
+                    </button>
+                    <button class="btn secondary" (click)="openPicker({ kind: 'link-device', nodeId: sel.id })">
+                      <app-icon [path]="icons.device" [size]="16" /> Link to device
+                    </button>
+                    <button class="btn secondary" (click)="openPicker({ kind: 'link-image', nodeId: sel.id })">
+                      <app-icon [path]="icons.image" [size]="16" /> Link to image
+                    </button>
+                    @if (siblingDiagrams().length > 0) {
+                      <button class="btn secondary" (click)="openPicker({ kind: 'link-diagram', nodeId: sel.id })">
+                        <app-icon [path]="icons.link" [size]="16" /> Link to diagram
+                      </button>
+                    }
+                    <button class="btn secondary" (click)="openPicker({ kind: 'link-connection', nodeId: sel.id })">
+                      <app-icon [path]="icons.connection" [size]="16" /> Link to connection
                     </button>
                   }
-                  @if (link.kind === 'device') {
-                    <div class="linked-preview">
-                      <app-icon [path]="icons.device" [size]="16" />
-                      <span>{{ deviceName(link.deviceId) }}</span>
-                    </div>
-                    <button class="btn secondary" (click)="openDevice(link.deviceId)">
-                      <app-icon [path]="icons.open" [size]="16" /> Open device
-                    </button>
-                  }
-                  @if (link.kind === 'diagram') {
-                    <div class="linked-preview">
-                      <app-icon [path]="icons.link" [size]="16" />
-                      <span>{{ diagramTitle(link.diagramId) }}</span>
-                    </div>
-                    <button class="btn secondary" (click)="openDiagram(link.diagramId)">
-                      <app-icon [path]="icons.open" [size]="16" /> Open diagram
-                    </button>
-                  }
-                  @if (link.kind === 'image') {
-                    <img
-                      class="link-thumb"
-                      [src]="linkImageUrl(link.attachmentId)"
-                      alt=""
-                      title="Open image"
-                      (click)="openImage(link.attachmentId)"
-                    />
-                  }
-                  @if (link.kind === 'connection') {
-                    <div class="linked-preview">
-                      <app-icon [path]="icons.connection" [size]="16" />
-                      <span>{{ connectionLabel(link.connectionId) }}</span>
-                    </div>
-                    <button class="btn secondary" (click)="openConnectionDevice(link.connectionId)">
-                      <app-icon [path]="icons.open" [size]="16" /> Open connection
-                    </button>
-                  }
-                  @if (!readOnly()) {
-                    <button class="btn secondary" (click)="openPicker(pickerFor(link.kind, sel.id))">
-                      Change {{ link.kind }} link
-                    </button>
-                    <button class="btn secondary" (click)="removeLink(sel.id, sel.data)">Remove link</button>
-                  }
-                } @else if (!readOnly()) {
-                  <button class="btn secondary" (click)="openPicker({ kind: 'link-area', nodeId: sel.id })">
-                    <app-icon [path]="icons.area" [size]="16" /> Link to area
-                  </button>
-                  <button class="btn secondary" (click)="openPicker({ kind: 'link-device', nodeId: sel.id })">
-                    <app-icon [path]="icons.device" [size]="16" /> Link to device
-                  </button>
-                  <button class="btn secondary" (click)="openPicker({ kind: 'link-image', nodeId: sel.id })">
-                    <app-icon [path]="icons.image" [size]="16" /> Link to image
-                  </button>
-                  @if (siblingDiagrams().length > 0) {
-                    <button class="btn secondary" (click)="openPicker({ kind: 'link-diagram', nodeId: sel.id })">
-                      <app-icon [path]="icons.link" [size]="16" /> Link to diagram
-                    </button>
-                  }
-                  <button class="btn secondary" (click)="openPicker({ kind: 'link-connection', nodeId: sel.id })">
-                    <app-icon [path]="icons.connection" [size]="16" /> Link to connection
-                  </button>
-                }
-              </div>
-            }
+                </div>
+              }
 
-            @if (!readOnly()) {
-              <button class="btn secondary" (click)="toggleLocked(sel.id, sel.locked)">
+              <button class="btn secondary lock-button" (click)="toggleLocked(sel.id, sel.locked)">
                 <app-icon [path]="sel.locked ? icons.locked : icons.unlocked" [size]="16" />
                 {{ sel.locked ? 'Locked — click to unlock' : 'Lock in place' }}
               </button>
-            }
-          } @else {
-            <h3>Connection</h3>
-            @if (readOnly()) {
-              @if (sel.data.label) {
-                <div class="field">
-                  <span>Label</span>
-                  <div class="value">{{ sel.data.label }}</div>
-                </div>
-              }
-              @if (sel.sourceArrowhead || sel.targetArrowhead) {
-                <div class="value muted">
-                  @if (sel.sourceArrowhead) {
-                    Arrow at start
-                  }
-                  @if (sel.sourceArrowhead && sel.targetArrowhead) {
-                    ·
-                  }
-                  @if (sel.targetArrowhead) {
-                    Arrow at end
-                  }
-                </div>
-              }
             } @else {
+              <h3>Connection</h3>
               <label class="field">
                 <span>Label</span>
                 <input class="text" [value]="sel.data.label ?? ''" (change)="setEdgeLabel(sel.id, $event)" />
@@ -681,21 +594,6 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                 />
                 <span>Arrow at end</span>
               </label>
-            }
-            @if (readOnly()) {
-              @if (sel.data.type) {
-                <div class="field">
-                  <span>Type</span>
-                  <div class="value">{{ wireOrCableLabel(sel.data.type) }}</div>
-                </div>
-              }
-              @if (sel.data.color) {
-                <div class="field">
-                  <span>Color</span>
-                  <span class="swatch" [style.background]="sel.data.color"></span>
-                </div>
-              }
-            } @else {
               <label class="field">
                 <span>Type</span>
                 <select class="text" (change)="setEdgeType(sel.id, $event)">
@@ -736,29 +634,38 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                   }
                 </div>
               </div>
+              @if (sel.data.connectionId; as connectionId) {
+                <div class="link-chip">
+                  <button type="button" class="link-chip-main" (click)="openConnectionDevice(connectionId)">
+                    <app-icon [path]="icons.connection" [size]="16" />
+                    <span>{{ connectionLabel(connectionId) }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="link-chip-remove"
+                    title="Remove link"
+                    (click)="removeEdgeConnection(sel.id, sel.data)"
+                  >
+                    <app-icon [path]="icons.close" [size]="14" />
+                  </button>
+                </div>
+              } @else {
+                <button class="btn secondary" (click)="openPicker({ kind: 'edge-connection', edgeId: sel.id })">
+                  <app-icon [path]="icons.connection" [size]="16" /> Link to connection
+                </button>
+              }
+              @if (sel.routingMode === 'manual') {
+                <button class="btn secondary" (click)="resetEdgeRouting(sel.id)">
+                  Reset routing
+                </button>
+              }
             }
-            @if (sel.data.connectionId) {
-              <span class="muted">{{ connectionLabel(sel.data.connectionId) }}</span>
-              <button class="btn secondary" (click)="openConnectionDevice(sel.data.connectionId)">
-                <app-icon [path]="icons.open" [size]="16" /> Open connection
-              </button>
-            }
-            @if (!readOnly()) {
-              <button class="btn secondary" (click)="openPicker({ kind: 'edge-connection', edgeId: sel.id })">
-                {{ sel.data.connectionId ? 'Change connection' : 'Link to connection' }}
-              </button>
-            }
-            @if (!readOnly() && sel.routingMode === 'manual') {
-              <button class="btn secondary" (click)="resetEdgeRouting(sel.id)">
-                Reset routing
-              </button>
-            }
-          }
-        </div>
+          </div>
+        }
       }
     </div>
 
-    <dialog #deviceDlg (cancel)="pickerTarget.set(null)">
+    <dialog #deviceDlg class="device-picker-dialog" (cancel)="pickerTarget.set(null)">
       <h3>Pick a device</h3>
       <app-device-picker placeholder="Search device…" (selected)="onDevicePicked($event)" />
       <div class="actions">
@@ -950,32 +857,6 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       gap: 4px;
       justify-content: flex-end;
     }
-    .port-view-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      color: var(--primary-text-color);
-      padding: 2px 0;
-    }
-    .port-type-badge {
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .value {
-      font-size: 13px;
-      color: var(--primary-text-color);
-    }
-    .value.muted {
-      color: var(--secondary-text-color);
-    }
-    .swatch {
-      display: block;
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      border: 1px solid var(--divider-color);
-    }
     .wire-color-row {
       display: flex;
       align-items: center;
@@ -990,14 +871,54 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       background: none;
       cursor: pointer;
     }
-    .linked-preview {
+    .link-chip {
+      display: flex;
+      align-items: stretch;
+      gap: 1px;
+      align-self: flex-start;
+      max-width: 100%;
+      border-radius: 16px;
+      background: var(--chip-background-color);
+      overflow: hidden;
+    }
+    .link-chip-main {
       display: flex;
       align-items: center;
       gap: 6px;
+      min-width: 0;
+      border: none;
+      background: none;
+      color: var(--primary-text-color);
+      font: inherit;
       font-size: 13px;
+      padding: 6px 6px 6px 12px;
+      cursor: pointer;
+    }
+    .link-chip-main span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .link-chip-remove {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 28px;
+      border: none;
+      background: none;
+      color: var(--secondary-text-color);
+      cursor: pointer;
+    }
+    .link-chip-remove:hover {
+      background: var(--hover-color);
       color: var(--primary-text-color);
     }
+    .link-image {
+      position: relative;
+    }
     .link-thumb {
+      display: block;
       width: 100%;
       max-height: 140px;
       object-fit: cover;
@@ -1005,10 +926,39 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       border: 1px solid var(--divider-color);
       cursor: pointer;
     }
+    .link-image-remove {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      cursor: pointer;
+    }
+    .link-image-remove:hover {
+      background: rgba(0, 0, 0, 0.8);
+    }
+    .lock-button {
+      width: 100%;
+      justify-content: flex-start;
+    }
     .actions {
       display: flex;
       justify-content: flex-end;
       margin-top: 16px;
+    }
+    .device-picker-dialog {
+      /* app-device-picker's results dropdown is an absolutely-positioned
+         overlay, so it doesn't grow the dialog's own auto-height like the
+         other pickers' in-flow lists do — reserve real room up front so a
+         modal <dialog>'s forced overflow:auto (Chromium) doesn't clip it. */
+      min-height: min(70vh, 480px);
     }
     @media (max-width: 640px) {
       .panel {
@@ -1067,8 +1017,6 @@ export class DiagramCanvasComponent implements OnDestroy {
   protected readonly wireTypes = WIRE_TYPES;
   protected readonly connectionTypeGroups = CONNECTION_TYPE_GROUPS;
   protected readonly connectionTypeLabels = CONNECTION_TYPE_LABELS;
-  protected readonly wireOrCableColor = wireOrCableColor;
-  protected readonly wireOrCableLabel = wireOrCableLabel;
   protected readonly model = signal<ModelAdapter | null>(null);
   /** Diagrams open read-only; "Edit" unlocks dragging/resizing/linking and the
    *  editing toolbar, "Save" persists and locks it back down. Clicking a
@@ -1078,6 +1026,9 @@ export class DiagramCanvasComponent implements OnDestroy {
   protected readonly title = signal('');
   protected readonly saving = signal(false);
   protected readonly dirty = signal(false);
+  /** Public (unlike dirty/readOnly themselves) so the routed page component
+   *  can read it for its CanDeactivate guard — see diagrams-deactivate.guard.ts. */
+  readonly hasUnsavedChanges = computed(() => !this.readOnly() && this.dirty());
   protected readonly propertiesOpen = signal(false);
   protected readonly pickerTarget = signal<PickerTarget | null>(null);
   protected readonly imageAttachments = signal<AttachmentDto[]>([]);
@@ -1249,20 +1200,19 @@ export class DiagramCanvasComponent implements OnDestroy {
     if (this.viewportSaveTimer) clearTimeout(this.viewportSaveTimer);
   }
 
+  /** Covers tab close/refresh/address-bar navigation — CanDeactivate (see
+   *  diagrams-deactivate.guard.ts) only catches in-app router navigation. */
+  @HostListener('window:beforeunload', ['$event'])
+  protected onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (!this.hasUnsavedChanges()) return;
+    event.preventDefault();
+    event.returnValue = true;
+  }
+
   protected hasImageSource(): boolean {
     return this.imageAttachments().length > 0;
   }
 
-  protected pickerFor(
-    linkKind: 'area' | 'device' | 'diagram' | 'image' | 'connection',
-    nodeId: string
-  ): PickerTarget {
-    if (linkKind === 'area') return { kind: 'link-area', nodeId };
-    if (linkKind === 'device') return { kind: 'link-device', nodeId };
-    if (linkKind === 'diagram') return { kind: 'link-diagram', nodeId };
-    if (linkKind === 'connection') return { kind: 'link-connection', nodeId };
-    return { kind: 'link-image', nodeId };
-  }
 
   private attachmentOwner() {
     const areaId = this.areaId();
@@ -1385,12 +1335,24 @@ export class DiagramCanvasComponent implements OnDestroy {
         this.selection.set(null);
         return;
       }
+      if (this.readOnly()) {
+        // No properties panel while read-only — everything in it duplicates
+        // what's already visible on the canvas, so a click jumps straight
+        // to whatever the node links to instead.
+        if (data.link) this.openLinkedEntity(data.link);
+        return;
+      }
       this.selection.set({ kind: 'node', id: n.id, data, locked: n.draggable === false });
       // Both panels are full-width bottom sheets on mobile — showing them
       // together would just stack one on top of the other.
       this.propertiesOpen.set(false);
     } else if (event.selectedEdges.length === 1 && event.selectedNodes.length === 0) {
       const e = event.selectedEdges[0];
+      if (this.readOnly()) {
+        const connectionId = (e.data as EdgeData | undefined)?.connectionId;
+        if (connectionId) this.openConnectionDevice(connectionId);
+        return;
+      }
       this.selection.set({
         kind: 'edge',
         id: e.id,
@@ -1451,10 +1413,13 @@ export class DiagramCanvasComponent implements OnDestroy {
         (c.fromDeviceId === targetDeviceId && c.toDeviceId === sourceDeviceId)
     );
     if (match) {
+      const existing = (event.edge.data ?? {}) as EdgeData;
       this.modelService.updateEdgeData(event.edge.id, {
+        ...existing,
         connectionId: match.id,
-        label: match.label ?? undefined,
+        label: existing.label || match.label || undefined,
       });
+      this.applyConnectionTypeToEdge(event.edge.id, match.type);
       this.toast.info(`Linked to connection ${match.fromDeviceName} → ${match.toDeviceName}`);
     }
   }
@@ -1569,13 +1534,17 @@ export class DiagramCanvasComponent implements OnDestroy {
       shape === 'box-ports'
         ? {
             shape,
-            label: 'Switch box',
+            // No label by default — box-ports-node.component.ts falls back
+            // to displaying "Switch box" on the canvas when it's unset.
             ports: [
               { id: this.generateId(), label: 'In 1', direction: 'in' },
               { id: this.generateId(), label: 'Out 1', direction: 'out' },
             ],
           }
-        : { shape, label: shape === 'dot' ? 'Marker' : 'Box', color: '#03a9f4' };
+        : // No label by default here either — dot-node/box-node fall back to
+          // "Marker"/"Box" on the canvas, which leaves the label free to be
+          // set from a linked entity's name instead of overwriting a placeholder.
+          { shape, color: '#03a9f4' };
     this.modelService.addNodes([{ id: this.generateId(), type: shape, position: this.nextPosition(), data }]);
   }
 
@@ -1624,6 +1593,21 @@ export class DiagramCanvasComponent implements OnDestroy {
     if (sel?.kind !== 'node' || sel.id !== nodeId) return;
     const fresh = this.modelService.getNodeById<NodeData>(nodeId);
     if (fresh) this.selection.set({ ...sel, data: fresh.data });
+  }
+
+  /** Linking (or auto-linking, see onEdgeDrawEnded()) an edge to a real
+   *  Connection copies the connection's type onto the wire when it doesn't
+   *  have one yet, then propagates it to connected ports the same way
+   *  manually setting a type does — see cascadeTypeFromEdge(). */
+  private applyConnectionTypeToEdge(edgeId: string, connectionType: ConnectionType): void {
+    const data = (this.modelService.getEdgeById<EdgeData>(edgeId)?.data ?? {}) as EdgeData;
+    if (data.type) return;
+    this.modelService.updateEdgeData(edgeId, {
+      ...data,
+      type: connectionType,
+      color: wireOrCableColor(connectionType) ?? data.color,
+    });
+    this.cascadeTypeFromEdge(edgeId, undefined, connectionType);
   }
 
   /**
@@ -1859,6 +1843,12 @@ export class DiagramCanvasComponent implements OnDestroy {
     this.updateSelectedNodeData(nodeId, rest as NodeData);
   }
 
+  protected removeEdgeConnection(edgeId: string, data: EdgeData): void {
+    const { connectionId, ...rest } = data;
+    void connectionId;
+    this.modelService.updateEdgeData(edgeId, rest as EdgeData);
+  }
+
   protected onConnectionPicked(connection: ConnectionDto): void {
     const target = this.pickerTarget();
     if (!target) return;
@@ -1870,8 +1860,16 @@ export class DiagramCanvasComponent implements OnDestroy {
     }
     if (target.kind === 'edge-connection') {
       const current = this.selection();
-      const label = current?.kind === 'edge' ? current.data.label : undefined;
-      this.modelService.updateEdgeData(target.edgeId, { connectionId: connection.id, label });
+      const existing =
+        current?.kind === 'edge' && current.id === target.edgeId
+          ? current.data
+          : ((this.modelService.getEdgeById<EdgeData>(target.edgeId)?.data ?? {}) as EdgeData);
+      this.modelService.updateEdgeData(target.edgeId, {
+        ...existing,
+        connectionId: connection.id,
+        label: existing.label || connection.label || undefined,
+      });
+      this.applyConnectionTypeToEdge(target.edgeId, connection.type);
     } else if (target.kind === 'link-connection') {
       const existing = this.modelService.getNodeById<NodeData>(target.nodeId)?.data;
       if (existing) {
@@ -1981,6 +1979,53 @@ export class DiagramCanvasComponent implements OnDestroy {
         ? { deviceId: this.deviceId(), open: diagramId }
         : { standalone: '1', open: diagramId };
     this.router.navigate(['/diagrams'], { queryParams });
+  }
+
+  /** The link chip is one control regardless of what it's linked to — these
+   *  three dispatch to the per-kind name/icon/navigate logic above. */
+  protected openLinkedEntity(link: NodeLink): void {
+    switch (link.kind) {
+      case 'area':
+        return this.openArea(link.areaId);
+      case 'device':
+        return this.openDevice(link.deviceId);
+      case 'diagram':
+        return this.openDiagram(link.diagramId);
+      case 'connection':
+        return this.openConnectionDevice(link.connectionId);
+      case 'image':
+        return this.openImage(link.attachmentId);
+    }
+  }
+
+  protected linkedEntityName(link: NodeLink): string {
+    switch (link.kind) {
+      case 'area':
+        return this.areaName(link.areaId);
+      case 'device':
+        return this.deviceName(link.deviceId);
+      case 'diagram':
+        return this.diagramTitle(link.diagramId);
+      case 'connection':
+        return this.connectionLabel(link.connectionId);
+      case 'image':
+        return '';
+    }
+  }
+
+  protected linkIcon(kind: NodeLink['kind']): string {
+    switch (kind) {
+      case 'area':
+        return this.icons.area;
+      case 'device':
+        return this.icons.device;
+      case 'diagram':
+        return this.icons.link;
+      case 'connection':
+        return this.icons.connection;
+      case 'image':
+        return this.icons.image;
+    }
   }
 
   protected async deleteSelection(): Promise<void> {

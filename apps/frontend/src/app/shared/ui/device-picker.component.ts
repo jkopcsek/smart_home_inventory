@@ -51,7 +51,7 @@ import { DevicesApi } from '../../core/api/api.services';
       list-style: none;
       margin: 0;
       padding: 4px;
-      max-height: 220px;
+      max-height: min(60vh, 420px);
       overflow: auto;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     }
@@ -97,7 +97,7 @@ export class DevicePickerComponent {
           (a, b) => Number(b.areaId === areaId) - Number(a.areaId === areaId)
         );
       }
-      this.results.set(filtered.slice(0, 8));
+      this.results.set(filtered.slice(0, 40));
       this.open.set(true);
     });
   }

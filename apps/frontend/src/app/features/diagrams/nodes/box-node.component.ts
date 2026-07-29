@@ -24,7 +24,7 @@ import { attachmentUrl } from '../../../core/api/api.services';
           }
         } @else {
           <div class="box-label" [style.background]="data().color || '#03a9f4'">
-            {{ data().label }}
+            {{ data().label || 'Box' }}
           </div>
         }
         <ng-diagram-port id="top" type="both" side="top" />

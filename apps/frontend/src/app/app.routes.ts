@@ -1,4 +1,5 @@
 import { Route } from '@angular/router';
+import { diagramsDeactivateGuard } from './features/diagrams/diagrams-deactivate.guard';
 
 export const appRoutes: Route[] = [
   { path: '', pathMatch: 'full', redirectTo: 'areas' },
@@ -64,6 +65,7 @@ export const appRoutes: Route[] = [
       import('./features/diagrams/diagrams-page.component').then(
         (m) => m.DiagramsPageComponent
       ),
+    canDeactivate: [diagramsDeactivateGuard],
   },
   {
     path: 'attachments/:attachmentId',

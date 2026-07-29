@@ -52,7 +52,7 @@ import { ConnectionFormDialogComponent } from '../../connections/connection-form
       list-style: none;
       margin: 0;
       padding: 0;
-      max-height: 320px;
+      max-height: min(65vh, 480px);
       overflow: auto;
     }
     .list button {

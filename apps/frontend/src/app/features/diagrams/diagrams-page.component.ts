@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  OnInit,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DiagramDto } from '@smart-home-inventory/shared';
 import { mdiArrowLeft, mdiChartTimelineVariant, mdiChevronDown } from '@mdi/js';
@@ -42,6 +49,7 @@ import { DiagramCanvasComponent } from './diagram-canvas.component';
       @if (selected(); as s) {
         <div class="detail">
           <app-diagram-canvas
+            #canvas
             [diagramId]="s.id"
             [areaId]="areaId()"
             [deviceId]="deviceId()"
@@ -155,6 +163,8 @@ export class DiagramsPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
+  private readonly canvas = viewChild<DiagramCanvasComponent>('canvas');
+
   protected readonly diagrams = signal<DiagramDto[]>([]);
   protected readonly selected = signal<DiagramDto | null>(null);
   protected readonly areaId = signal<string | null>(null);
@@ -219,5 +229,10 @@ export class DiagramsPageComponent implements OnInit {
   protected onDeleted(diagram: DiagramDto): void {
     this.diagrams.update((list) => list.filter((d) => d.id !== diagram.id));
     this.selected.set(null);
+  }
+
+  /** Used by diagramsDeactivateGuard to block navigation away from unsaved edits. */
+  hasUnsavedChanges(): boolean {
+    return this.canvas()?.hasUnsavedChanges() ?? false;
   }
 }
