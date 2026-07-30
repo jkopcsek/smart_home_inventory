@@ -46,8 +46,6 @@ import {
   AreaDto,
   AttachmentDto,
   BoxPortsNodeData,
-  CONNECTION_TYPE_GROUPS,
-  CONNECTION_TYPE_LABELS,
   ConnectionDto,
   ConnectionType,
   DeviceDto,
@@ -74,6 +72,7 @@ import {
 } from '../../core/api/api.services';
 import { ToastService } from '../../core/toast/toast.service';
 import { ConfirmService } from '../../core/confirm/confirm.service';
+import { ConnectionTypesStore } from '../../core/connection-types/connection-types.store';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { DevicePickerComponent } from '../../shared/ui/device-picker.component';
 import { DotNodeComponent } from './nodes/dot-node.component';
@@ -412,10 +411,10 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                                 <option [value]="t" [selected]="port.type === t">{{ t }}</option>
                               }
                             </optgroup>
-                            @for (group of connectionTypeGroups; track group.label) {
+                            @for (group of connectionTypes.groups(); track group.group) {
                               <optgroup [label]="group.label">
-                                @for (t of group.types; track t) {
-                                  <option [value]="t" [selected]="port.type === t">{{ connectionTypeLabels[t] }}</option>
+                                @for (t of group.types; track t.key) {
+                                  <option [value]="t.key" [selected]="port.type === t.key">{{ t.label }}</option>
                                 }
                               </optgroup>
                             }
@@ -470,10 +469,10 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                                 <option [value]="t" [selected]="port.type === t">{{ t }}</option>
                               }
                             </optgroup>
-                            @for (group of connectionTypeGroups; track group.label) {
+                            @for (group of connectionTypes.groups(); track group.group) {
                               <optgroup [label]="group.label">
-                                @for (t of group.types; track t) {
-                                  <option [value]="t" [selected]="port.type === t">{{ connectionTypeLabels[t] }}</option>
+                                @for (t of group.types; track t.key) {
+                                  <option [value]="t.key" [selected]="port.type === t.key">{{ t.label }}</option>
                                 }
                               </optgroup>
                             }
@@ -603,10 +602,10 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                       <option [value]="t" [selected]="sel.data.type === t">{{ t }}</option>
                     }
                   </optgroup>
-                  @for (group of connectionTypeGroups; track group.label) {
+                  @for (group of connectionTypes.groups(); track group.group) {
                     <optgroup [label]="group.label">
-                      @for (t of group.types; track t) {
-                        <option [value]="t" [selected]="sel.data.type === t">{{ connectionTypeLabels[t] }}</option>
+                      @for (t of group.types; track t.key) {
+                        <option [value]="t.key" [selected]="sel.data.type === t.key">{{ t.label }}</option>
                       }
                     </optgroup>
                   }
@@ -991,6 +990,7 @@ export class DiagramCanvasComponent implements OnDestroy {
   private readonly areasApi = inject(AreasApi);
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
+  protected readonly connectionTypes = inject(ConnectionTypesStore);
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
   private readonly modelService = inject(NgDiagramModelService);
@@ -1015,8 +1015,6 @@ export class DiagramCanvasComponent implements OnDestroy {
   ]);
   protected readonly edgeTemplateMap = new NgDiagramEdgeTemplateMap([['wire', WireEdgeComponent]]);
   protected readonly wireTypes = WIRE_TYPES;
-  protected readonly connectionTypeGroups = CONNECTION_TYPE_GROUPS;
-  protected readonly connectionTypeLabels = CONNECTION_TYPE_LABELS;
   protected readonly model = signal<ModelAdapter | null>(null);
   /** Diagrams open read-only; "Edit" unlocks dragging/resizing/linking and the
    *  editing toolbar, "Save" persists and locks it back down. Clicking a
@@ -1436,7 +1434,11 @@ export class DiagramCanvasComponent implements OnDestroy {
     let value = edgeData.type;
     if (!value && sourcePort?.type) {
       value = sourcePort.type;
-      this.modelService.updateEdgeData(event.edge.id, { ...edgeData, type: value, color: wireOrCableColor(value) ?? edgeData.color });
+      this.modelService.updateEdgeData(event.edge.id, {
+        ...edgeData,
+        type: value,
+        color: wireOrCableColor(value, this.connectionTypes) ?? edgeData.color,
+      });
     }
     if (targetPort && !targetPort.type && value) {
       const targetData = event.target.data as BoxPortsNodeData;
@@ -1605,7 +1607,7 @@ export class DiagramCanvasComponent implements OnDestroy {
     this.modelService.updateEdgeData(edgeId, {
       ...data,
       type: connectionType,
-      color: wireOrCableColor(connectionType) ?? data.color,
+      color: wireOrCableColor(connectionType, this.connectionTypes) ?? data.color,
     });
     this.cascadeTypeFromEdge(edgeId, undefined, connectionType);
   }
@@ -1657,7 +1659,7 @@ export class DiagramCanvasComponent implements OnDestroy {
       this.modelService.updateEdgeData(edge.id, {
         ...edgeData,
         type: newType,
-        ...(newType ? { color: wireOrCableColor(newType) ?? edgeData.color } : {}),
+        ...(newType ? { color: wireOrCableColor(newType, this.connectionTypes) ?? edgeData.color } : {}),
       });
       this.propagateFromEdge(edge.id, oldType, newType, visitedPorts, visitedEdges);
     }
@@ -1948,7 +1950,7 @@ export class DiagramCanvasComponent implements OnDestroy {
     const data: EdgeData = {
       ...sel.data,
       type,
-      ...(type ? { color: wireOrCableColor(type) ?? sel.data.color } : {}),
+      ...(type ? { color: wireOrCableColor(type, this.connectionTypes) ?? sel.data.color } : {}),
     };
     this.modelService.updateEdgeData(edgeId, data);
     this.selection.set({ ...sel, data });

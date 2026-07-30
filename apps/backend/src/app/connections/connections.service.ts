@@ -11,6 +11,7 @@ import {
   UpdateConnectionDto,
 } from '@smart-home-inventory/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConnectionTypesService } from '../connection-types/connection-types.service';
 import { toConnectionDto } from '../common/mappers';
 
 const includeNames = {
@@ -20,7 +21,10 @@ const includeNames = {
 
 @Injectable()
 export class ConnectionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly connectionTypes: ConnectionTypesService
+  ) {}
 
   async list(query: ConnectionQueryDto): Promise<ConnectionDto[]> {
     const connections = await this.prisma.connection.findMany({
@@ -61,6 +65,7 @@ export class ConnectionsService {
   async create(dto: CreateConnectionDto): Promise<ConnectionDto> {
     await this.ensureDevice(dto.fromDeviceId);
     await this.ensureDevice(dto.toDeviceId);
+    await this.connectionTypes.ensureKeyExists(dto.type);
     const connection = await this.prisma.connection.create({
       data: {
         type: dto.type,
@@ -77,6 +82,7 @@ export class ConnectionsService {
 
   async update(id: string, dto: UpdateConnectionDto): Promise<ConnectionDto> {
     await this.get(id);
+    if (dto.type !== undefined) await this.connectionTypes.ensureKeyExists(dto.type);
     const connection = await this.prisma.connection.update({
       where: { id },
       data: {

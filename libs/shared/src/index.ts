@@ -1,7 +1,6 @@
 export * from './lib/enums';
 export * from './lib/diagram-content';
 export * from './lib/wire-colors';
-export * from './lib/connection-colors';
 export * from './lib/type-display';
 export * from './lib/dto/floor.dto';
 export * from './lib/dto/area.dto';
@@ -9,5 +8,7 @@ export * from './lib/dto/device.dto';
 export * from './lib/dto/attachment.dto';
 export * from './lib/dto/capability.dto';
 export * from './lib/dto/connection.dto';
+export * from './lib/dto/connection-type.dto';
 export * from './lib/dto/diagram.dto';
 export * from './lib/dto/ha.dto';
+export * from './lib/dto/zigbee-catalog.dto';

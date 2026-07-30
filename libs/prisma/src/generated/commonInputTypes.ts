@@ -324,21 +324,21 @@ export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
   _max?: Prisma.NestedJsonNullableFilter<$PrismaModel>
 }
 
-export type EnumConnectionTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.ConnectionType | Prisma.EnumConnectionTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.ConnectionType[]
-  notIn?: $Enums.ConnectionType[]
-  not?: Prisma.NestedEnumConnectionTypeFilter<$PrismaModel> | $Enums.ConnectionType
+export type EnumConnectionTypeGroupFilter<$PrismaModel = never> = {
+  equals?: $Enums.ConnectionTypeGroup | Prisma.EnumConnectionTypeGroupFieldRefInput<$PrismaModel>
+  in?: $Enums.ConnectionTypeGroup[]
+  notIn?: $Enums.ConnectionTypeGroup[]
+  not?: Prisma.NestedEnumConnectionTypeGroupFilter<$PrismaModel> | $Enums.ConnectionTypeGroup
 }
 
-export type EnumConnectionTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.ConnectionType | Prisma.EnumConnectionTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.ConnectionType[]
-  notIn?: $Enums.ConnectionType[]
-  not?: Prisma.NestedEnumConnectionTypeWithAggregatesFilter<$PrismaModel> | $Enums.ConnectionType
+export type EnumConnectionTypeGroupWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ConnectionTypeGroup | Prisma.EnumConnectionTypeGroupFieldRefInput<$PrismaModel>
+  in?: $Enums.ConnectionTypeGroup[]
+  notIn?: $Enums.ConnectionTypeGroup[]
+  not?: Prisma.NestedEnumConnectionTypeGroupWithAggregatesFilter<$PrismaModel> | $Enums.ConnectionTypeGroup
   _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumConnectionTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumConnectionTypeFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumConnectionTypeGroupFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumConnectionTypeGroupFilter<$PrismaModel>
 }
 
 export type JsonFilter<$PrismaModel = never> =
@@ -687,21 +687,21 @@ export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
 }
 
-export type NestedEnumConnectionTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.ConnectionType | Prisma.EnumConnectionTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.ConnectionType[]
-  notIn?: $Enums.ConnectionType[]
-  not?: Prisma.NestedEnumConnectionTypeFilter<$PrismaModel> | $Enums.ConnectionType
+export type NestedEnumConnectionTypeGroupFilter<$PrismaModel = never> = {
+  equals?: $Enums.ConnectionTypeGroup | Prisma.EnumConnectionTypeGroupFieldRefInput<$PrismaModel>
+  in?: $Enums.ConnectionTypeGroup[]
+  notIn?: $Enums.ConnectionTypeGroup[]
+  not?: Prisma.NestedEnumConnectionTypeGroupFilter<$PrismaModel> | $Enums.ConnectionTypeGroup
 }
 
-export type NestedEnumConnectionTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.ConnectionType | Prisma.EnumConnectionTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.ConnectionType[]
-  notIn?: $Enums.ConnectionType[]
-  not?: Prisma.NestedEnumConnectionTypeWithAggregatesFilter<$PrismaModel> | $Enums.ConnectionType
+export type NestedEnumConnectionTypeGroupWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ConnectionTypeGroup | Prisma.EnumConnectionTypeGroupFieldRefInput<$PrismaModel>
+  in?: $Enums.ConnectionTypeGroup[]
+  notIn?: $Enums.ConnectionTypeGroup[]
+  not?: Prisma.NestedEnumConnectionTypeGroupWithAggregatesFilter<$PrismaModel> | $Enums.ConnectionTypeGroup
   _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumConnectionTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumConnectionTypeFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumConnectionTypeGroupFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumConnectionTypeGroupFilter<$PrismaModel>
 }
 
 export type NestedJsonFilter<$PrismaModel = never> =

@@ -70,6 +70,11 @@ export type CapabilityType = Prisma.CapabilityTypeModel
  */
 export type DeviceCapability = Prisma.DeviceCapabilityModel
 /**
+ * Model ConnectionType
+ * 
+ */
+export type ConnectionType = Prisma.ConnectionTypeModel
+/**
  * Model Connection
  * 
  */

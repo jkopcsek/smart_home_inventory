@@ -7,17 +7,11 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import {
-  CONNECTION_TYPE_COLORS,
-  CONNECTION_TYPE_GROUPS,
-  CONNECTION_TYPE_LABELS,
-  CONNECTION_TYPES_ORDERED,
-  ConnectionDto,
-  ConnectionType,
-} from '@smart-home-inventory/shared';
-import { mdiArrowRightThin, mdiDelete, mdiPlus, mdiTransitConnectionVariant } from '@mdi/js';
+import { ConnectionDto } from '@smart-home-inventory/shared';
+import { mdiDelete, mdiPlus, mdiTransitConnectionVariant } from '@mdi/js';
 import { ConnectionsApi } from '../../core/api/api.services';
 import { ConfirmService } from '../../core/confirm/confirm.service';
+import { ConnectionTypesStore } from '../../core/connection-types/connection-types.store';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { ConnectionFormDialogComponent } from './connection-form-dialog.component';
@@ -43,55 +37,58 @@ import { ConnectionFormDialogComponent } from './connection-form-dialog.componen
       <button class="chip" [class.active]="!typeFilter()" (click)="typeFilter.set(null)">
         all
       </button>
-      @for (group of typeGroups; track group.label) {
+      @for (group of connectionTypes.groups(); track group.group) {
         <span class="chip-group-label">{{ group.label }}</span>
-        @for (t of group.types; track t) {
+        @for (t of group.types; track t.key) {
           <button
             class="chip"
-            [class.active]="typeFilter() === t"
-            (click)="typeFilter.set(typeFilter() === t ? null : t)"
+            [class.active]="typeFilter() === t.key"
+            (click)="typeFilter.set(typeFilter() === t.key ? null : t.key)"
           >
-            <span class="type-dot" [style.background]="typeColors[t]"></span>
-            {{ typeLabels[t] }}
+            <span class="type-dot" [style.background]="t.color"></span>
+            {{ t.label }}
           </button>
         }
       }
     </div>
 
-    @for (group of grouped(); track group.type) {
-      <div class="card section">
-        <h3>
-          <span class="type-dot" [style.background]="typeColors[group.type]"></span>
-          {{ typeLabels[group.type] }}
-        </h3>
-        <table class="data">
-          <tbody>
-            @for (conn of group.connections; track conn.id) {
-              <tr>
-                <td>
-                  <a [routerLink]="['/devices', conn.fromDeviceId]">
-                    {{ conn.fromDeviceName }}
-                  </a>
-                  <app-icon [path]="icons.arrow" [size]="16" class="muted" />
-                  <a [routerLink]="['/devices', conn.toDeviceId]">
-                    {{ conn.toDeviceName }}
-                  </a>
-                </td>
-                <td class="muted">{{ conn.label }}</td>
-                <td class="muted">{{ conn.notes }}</td>
-                <td class="row-actions">
-                  <button class="btn icon-only" title="Delete" (click)="remove(conn)">
-                    <app-icon [path]="icons.delete" [size]="18" />
-                  </button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
-
-    @if (connections().length === 0 && loaded()) {
+    @if (filteredConnections().length > 0) {
+      <table class="data card connections">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Target</th>
+            <th>Type</th>
+            <th>Label</th>
+            <th>Notes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (conn of filteredConnections(); track conn.id) {
+            <tr>
+              <td>
+                <a [routerLink]="['/devices', conn.fromDeviceId]">{{ conn.fromDeviceName }}</a>
+              </td>
+              <td>
+                <a [routerLink]="['/devices', conn.toDeviceId]">{{ conn.toDeviceName }}</a>
+              </td>
+              <td>
+                <span class="type-dot" [style.background]="connectionTypes.color(conn.type)"></span>
+                {{ connectionTypes.label(conn.type) }}
+              </td>
+              <td class="muted">{{ conn.label }}</td>
+              <td class="muted">{{ conn.notes }}</td>
+              <td class="row-actions">
+                <button class="btn icon-only" title="Delete" (click)="remove(conn)">
+                  <app-icon [path]="icons.delete" [size]="18" />
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else if (loaded()) {
       <app-empty-state
         [icon]="icons.connections"
         message="No connections documented yet"
@@ -131,11 +128,6 @@ import { ConnectionFormDialogComponent } from './connection-form-dialog.componen
       align-items: center;
       gap: 6px;
     }
-    .section h3 {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
     .type-dot {
       display: inline-block;
       width: 10px;
@@ -143,8 +135,8 @@ import { ConnectionFormDialogComponent } from './connection-form-dialog.componen
       border-radius: 50%;
       flex-shrink: 0;
     }
-    .section {
-      margin-bottom: 16px;
+    .connections td {
+      vertical-align: middle;
     }
     .row-actions {
       text-align: right;
@@ -154,34 +146,27 @@ import { ConnectionFormDialogComponent } from './connection-form-dialog.componen
 export class ConnectionsPageComponent implements OnInit {
   private readonly api = inject(ConnectionsApi);
   private readonly confirm = inject(ConfirmService);
+  protected readonly connectionTypes = inject(ConnectionTypesStore);
 
   protected readonly connections = signal<ConnectionDto[]>([]);
-  protected readonly typeFilter = signal<ConnectionType | null>(null);
+  protected readonly typeFilter = signal<string | null>(null);
   protected readonly loaded = signal(false);
   protected readonly dialogOpen = signal(false);
-  protected readonly typeGroups = CONNECTION_TYPE_GROUPS;
-  protected readonly typeLabels = CONNECTION_TYPE_LABELS;
-  protected readonly typeColors = CONNECTION_TYPE_COLORS;
 
   protected readonly icons = {
     plus: mdiPlus,
     delete: mdiDelete,
-    arrow: mdiArrowRightThin,
     connections: mdiTransitConnectionVariant,
   };
 
-  protected readonly grouped = computed(() => {
+  protected readonly filteredConnections = computed(() => {
     const filter = this.typeFilter();
+    const order = this.connectionTypes.types().map((t) => t.key);
     const visible = this.connections().filter((c) => !filter || c.type === filter);
-    const groups = new Map<ConnectionType, ConnectionDto[]>();
-    for (const conn of visible) {
-      if (!groups.has(conn.type)) groups.set(conn.type, []);
-      groups.get(conn.type)?.push(conn);
-    }
-    return CONNECTION_TYPES_ORDERED.filter((type) => groups.has(type)).map((type) => ({
-      type,
-      connections: groups.get(type) as ConnectionDto[],
-    }));
+    return [...visible].sort((a, b) => {
+      const typeDiff = order.indexOf(a.type) - order.indexOf(b.type);
+      return typeDiff !== 0 ? typeDiff : a.fromDeviceName.localeCompare(b.fromDeviceName);
+    });
   });
 
   ngOnInit(): void {
@@ -197,7 +182,7 @@ export class ConnectionsPageComponent implements OnInit {
 
   protected async remove(conn: ConnectionDto): Promise<void> {
     const confirmed = await this.confirm.ask(
-      `Delete the ${this.typeLabels[conn.type]} connection between "${conn.fromDeviceName}" and "${conn.toDeviceName}"?`,
+      `Delete the ${this.connectionTypes.label(conn.type)} connection between "${conn.fromDeviceName}" and "${conn.toDeviceName}"?`,
       { confirmLabel: 'Delete' }
     );
     if (!confirmed) return;

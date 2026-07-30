@@ -1,16 +1,26 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   input,
   OnInit,
   signal,
 } from '@angular/core';
+import { HttpEventType } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
-import { ConnectionDto, DeviceDetailDto, DiagramDto } from '@smart-home-inventory/shared';
+import {
+  ConnectionDto,
+  DeviceDetailDto,
+  DiagramDto,
+  HaCapabilitySuggestionDto,
+  ZigbeeCatalogMatchDto,
+} from '@smart-home-inventory/shared';
 import {
   mdiArrowLeftThin,
   mdiArrowRightThin,
+  mdiClose,
   mdiDelete,
   mdiDevices,
   mdiOpenInNew,
@@ -19,9 +29,13 @@ import {
 } from '@mdi/js';
 import {
   attachmentUrl,
+  AttachmentsApi,
+  CapabilitiesApi,
   ConnectionsApi,
   DevicesApi,
   DiagramsApi,
+  HaApi,
+  ZigbeeCatalogApi,
 } from '../../core/api/api.services';
 import { ConfirmService } from '../../core/confirm/confirm.service';
 import { ToastService } from '../../core/toast/toast.service';
@@ -77,6 +91,87 @@ import { ConnectionFormDialogComponent } from '../connections/connection-form-di
           </button>
         </div>
       </div>
+
+      @if (zigbeeMatch(); as match) {
+        @if (zigbeeSuggestionVisible()) {
+          <div class="card section zigbee-suggestion">
+            <div class="section-head">
+              <h3>Suggested from Zigbee2MQTT</h3>
+              <button class="btn icon-only" title="Dismiss" (click)="zigbeeMatch.set(null)">
+                <app-icon [path]="icons.close" [size]="16" />
+              </button>
+            </div>
+            <div class="zigbee-row">
+              @if (match.imageUrl && !d.primaryImageId) {
+                <img class="zigbee-thumb" [src]="match.imageUrl" alt="" />
+              }
+              <div class="zigbee-info">
+                <div>{{ match.vendor }} {{ match.model }} — {{ match.description }}</div>
+                <div class="chips">
+                  @if (match.imageUrl && !d.primaryImageId) {
+                    <button
+                      class="btn secondary"
+                      [disabled]="applyingImage()"
+                      (click)="useZigbeeImage(d.id, match)"
+                    >
+                      Use as primary image
+                    </button>
+                  }
+                  @if (match.suggestedCapabilities.length > 2) {
+                    <button
+                      class="btn secondary"
+                      (click)="applyAllSuggested(d.id, match.suggestedCapabilities)"
+                    >
+                      Apply all
+                    </button>
+                  }
+                  @for (cap of match.suggestedCapabilities; track cap.key) {
+                    @if (hasCapability(d, cap.key)) {
+                      <span class="chip muted">{{ cap.label }} ✓</span>
+                    } @else {
+                      <button class="chip chip-button" (click)="addSuggestedCapability(d.id, cap)">
+                        + {{ cap.label }}
+                      </button>
+                    }
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      }
+
+      @if (haSuggestion(); as suggestion) {
+        @if (haSuggestionVisible()) {
+          <div class="card section zigbee-suggestion">
+            <div class="section-head">
+              <h3>Suggested from Home Assistant</h3>
+              <button class="btn icon-only" title="Dismiss" (click)="haSuggestion.set(null)">
+                <app-icon [path]="icons.close" [size]="16" />
+              </button>
+            </div>
+            <div class="chips">
+              @if (suggestion.suggestedCapabilities.length > 2) {
+                <button
+                  class="btn secondary"
+                  (click)="applyAllSuggested(d.id, suggestion.suggestedCapabilities)"
+                >
+                  Apply all
+                </button>
+              }
+              @for (cap of suggestion.suggestedCapabilities; track cap.key) {
+                @if (hasCapability(d, cap.key)) {
+                  <span class="chip muted">{{ cap.label }} ✓</span>
+                } @else {
+                  <button class="chip chip-button" (click)="addSuggestedCapability(d.id, cap)">
+                    + {{ cap.label }}
+                  </button>
+                }
+              }
+            </div>
+          </div>
+        }
+      }
 
       <div class="card section">
         <h3>Details</h3>
@@ -233,6 +328,29 @@ import { ConnectionFormDialogComponent } from '../connections/connection-form-di
       align-items: center;
       margin-bottom: 8px;
     }
+    .zigbee-row {
+      display: flex;
+      gap: 12px;
+    }
+    .zigbee-thumb {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      border-radius: 6px;
+      background: var(--secondary-background-color);
+      flex-shrink: 0;
+    }
+    .zigbee-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+    .chip-button {
+      border: none;
+      cursor: pointer;
+      font: inherit;
+    }
     .section-head h3 {
       margin: 0;
     }
@@ -266,6 +384,10 @@ export class DeviceDetailPageComponent implements OnInit {
   private readonly devicesApi = inject(DevicesApi);
   private readonly connectionsApi = inject(ConnectionsApi);
   private readonly diagramsApi = inject(DiagramsApi);
+  private readonly attachmentsApi = inject(AttachmentsApi);
+  private readonly capabilitiesApi = inject(CapabilitiesApi);
+  private readonly zigbeeCatalogApi = inject(ZigbeeCatalogApi);
+  private readonly haApi = inject(HaApi);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -275,6 +397,28 @@ export class DeviceDetailPageComponent implements OnInit {
   protected readonly device = signal<DeviceDetailDto | null>(null);
   protected readonly diagrams = signal<DiagramDto[]>([]);
   protected readonly connectionDialogOpen = signal(false);
+  protected readonly zigbeeMatch = signal<ZigbeeCatalogMatchDto | null>(null);
+  protected readonly haSuggestion = signal<HaCapabilitySuggestionDto | null>(null);
+  protected readonly applyingImage = signal(false);
+
+  /** Hides the card once every suggestion is either already on the device
+   *  or, for the image, moot because a primary image already exists
+   *  (whether it came from this suggestion or not). */
+  protected readonly zigbeeSuggestionVisible = computed(() => {
+    const match = this.zigbeeMatch();
+    const d = this.device();
+    if (!match || !d) return false;
+    const allCapsApplied = match.suggestedCapabilities.every((c) => this.hasCapability(d, c.key));
+    const imageDone = !match.imageUrl || !!d.primaryImageId;
+    return !(allCapsApplied && imageDone);
+  });
+
+  protected readonly haSuggestionVisible = computed(() => {
+    const suggestion = this.haSuggestion();
+    const d = this.device();
+    if (!suggestion || !d || suggestion.suggestedCapabilities.length === 0) return false;
+    return !suggestion.suggestedCapabilities.every((c) => this.hasCapability(d, c.key));
+  });
 
   protected readonly icons = {
     pencil: mdiPencil,
@@ -284,6 +428,7 @@ export class DeviceDetailPageComponent implements OnInit {
     openInNew: mdiOpenInNew,
     arrowRight: mdiArrowRightThin,
     arrowLeft: mdiArrowLeftThin,
+    close: mdiClose,
   };
 
   ngOnInit(): void {
@@ -293,8 +438,67 @@ export class DeviceDetailPageComponent implements OnInit {
   protected imageUrl = (id: string) => attachmentUrl(id, true);
 
   protected load(): void {
-    this.devicesApi.get(this.deviceId()).subscribe((device) => this.device.set(device));
+    this.devicesApi.get(this.deviceId()).subscribe((device) => {
+      this.device.set(device);
+      this.zigbeeMatch.set(null);
+      this.haSuggestion.set(null);
+      if (device.model?.trim()) {
+        this.zigbeeCatalogApi.match(device.model).subscribe((match) => this.zigbeeMatch.set(match));
+      }
+      if (device.haDeviceId) {
+        this.haApi
+          .capabilitySuggestions(device.id)
+          .subscribe((suggestion) => this.haSuggestion.set(suggestion));
+      }
+    });
     this.diagramsApi.list({ deviceId: this.deviceId() }).subscribe((d) => this.diagrams.set(d));
+  }
+
+  protected hasCapability(device: DeviceDetailDto, key: string): boolean {
+    return device.capabilities.some((c) => c.key === key);
+  }
+
+  protected addSuggestedCapability(deviceId: string, cap: { key: string; label: string }): void {
+    this.capabilitiesApi.setForDevice(deviceId, cap.key).subscribe(() => this.load());
+  }
+
+  protected applyAllSuggested(deviceId: string, caps: Array<{ key: string; label: string }>): void {
+    const device = this.device();
+    const pending = caps.filter((c) => !device || !this.hasCapability(device, c.key));
+    if (pending.length === 0) return;
+    forkJoin(pending.map((c) => this.capabilitiesApi.setForDevice(deviceId, c.key))).subscribe(() =>
+      this.load()
+    );
+  }
+
+  protected useZigbeeImage(deviceId: string, match: ZigbeeCatalogMatchDto): void {
+    const url = match.imageUrl;
+    if (!url) return;
+    this.applyingImage.set(true);
+    fetch(url)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const filename = url.split('/').pop() || `${match.model}.png`;
+        const file = new File([blob], filename, { type: blob.type });
+        this.attachmentsApi
+          .upload({ deviceId }, file, 'image', `${match.vendor} ${match.model}`)
+          .subscribe({
+            next: (event) => {
+              if (event.type === HttpEventType.Response && event.body) {
+                this.devicesApi.setPrimaryImage(deviceId, event.body.id).subscribe(() => {
+                  this.applyingImage.set(false);
+                  this.toast.success('Primary image set');
+                  this.load();
+                });
+              }
+            },
+            error: () => this.applyingImage.set(false),
+          });
+      })
+      .catch(() => {
+        this.applyingImage.set(false);
+        this.toast.error('Could not fetch the image from Zigbee2MQTT');
+      });
   }
 
   protected async removeConnection(conn: ConnectionDto): Promise<void> {

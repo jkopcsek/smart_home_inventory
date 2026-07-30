@@ -49,19 +49,9 @@ enum AttachmentKind {
   other
 }
 
-enum ConnectionType {
-  mains_230v
-  dc_24v
-  dc_12v
-  usb
-  zigbee_binding
-  zigbee_network
-  zwave_network
-  matter_fabric
-  thread
-  ethernet
-  wifi
-  knx
+enum ConnectionTypeGroup {
+  wired
+  wireless
   other
 }
 
@@ -193,9 +183,25 @@ model DeviceCapability {
   @@id([deviceId, capabilityTypeId])
 }
 
+// User-editable, unlike CapabilityType only in that there's no join table:
+// Connection.type stores this row's `key` as a plain string (like it already
+// did back when this was a hardcoded enum — SQLite never enforced it as a
+// real enum anyway, see the migration note on 20260726140000), so adding a
+// type here doesn't require a migration, and a type that gets deleted just
+// leaves any Connection/diagram wire referencing it showing a raw key
+// instead of a label — never a broken foreign key.
+model ConnectionType {
+  id       String              @id @default(cuid())
+  key      String              @unique
+  label    String
+  group    ConnectionTypeGroup @default(other)
+  color    String
+  isSystem Boolean             @default(false)
+}
+
 model Connection {
   id           String   @id @default(cuid())
-  type         ConnectionType
+  type         String
   // Directed edge: from = upstream/provider end (breaker, switch, coordinator),
   // to = consumer end. UI may render undirected.
   fromDeviceId String

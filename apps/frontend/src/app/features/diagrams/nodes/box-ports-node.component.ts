@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Node as NgNode, NgDiagramNodeTemplate, NgDiagramPortComponent } from 'ng-diagram';
 import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '@smart-home-inventory/shared';
+import { ConnectionTypesStore } from '../../../core/connection-types/connection-types.store';
 
 /**
  * The "Box with ports" shape: a user-configurable number of named
@@ -34,7 +35,7 @@ import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '
                 @if (port.label) {
                   <span class="label">{{ port.label }}</span>
                 }
-                @if (wireOrCableLabel(port.type); as type) {
+                @if (wireOrCableLabel(port.type, connectionTypes); as type) {
                   <span class="type">{{ type }}</span>
                 }
               </div>
@@ -48,7 +49,7 @@ import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '
                 @if (port.label) {
                   <span class="label">{{ port.label }}</span>
                 }
-                @if (wireOrCableLabel(port.type); as type) {
+                @if (wireOrCableLabel(port.type, connectionTypes); as type) {
                   <span class="type">{{ type }}</span>
                 }
               </div>
@@ -187,6 +188,7 @@ import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '
 })
 export class BoxPortsNodeComponent implements NgDiagramNodeTemplate<BoxPortsNodeData> {
   readonly node = input.required<NgNode<BoxPortsNodeData>>();
+  protected readonly connectionTypes = inject(ConnectionTypesStore);
 
   protected readonly data = computed(() => this.node().data);
   protected readonly inputPorts = computed(() => this.portsByDirection('in'));
@@ -198,6 +200,6 @@ export class BoxPortsNodeComponent implements NgDiagramNodeTemplate<BoxPortsNode
   }
 
   protected portColor(port: NodePort): string | null {
-    return wireOrCableColor(port.type);
+    return wireOrCableColor(port.type, this.connectionTypes);
   }
 }

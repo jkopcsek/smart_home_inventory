@@ -57,6 +57,7 @@ export const ModelName = {
   Attachment: 'Attachment',
   CapabilityType: 'CapabilityType',
   DeviceCapability: 'DeviceCapability',
+  ConnectionType: 'ConnectionType',
   Connection: 'Connection',
   Diagram: 'Diagram'
 } as const
@@ -170,6 +171,18 @@ export const DeviceCapabilityScalarFieldEnum = {
 } as const
 
 export type DeviceCapabilityScalarFieldEnum = (typeof DeviceCapabilityScalarFieldEnum)[keyof typeof DeviceCapabilityScalarFieldEnum]
+
+
+export const ConnectionTypeScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  label: 'label',
+  group: 'group',
+  color: 'color',
+  isSystem: 'isSystem'
+} as const
+
+export type ConnectionTypeScalarFieldEnum = (typeof ConnectionTypeScalarFieldEnum)[keyof typeof ConnectionTypeScalarFieldEnum]
 
 
 export const ConnectionScalarFieldEnum = {

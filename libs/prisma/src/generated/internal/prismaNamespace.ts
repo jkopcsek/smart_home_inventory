@@ -390,6 +390,7 @@ export const ModelName = {
   Attachment: 'Attachment',
   CapabilityType: 'CapabilityType',
   DeviceCapability: 'DeviceCapability',
+  ConnectionType: 'ConnectionType',
   Connection: 'Connection',
   Diagram: 'Diagram'
 } as const
@@ -407,7 +408,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "floor" | "area" | "device" | "attachment" | "capabilityType" | "deviceCapability" | "connection" | "diagram"
+    modelProps: "floor" | "area" | "device" | "attachment" | "capabilityType" | "deviceCapability" | "connectionType" | "connection" | "diagram"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -855,6 +856,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ConnectionType: {
+      payload: Prisma.$ConnectionTypePayload<ExtArgs>
+      fields: Prisma.ConnectionTypeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ConnectionTypeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ConnectionTypePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ConnectionTypeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ConnectionTypePayload>
+        }
+        findFirst: {
+          args: Prisma.ConnectionTypeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ConnectionTypePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ConnectionTypeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ConnectionTypePayload>
+        }
+        findMany: {
+          args: Prisma.ConnectionTypeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ConnectionTypePayload>[]
+        }
+        create: {
+          args: Prisma.ConnectionTypeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ConnectionTypePayload>
+        }
+        createMany: {
+          args: Prisma.ConnectionTypeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ConnectionTypeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ConnectionTypePayload>[]
+        }
+        delete: {
+          args: Prisma.ConnectionTypeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ConnectionTypePayload>
+        }
+        update: {
+          args: Prisma.ConnectionTypeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ConnectionTypePayload>
+        }
+        deleteMany: {
+          args: Prisma.ConnectionTypeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ConnectionTypeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ConnectionTypeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ConnectionTypePayload>[]
+        }
+        upsert: {
+          args: Prisma.ConnectionTypeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ConnectionTypePayload>
+        }
+        aggregate: {
+          args: Prisma.ConnectionTypeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateConnectionType>
+        }
+        groupBy: {
+          args: Prisma.ConnectionTypeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ConnectionTypeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ConnectionTypeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ConnectionTypeCountAggregateOutputType> | number
+        }
+      }
+    }
     Connection: {
       payload: Prisma.$ConnectionPayload<ExtArgs>
       fields: Prisma.ConnectionFieldRefs
@@ -1137,6 +1212,18 @@ export const DeviceCapabilityScalarFieldEnum = {
 export type DeviceCapabilityScalarFieldEnum = (typeof DeviceCapabilityScalarFieldEnum)[keyof typeof DeviceCapabilityScalarFieldEnum]
 
 
+export const ConnectionTypeScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  label: 'label',
+  group: 'group',
+  color: 'color',
+  isSystem: 'isSystem'
+} as const
+
+export type ConnectionTypeScalarFieldEnum = (typeof ConnectionTypeScalarFieldEnum)[keyof typeof ConnectionTypeScalarFieldEnum]
+
+
 export const ConnectionScalarFieldEnum = {
   id: 'id',
   type: 'type',
@@ -1299,9 +1386,9 @@ export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prisma
 
 
 /**
- * Reference to a field of type 'ConnectionType'
+ * Reference to a field of type 'ConnectionTypeGroup'
  */
-export type EnumConnectionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ConnectionType'>
+export type EnumConnectionTypeGroupFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ConnectionTypeGroup'>
     
 
 
@@ -1427,6 +1514,7 @@ export type GlobalOmitConfig = {
   attachment?: Prisma.AttachmentOmit
   capabilityType?: Prisma.CapabilityTypeOmit
   deviceCapability?: Prisma.DeviceCapabilityOmit
+  connectionType?: Prisma.ConnectionTypeOmit
   connection?: Prisma.ConnectionOmit
   diagram?: Prisma.DiagramOmit
 }

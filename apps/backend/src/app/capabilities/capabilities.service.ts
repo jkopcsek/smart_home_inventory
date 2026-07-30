@@ -16,15 +16,26 @@ import { CapabilityType, Prisma } from '@smart-home-inventory/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 import { toDeviceCapabilityDto } from '../common/mappers';
 
+/**
+ * A device's bare *possibilities* — what it can speak / how it's powered —
+ * deliberately not the topology of a specific wire or binding (that's what
+ * Connection.type is for). Zigbee and Thread both have a real, commonly-
+ * distinguished Router (mains-powered, extends the mesh) vs. End Device
+ * (may run on battery, "sleepy") role, so those get their own keys instead
+ * of one generic protocol capability; Z-Wave/Matter don't have an
+ * equivalently-named distinction worth inventing a term for.
+ */
 const SYSTEM_CAPABILITIES: Array<{
   key: string;
   label: string;
   category: CapabilityCategory;
 }> = [
-  { key: 'zigbee', label: 'Zigbee', category: 'protocol' },
+  { key: 'zigbee_router', label: 'Zigbee Router', category: 'protocol' },
+  { key: 'zigbee_end_device', label: 'Zigbee End Device', category: 'protocol' },
   { key: 'zwave', label: 'Z-Wave', category: 'protocol' },
   { key: 'matter', label: 'Matter', category: 'protocol' },
-  { key: 'thread', label: 'Thread', category: 'protocol' },
+  { key: 'thread_router', label: 'Thread Router', category: 'protocol' },
+  { key: 'thread_end_device', label: 'Thread End Device', category: 'protocol' },
   { key: 'knx', label: 'KNX', category: 'protocol' },
   { key: 'wifi', label: 'Wi-Fi', category: 'network' },
   { key: 'ethernet', label: 'Ethernet', category: 'network' },
@@ -54,7 +65,10 @@ const withCount = { _count: { select: { devices: true } } } as const;
 export class CapabilitiesService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Idempotently seed the built-in capability types on startup. */
+  /** Idempotently seed the built-in capability types on startup, and drop
+   *  any system type that's no longer in the list above (e.g. a renamed
+   *  key) as long as nothing actually uses it — same "only delete if
+   *  unused" rule as removeType below. */
   async onModuleInit(): Promise<void> {
     for (const cap of SYSTEM_CAPABILITIES) {
       await this.prisma.capabilityType.upsert({
@@ -62,6 +76,16 @@ export class CapabilitiesService implements OnModuleInit {
         create: { ...cap, isSystem: true },
         update: {},
       });
+    }
+    const currentKeys = SYSTEM_CAPABILITIES.map((c) => c.key);
+    const stale = await this.prisma.capabilityType.findMany({
+      where: { isSystem: true, key: { notIn: currentKeys } },
+      include: withCount,
+    });
+    for (const cap of stale) {
+      if (cap._count.devices === 0) {
+        await this.prisma.capabilityType.delete({ where: { id: cap.id } });
+      }
     }
   }
 

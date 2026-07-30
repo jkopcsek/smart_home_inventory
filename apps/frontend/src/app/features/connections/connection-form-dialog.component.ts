@@ -11,15 +11,10 @@ import {
   ElementRef,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  CONNECTION_TYPE_LABELS,
-  CONNECTION_TYPES,
-  ConnectionDto,
-  ConnectionType,
-  DeviceDto,
-} from '@smart-home-inventory/shared';
+import { ConnectionDto, ConnectionType, DeviceDto } from '@smart-home-inventory/shared';
 import { mdiSwapHorizontal } from '@mdi/js';
 import { ConnectionsApi } from '../../core/api/api.services';
+import { ConnectionTypesStore } from '../../core/connection-types/connection-types.store';
 import { ToastService } from '../../core/toast/toast.service';
 import { DevicePickerComponent } from '../../shared/ui/device-picker.component';
 import { IconComponent } from '../../shared/ui/icon.component';
@@ -41,8 +36,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
         <label class="field">
           <span>Type *</span>
           <select class="text" name="type" [(ngModel)]="type">
-            @for (t of types; track t) {
-              <option [value]="t">{{ typeLabels[t] }}</option>
+            @for (group of connectionTypes.groups(); track group.group) {
+              <optgroup [label]="group.label">
+                @for (t of group.types; track t.key) {
+                  <option [value]="t.key">{{ t.label }}</option>
+                }
+              </optgroup>
             }
           </select>
         </label>
@@ -139,6 +138,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
 export class ConnectionFormDialogComponent {
   private readonly api = inject(ConnectionsApi);
   private readonly toast = inject(ToastService);
+  protected readonly connectionTypes = inject(ConnectionTypesStore);
   private readonly dlg = viewChild.required<ElementRef<HTMLDialogElement>>('dlg');
 
   readonly open = input(false);
@@ -149,10 +149,8 @@ export class ConnectionFormDialogComponent {
   readonly closed = output<void>();
   readonly saved = output<ConnectionDto>();
 
-  protected readonly types = CONNECTION_TYPES;
-  protected readonly typeLabels = CONNECTION_TYPE_LABELS;
   protected readonly icons = { swap: mdiSwapHorizontal };
-  protected type: ConnectionType = 'mains_230v';
+  protected type: ConnectionType = '';
   protected fixedIsSource = false;
   protected label = '';
   protected notes = '';
@@ -174,7 +172,7 @@ export class ConnectionFormDialogComponent {
     effect(() => {
       const el = this.dlg().nativeElement;
       if (this.open()) {
-        this.type = 'mains_230v';
+        this.type = this.connectionTypes.types()[0]?.key ?? '';
         this.fixedIsSource = false;
         this.label = this.initialLabel();
         this.notes = '';
@@ -189,6 +187,7 @@ export class ConnectionFormDialogComponent {
   }
 
   protected canSave(): boolean {
+    if (!this.type) return false;
     if (this.fixedPair()) return true;
     if (this.fixedDevice()) return this.otherDevice() !== null;
     return this.sourceDevice() !== null && this.otherDevice() !== null;

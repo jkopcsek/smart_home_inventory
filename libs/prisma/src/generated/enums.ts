@@ -52,23 +52,13 @@ export const AttachmentKind = {
 export type AttachmentKind = (typeof AttachmentKind)[keyof typeof AttachmentKind]
 
 
-export const ConnectionType = {
-  mains_230v: 'mains_230v',
-  dc_24v: 'dc_24v',
-  dc_12v: 'dc_12v',
-  usb: 'usb',
-  zigbee_binding: 'zigbee_binding',
-  zigbee_network: 'zigbee_network',
-  zwave_network: 'zwave_network',
-  matter_fabric: 'matter_fabric',
-  thread: 'thread',
-  ethernet: 'ethernet',
-  wifi: 'wifi',
-  knx: 'knx',
+export const ConnectionTypeGroup = {
+  wired: 'wired',
+  wireless: 'wireless',
   other: 'other'
 } as const
 
-export type ConnectionType = (typeof ConnectionType)[keyof typeof ConnectionType]
+export type ConnectionTypeGroup = (typeof ConnectionTypeGroup)[keyof typeof ConnectionTypeGroup]
 
 
 export const CapabilityCategory = {

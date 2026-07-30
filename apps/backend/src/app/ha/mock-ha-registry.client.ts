@@ -1,5 +1,10 @@
-import { HaArea, HaDevice, HaFloor, HaRegistryClient } from './ha-registry.types';
-import { FIXTURE_AREAS, FIXTURE_DEVICES, FIXTURE_FLOORS } from './fixtures/registry.fixtures';
+import { HaArea, HaDevice, HaEntity, HaFloor, HaRegistryClient } from './ha-registry.types';
+import {
+  FIXTURE_AREAS,
+  FIXTURE_DEVICES,
+  FIXTURE_ENTITIES,
+  FIXTURE_FLOORS,
+} from './fixtures/registry.fixtures';
 
 /**
  * Offline development client returning a small realistic registry so the
@@ -16,6 +21,10 @@ export class MockHaRegistryClient implements HaRegistryClient {
 
   async listFloors(): Promise<HaFloor[]> {
     return FIXTURE_FLOORS;
+  }
+
+  async listEntities(): Promise<HaEntity[]> {
+    return FIXTURE_ENTITIES;
   }
 
   async ping(): Promise<boolean> {

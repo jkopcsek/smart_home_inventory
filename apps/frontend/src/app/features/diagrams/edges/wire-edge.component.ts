@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import {
   Edge as NgEdge,
   NgDiagramBaseEdgeComponent,
@@ -6,6 +6,7 @@ import {
   NgDiagramEdgeTemplate,
 } from 'ng-diagram';
 import { EdgeData, wireOrCableLabel } from '@smart-home-inventory/shared';
+import { ConnectionTypesStore } from '../../../core/connection-types/connection-types.store';
 
 /**
  * The 'wire' edge template — same look as ng-diagram's default edge, except
@@ -63,10 +64,11 @@ import { EdgeData, wireOrCableLabel } from '@smart-home-inventory/shared';
 })
 export class WireEdgeComponent implements NgDiagramEdgeTemplate<EdgeData> {
   edge = input.required<NgEdge<EdgeData>>();
+  private readonly connectionTypes = inject(ConnectionTypesStore);
 
   protected readonly strokeColor = computed(() =>
     this.edge().selected ? 'var(--primary-color)' : this.edge().data?.color || 'var(--ngd-default-edge-stroke)'
   );
   protected readonly label = computed(() => this.edge().data?.label || '');
-  protected readonly typeLabel = computed(() => wireOrCableLabel(this.edge().data?.type) || '');
+  protected readonly typeLabel = computed(() => wireOrCableLabel(this.edge().data?.type, this.connectionTypes) || '');
 }

@@ -26,7 +26,7 @@ export type AggregateConnection = {
 
 export type ConnectionMinAggregateOutputType = {
   id: string | null
-  type: $Enums.ConnectionType | null
+  type: string | null
   fromDeviceId: string | null
   toDeviceId: string | null
   label: string | null
@@ -37,7 +37,7 @@ export type ConnectionMinAggregateOutputType = {
 
 export type ConnectionMaxAggregateOutputType = {
   id: string | null
-  type: $Enums.ConnectionType | null
+  type: string | null
   fromDeviceId: string | null
   toDeviceId: string | null
   label: string | null
@@ -169,7 +169,7 @@ export type ConnectionGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inter
 
 export type ConnectionGroupByOutputType = {
   id: string
-  type: $Enums.ConnectionType
+  type: string
   fromDeviceId: string
   toDeviceId: string
   label: string | null
@@ -202,7 +202,7 @@ export type ConnectionWhereInput = {
   OR?: Prisma.ConnectionWhereInput[]
   NOT?: Prisma.ConnectionWhereInput | Prisma.ConnectionWhereInput[]
   id?: Prisma.StringFilter<"Connection"> | string
-  type?: Prisma.EnumConnectionTypeFilter<"Connection"> | $Enums.ConnectionType
+  type?: Prisma.StringFilter<"Connection"> | string
   fromDeviceId?: Prisma.StringFilter<"Connection"> | string
   toDeviceId?: Prisma.StringFilter<"Connection"> | string
   label?: Prisma.StringNullableFilter<"Connection"> | string | null
@@ -233,7 +233,7 @@ export type ConnectionWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.ConnectionWhereInput | Prisma.ConnectionWhereInput[]
   OR?: Prisma.ConnectionWhereInput[]
   NOT?: Prisma.ConnectionWhereInput | Prisma.ConnectionWhereInput[]
-  type?: Prisma.EnumConnectionTypeFilter<"Connection"> | $Enums.ConnectionType
+  type?: Prisma.StringFilter<"Connection"> | string
   fromDeviceId?: Prisma.StringFilter<"Connection"> | string
   toDeviceId?: Prisma.StringFilter<"Connection"> | string
   label?: Prisma.StringNullableFilter<"Connection"> | string | null
@@ -265,7 +265,7 @@ export type ConnectionScalarWhereWithAggregatesInput = {
   OR?: Prisma.ConnectionScalarWhereWithAggregatesInput[]
   NOT?: Prisma.ConnectionScalarWhereWithAggregatesInput | Prisma.ConnectionScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Connection"> | string
-  type?: Prisma.EnumConnectionTypeWithAggregatesFilter<"Connection"> | $Enums.ConnectionType
+  type?: Prisma.StringWithAggregatesFilter<"Connection"> | string
   fromDeviceId?: Prisma.StringWithAggregatesFilter<"Connection"> | string
   toDeviceId?: Prisma.StringWithAggregatesFilter<"Connection"> | string
   label?: Prisma.StringNullableWithAggregatesFilter<"Connection"> | string | null
@@ -277,7 +277,7 @@ export type ConnectionScalarWhereWithAggregatesInput = {
 
 export type ConnectionCreateInput = {
   id?: string
-  type: $Enums.ConnectionType
+  type: string
   label?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   notes?: string | null
@@ -289,7 +289,7 @@ export type ConnectionCreateInput = {
 
 export type ConnectionUncheckedCreateInput = {
   id?: string
-  type: $Enums.ConnectionType
+  type: string
   fromDeviceId: string
   toDeviceId: string
   label?: string | null
@@ -301,7 +301,7 @@ export type ConnectionUncheckedCreateInput = {
 
 export type ConnectionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumConnectionTypeFieldUpdateOperationsInput | $Enums.ConnectionType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -313,7 +313,7 @@ export type ConnectionUpdateInput = {
 
 export type ConnectionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumConnectionTypeFieldUpdateOperationsInput | $Enums.ConnectionType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   fromDeviceId?: Prisma.StringFieldUpdateOperationsInput | string
   toDeviceId?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -325,7 +325,7 @@ export type ConnectionUncheckedUpdateInput = {
 
 export type ConnectionCreateManyInput = {
   id?: string
-  type: $Enums.ConnectionType
+  type: string
   fromDeviceId: string
   toDeviceId: string
   label?: string | null
@@ -337,7 +337,7 @@ export type ConnectionCreateManyInput = {
 
 export type ConnectionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumConnectionTypeFieldUpdateOperationsInput | $Enums.ConnectionType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -347,7 +347,7 @@ export type ConnectionUpdateManyMutationInput = {
 
 export type ConnectionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumConnectionTypeFieldUpdateOperationsInput | $Enums.ConnectionType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   fromDeviceId?: Prisma.StringFieldUpdateOperationsInput | string
   toDeviceId?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -485,13 +485,9 @@ export type ConnectionUncheckedUpdateManyWithoutToDeviceNestedInput = {
   deleteMany?: Prisma.ConnectionScalarWhereInput | Prisma.ConnectionScalarWhereInput[]
 }
 
-export type EnumConnectionTypeFieldUpdateOperationsInput = {
-  set?: $Enums.ConnectionType
-}
-
 export type ConnectionCreateWithoutFromDeviceInput = {
   id?: string
-  type: $Enums.ConnectionType
+  type: string
   label?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   notes?: string | null
@@ -502,7 +498,7 @@ export type ConnectionCreateWithoutFromDeviceInput = {
 
 export type ConnectionUncheckedCreateWithoutFromDeviceInput = {
   id?: string
-  type: $Enums.ConnectionType
+  type: string
   toDeviceId: string
   label?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -522,7 +518,7 @@ export type ConnectionCreateManyFromDeviceInputEnvelope = {
 
 export type ConnectionCreateWithoutToDeviceInput = {
   id?: string
-  type: $Enums.ConnectionType
+  type: string
   label?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   notes?: string | null
@@ -533,7 +529,7 @@ export type ConnectionCreateWithoutToDeviceInput = {
 
 export type ConnectionUncheckedCreateWithoutToDeviceInput = {
   id?: string
-  type: $Enums.ConnectionType
+  type: string
   fromDeviceId: string
   label?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -572,7 +568,7 @@ export type ConnectionScalarWhereInput = {
   OR?: Prisma.ConnectionScalarWhereInput[]
   NOT?: Prisma.ConnectionScalarWhereInput | Prisma.ConnectionScalarWhereInput[]
   id?: Prisma.StringFilter<"Connection"> | string
-  type?: Prisma.EnumConnectionTypeFilter<"Connection"> | $Enums.ConnectionType
+  type?: Prisma.StringFilter<"Connection"> | string
   fromDeviceId?: Prisma.StringFilter<"Connection"> | string
   toDeviceId?: Prisma.StringFilter<"Connection"> | string
   label?: Prisma.StringNullableFilter<"Connection"> | string | null
@@ -600,7 +596,7 @@ export type ConnectionUpdateManyWithWhereWithoutToDeviceInput = {
 
 export type ConnectionCreateManyFromDeviceInput = {
   id?: string
-  type: $Enums.ConnectionType
+  type: string
   toDeviceId: string
   label?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -611,7 +607,7 @@ export type ConnectionCreateManyFromDeviceInput = {
 
 export type ConnectionCreateManyToDeviceInput = {
   id?: string
-  type: $Enums.ConnectionType
+  type: string
   fromDeviceId: string
   label?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -622,7 +618,7 @@ export type ConnectionCreateManyToDeviceInput = {
 
 export type ConnectionUpdateWithoutFromDeviceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumConnectionTypeFieldUpdateOperationsInput | $Enums.ConnectionType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -633,7 +629,7 @@ export type ConnectionUpdateWithoutFromDeviceInput = {
 
 export type ConnectionUncheckedUpdateWithoutFromDeviceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumConnectionTypeFieldUpdateOperationsInput | $Enums.ConnectionType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   toDeviceId?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -644,7 +640,7 @@ export type ConnectionUncheckedUpdateWithoutFromDeviceInput = {
 
 export type ConnectionUncheckedUpdateManyWithoutFromDeviceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumConnectionTypeFieldUpdateOperationsInput | $Enums.ConnectionType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   toDeviceId?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -655,7 +651,7 @@ export type ConnectionUncheckedUpdateManyWithoutFromDeviceInput = {
 
 export type ConnectionUpdateWithoutToDeviceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumConnectionTypeFieldUpdateOperationsInput | $Enums.ConnectionType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -666,7 +662,7 @@ export type ConnectionUpdateWithoutToDeviceInput = {
 
 export type ConnectionUncheckedUpdateWithoutToDeviceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumConnectionTypeFieldUpdateOperationsInput | $Enums.ConnectionType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   fromDeviceId?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -677,7 +673,7 @@ export type ConnectionUncheckedUpdateWithoutToDeviceInput = {
 
 export type ConnectionUncheckedUpdateManyWithoutToDeviceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumConnectionTypeFieldUpdateOperationsInput | $Enums.ConnectionType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   fromDeviceId?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -764,7 +760,7 @@ export type $ConnectionPayload<ExtArgs extends runtime.Types.Extensions.Internal
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    type: $Enums.ConnectionType
+    type: string
     fromDeviceId: string
     toDeviceId: string
     label: string | null
@@ -1198,7 +1194,7 @@ export interface Prisma__ConnectionClient<T, Null = never, ExtArgs extends runti
  */
 export interface ConnectionFieldRefs {
   readonly id: Prisma.FieldRef<"Connection", 'String'>
-  readonly type: Prisma.FieldRef<"Connection", 'ConnectionType'>
+  readonly type: Prisma.FieldRef<"Connection", 'String'>
   readonly fromDeviceId: Prisma.FieldRef<"Connection", 'String'>
   readonly toDeviceId: Prisma.FieldRef<"Connection", 'String'>
   readonly label: Prisma.FieldRef<"Connection", 'String'>

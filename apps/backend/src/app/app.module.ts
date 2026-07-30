@@ -9,9 +9,11 @@ import { AreasModule } from './areas/areas.module';
 import { DevicesModule } from './devices/devices.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { CapabilitiesModule } from './capabilities/capabilities.module';
+import { ConnectionTypesModule } from './connection-types/connection-types.module';
 import { ConnectionsModule } from './connections/connections.module';
 import { DiagramsModule } from './diagrams/diagrams.module';
 import { HaModule } from './ha/ha.module';
+import { ZigbeeCatalogModule } from './zigbee-catalog/zigbee-catalog.module';
 
 @Module({
   imports: [
@@ -38,9 +40,11 @@ import { HaModule } from './ha/ha.module';
     DevicesModule,
     AttachmentsModule,
     CapabilitiesModule,
+    ConnectionTypesModule,
     ConnectionsModule,
     DiagramsModule,
     HaModule,
+    ZigbeeCatalogModule,
   ],
 })
 export class AppModule {}

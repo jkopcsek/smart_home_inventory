@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, ElementRef, effect, input, output, signal, viewChild } from '@angular/core';
-import { CONNECTION_TYPE_LABELS, ConnectionDto, DeviceDto } from '@smart-home-inventory/shared';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, effect, inject, input, output, signal, viewChild } from '@angular/core';
+import { ConnectionDto, DeviceDto } from '@smart-home-inventory/shared';
+import { ConnectionTypesStore } from '../../../core/connection-types/connection-types.store';
 import { IconComponent } from '../../../shared/ui/icon.component';
 import { mdiPlus, mdiTransitConnectionVariant } from '@mdi/js';
 import { ConnectionFormDialogComponent } from '../../connections/connection-form-dialog.component';
@@ -28,7 +29,7 @@ import { ConnectionFormDialogComponent } from '../../connections/connection-form
           <li>
             <button type="button" (click)="picked.emit(c)">
               <span>{{ c.fromDeviceName }} → {{ c.toDeviceName }}</span>
-              <span class="muted">{{ typeLabels[c.type] }}</span>
+              <span class="muted">{{ connectionTypes.label(c.type) }}</span>
             </button>
           </li>
         }
@@ -108,9 +109,9 @@ export class ConnectionPickerDialogComponent {
   readonly closed = output<void>();
   readonly picked = output<ConnectionDto>();
 
+  protected readonly connectionTypes = inject(ConnectionTypesStore);
   protected readonly formOpen = signal(false);
   protected readonly icons = { connection: mdiTransitConnectionVariant, plus: mdiPlus };
-  protected readonly typeLabels = CONNECTION_TYPE_LABELS;
 
   protected readonly sortedConnections = computed(() => {
     const ids = this.contextDeviceIds();

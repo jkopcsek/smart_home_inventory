@@ -1,5 +1,6 @@
 import { Logger, Module } from '@nestjs/common';
 import { AppConfig } from '../config/app-config';
+import { HaCapabilitySuggestionsService } from './ha-capability-suggestions.service';
 import { HA_REGISTRY_CLIENT } from './ha-registry.types';
 import { HaController } from './ha.controller';
 import { HaSyncService } from './ha-sync.service';
@@ -10,6 +11,7 @@ import { WsHaRegistryClient } from './ws-ha-registry.client';
   controllers: [HaController],
   providers: [
     HaSyncService,
+    HaCapabilitySuggestionsService,
     {
       provide: HA_REGISTRY_CLIENT,
       inject: [AppConfig],

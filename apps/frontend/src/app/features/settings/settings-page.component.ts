@@ -10,12 +10,16 @@ import {
   CAPABILITY_CATEGORIES,
   CapabilityCategory,
   CapabilityTypeDto,
+  CONNECTION_TYPE_GROUPS,
+  ConnectionTypeDto,
+  ConnectionTypeGroup,
   HaStatusDto,
   SyncResultDto,
 } from '@smart-home-inventory/shared';
 import { mdiDelete, mdiSync } from '@mdi/js';
-import { CapabilitiesApi, HaApi } from '../../core/api/api.services';
+import { CapabilitiesApi, ConnectionTypesApi, HaApi } from '../../core/api/api.services';
 import { ConfirmService } from '../../core/confirm/confirm.service';
+import { ConnectionTypesStore } from '../../core/connection-types/connection-types.store';
 import { ToastService } from '../../core/toast/toast.service';
 import { IconComponent } from '../../shared/ui/icon.component';
 
@@ -146,6 +150,66 @@ import { IconComponent } from '../../shared/ui/icon.component';
         </button>
       </form>
     </div>
+
+    <div class="card section">
+      <h3>Connection types</h3>
+      <p class="muted">
+        The wire/protocol types available on connections and diagram
+        wires/ports. Built-in types cannot be deleted; add your own for
+        anything missing (DALI, 1-Wire, …).
+      </p>
+      <table class="data">
+        <tbody>
+          @for (type of connectionTypes.types(); track type.id) {
+            <tr>
+              <td><span class="chip">{{ type.key }}</span></td>
+              <td>{{ type.label }}</td>
+              <td class="muted">{{ type.group }}</td>
+              <td>
+                <span class="swatch" [style.background]="type.color"></span>
+              </td>
+              <td class="muted">
+                {{ type.connectionCount }} connection{{ type.connectionCount === 1 ? '' : 's' }}
+              </td>
+              <td class="row-actions">
+                @if (!type.isSystem) {
+                  <button
+                    class="btn icon-only"
+                    title="Delete"
+                    (click)="removeConnectionType(type)"
+                  >
+                    <app-icon [path]="icons.delete" [size]="18" />
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <form class="new-cap" (ngSubmit)="addConnectionType()">
+        <input
+          class="text"
+          name="ctKey"
+          placeholder="key (e.g. dali)"
+          pattern="[a-z0-9_]+"
+          [(ngModel)]="newTypeKey"
+        />
+        <input class="text" name="ctLabel" placeholder="Label" [(ngModel)]="newTypeLabel" />
+        <select class="text" name="ctGroup" [(ngModel)]="newTypeGroup">
+          @for (g of connectionTypeGroups; track g) {
+            <option [value]="g">{{ g }}</option>
+          }
+        </select>
+        <input class="color" type="color" name="ctColor" [(ngModel)]="newTypeColor" />
+        <button
+          class="btn"
+          type="submit"
+          [disabled]="!newTypeKey.trim() || !newTypeLabel.trim()"
+        >
+          Add
+        </button>
+      </form>
+    </div>
   `,
   styles: `
     .section {
@@ -170,8 +234,21 @@ import { IconComponent } from '../../shared/ui/icon.component';
       flex: 1;
       min-width: 120px;
     }
+    .new-cap input.color {
+      flex: 0 0 auto;
+      width: 44px;
+      min-width: 44px;
+      padding: 2px;
+    }
     .row-actions {
       text-align: right;
+    }
+    .swatch {
+      display: block;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid var(--divider-color);
     }
     code {
       background: var(--chip-background-color);
@@ -183,6 +260,8 @@ import { IconComponent } from '../../shared/ui/icon.component';
 export class SettingsPageComponent implements OnInit {
   private readonly haApi = inject(HaApi);
   private readonly capabilitiesApi = inject(CapabilitiesApi);
+  private readonly connectionTypesApi = inject(ConnectionTypesApi);
+  protected readonly connectionTypes = inject(ConnectionTypesStore);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
 
@@ -191,11 +270,17 @@ export class SettingsPageComponent implements OnInit {
   protected readonly syncing = signal(false);
   protected readonly capabilities = signal<CapabilityTypeDto[]>([]);
   protected readonly categories = CAPABILITY_CATEGORIES;
+  protected readonly connectionTypeGroups = CONNECTION_TYPE_GROUPS;
   protected readonly icons = { sync: mdiSync, delete: mdiDelete };
 
   protected newKey = '';
   protected newLabel = '';
   protected newCategory: CapabilityCategory = 'other';
+
+  protected newTypeKey = '';
+  protected newTypeLabel = '';
+  protected newTypeGroup: ConnectionTypeGroup = 'other';
+  protected newTypeColor = '#757575';
 
   ngOnInit(): void {
     this.haApi.status().subscribe((status) => {
@@ -243,5 +328,26 @@ export class SettingsPageComponent implements OnInit {
     });
     if (!confirmed) return;
     this.capabilitiesApi.removeType(cap.id).subscribe(() => this.loadCapabilities());
+  }
+
+  protected addConnectionType(): void {
+    const key = this.newTypeKey.trim();
+    const label = this.newTypeLabel.trim();
+    if (!key || !label) return;
+    this.connectionTypesApi
+      .create({ key, label, group: this.newTypeGroup, color: this.newTypeColor })
+      .subscribe(() => {
+        this.newTypeKey = '';
+        this.newTypeLabel = '';
+        this.connectionTypes.reload();
+      });
+  }
+
+  protected async removeConnectionType(type: ConnectionTypeDto): Promise<void> {
+    const confirmed = await this.confirm.ask(`Delete connection type "${type.label}"?`, {
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
+    this.connectionTypesApi.remove(type.id).subscribe(() => this.connectionTypes.reload());
   }
 }

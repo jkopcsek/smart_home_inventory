@@ -7,9 +7,11 @@ import {
   AttachmentKind,
   CapabilityTypeDto,
   ConnectionDto,
+  ConnectionTypeDto,
   CreateAreaDto,
   CreateCapabilityTypeDto,
   CreateConnectionDto,
+  CreateConnectionTypeDto,
   CreateDeviceDto,
   CreateDiagramDto,
   CreateFloorDto,
@@ -20,15 +22,18 @@ import {
   DiagramContent,
   DiagramDto,
   FloorDto,
+  HaCapabilitySuggestionDto,
   HaStatusDto,
   SetDeviceCapabilityDto,
   SyncResultDto,
   UpdateAreaDto,
   UpdateCapabilityTypeDto,
   UpdateConnectionDto,
+  UpdateConnectionTypeDto,
   UpdateDeviceDto,
   UpdateDiagramDto,
   UpdateFloorDto,
+  ZigbeeCatalogMatchDto,
 } from '@smart-home-inventory/shared';
 
 function params(obj: Record<string, string | undefined>): HttpParams {
@@ -187,6 +192,24 @@ export class CapabilitiesApi {
 }
 
 @Injectable({ providedIn: 'root' })
+export class ConnectionTypesApi {
+  private readonly http = inject(HttpClient);
+
+  list(): Observable<ConnectionTypeDto[]> {
+    return this.http.get<ConnectionTypeDto[]>('api/connection-types');
+  }
+  create(dto: CreateConnectionTypeDto): Observable<ConnectionTypeDto> {
+    return this.http.post<ConnectionTypeDto>('api/connection-types', dto);
+  }
+  update(id: string, dto: UpdateConnectionTypeDto): Observable<ConnectionTypeDto> {
+    return this.http.patch<ConnectionTypeDto>(`api/connection-types/${id}`, dto);
+  }
+  remove(id: string): Observable<void> {
+    return this.http.delete<void>(`api/connection-types/${id}`);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
 export class ConnectionsApi {
   private readonly http = inject(HttpClient);
 
@@ -247,5 +270,23 @@ export class HaApi {
   }
   status(): Observable<HaStatusDto> {
     return this.http.get<HaStatusDto>('api/ha/status');
+  }
+  /** Null when the device isn't HA-sourced, or HA can't be reached. */
+  capabilitySuggestions(deviceId: string): Observable<HaCapabilitySuggestionDto | null> {
+    return this.http.get<HaCapabilitySuggestionDto | null>('api/ha/capability-suggestions', {
+      params: params({ deviceId }),
+    });
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class ZigbeeCatalogApi {
+  private readonly http = inject(HttpClient);
+
+  /** Null (not an error) when the model has no Zigbee2MQTT catalog match. */
+  match(model: string): Observable<ZigbeeCatalogMatchDto | null> {
+    return this.http.get<ZigbeeCatalogMatchDto | null>('api/zigbee-catalog/match', {
+      params: params({ model }),
+    });
   }
 }

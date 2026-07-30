@@ -23,3 +23,9 @@ export interface HaStatusDto {
   lastSyncAt: string | null;
   lastSyncResult: SyncResultDto | null;
 }
+
+/** Capability keys inferred from a device's HA entity registry (platform +
+ *  device_class) — see HaCapabilitySuggestionsService. Purely informational. */
+export interface HaCapabilitySuggestionDto {
+  suggestedCapabilities: Array<{ key: string; label: string }>;
+}

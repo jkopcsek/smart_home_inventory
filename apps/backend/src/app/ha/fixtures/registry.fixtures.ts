@@ -1,4 +1,4 @@
-import { HaArea, HaDevice, HaFloor } from '../ha-registry.types';
+import { HaArea, HaDevice, HaEntity, HaFloor } from '../ha-registry.types';
 
 export const FIXTURE_FLOORS: HaFloor[] = [
   { floor_id: 'eg', name: 'Erdgeschoss', level: 0 },
@@ -67,5 +67,50 @@ export const FIXTURE_DEVICES: HaDevice[] = [
     model: null,
     area_id: null,
     entry_type: 'service',
+  },
+];
+
+export const FIXTURE_ENTITIES: HaEntity[] = [
+  {
+    entity_id: 'light.hue_bridge_update',
+    device_id: 'mock-hue-bridge',
+    platform: 'hue',
+    device_class: 'firmware',
+  },
+  {
+    entity_id: 'light.stehlampe_wohnzimmer',
+    device_id: 'mock-hue-lamp-wz',
+    platform: 'hue',
+    device_class: null,
+  },
+  {
+    entity_id: 'update.skyconnect_firmware',
+    device_id: 'mock-zigbee-coordinator',
+    platform: 'zha',
+    device_class: 'firmware',
+  },
+  {
+    entity_id: 'binary_sensor.bewegungsmelder_flur_occupancy',
+    device_id: 'mock-motion-flur',
+    platform: 'zha',
+    device_class: 'motion',
+  },
+  {
+    entity_id: 'sensor.bewegungsmelder_flur_battery',
+    device_id: 'mock-motion-flur',
+    platform: 'zha',
+    device_class: 'battery',
+  },
+  {
+    entity_id: 'climate.heizung_schlafzimmer',
+    device_id: 'mock-thermostat-sz',
+    platform: 'zha',
+    device_class: null,
+  },
+  {
+    entity_id: 'sensor.heizung_schlafzimmer_battery',
+    device_id: 'mock-thermostat-sz',
+    platform: 'zha',
+    device_class: 'battery',
   },
 ];
