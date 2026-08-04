@@ -87,8 +87,11 @@ import { ConnectionPickerDialogComponent } from './pickers/connection-picker-dia
 import { EdgeReshapeOverlayComponent } from './edge-reshaping/edge-reshape-overlay.component';
 import { EdgeCommandDispatcher } from './edge-reshaping/commands';
 import { EdgeReshapeHandler } from './edge-reshaping/handlers/edge-reshape.handler';
+import { DiagramViewState } from './diagram-view-state.service';
 import { applyEdgeStretchOnSelectionMoved } from './edge-reshaping/middleware/edge-stretch-on-move';
 import {
+  mdiArrangeBringToFront,
+  mdiArrangeSendToBack,
   mdiChevronDown,
   mdiChevronUp,
   mdiCircleOutline,
@@ -177,6 +180,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       autoSize: n.autoSize,
       resizable: n.resizable,
       draggable: n.draggable,
+      zOrder: n.zOrder,
       data: n.data as NodeData,
     })),
     edges: edges.map((e) => ({
@@ -191,6 +195,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       points: e.points,
       routing: e.routing,
       routingMode: e.routingMode,
+      zOrder: e.zOrder,
       data: (e.data ?? {}) as EdgeData,
     })),
   };
@@ -208,7 +213,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
  */
 @Component({
   selector: 'app-diagram-canvas',
-  providers: [provideNgDiagram(), EdgeCommandDispatcher, EdgeReshapeHandler],
+  providers: [provideNgDiagram(), EdgeCommandDispatcher, EdgeReshapeHandler, DiagramViewState],
   imports: [
     NgDiagramComponent,
     NgDiagramBackgroundComponent,
@@ -277,6 +282,23 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
           </button>
           <button class="btn icon-only" title="Add box with ports" (click)="addNode('box-ports')">
             <app-icon [path]="icons.ports" [size]="20" />
+          </button>
+          <div class="v-divider"></div>
+          <button
+            class="btn icon-only"
+            title="Bring to front"
+            [disabled]="!selection()"
+            (click)="bringSelectionToFront()"
+          >
+            <app-icon [path]="icons.bringToFront" [size]="20" />
+          </button>
+          <button
+            class="btn icon-only"
+            title="Send to back"
+            [disabled]="!selection()"
+            (click)="sendSelectionToBack()"
+          >
+            <app-icon [path]="icons.sendToBack" [size]="20" />
           </button>
           <div class="v-divider"></div>
           <button
@@ -364,6 +386,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                     <span>Color</span>
                     <input
                       type="color"
+                      [disabled]="sel.data.transparent"
                       [value]="sel.data.color ?? '#03a9f4'"
                       (change)="setNodeColor(sel.id, sel.data, $event)"
                     />
@@ -377,6 +400,14 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                     />
                   </label>
                 </div>
+                <label class="field-row">
+                  <input
+                    type="checkbox"
+                    [checked]="sel.data.transparent ?? false"
+                    (change)="setNodeTransparent(sel.id, sel.data, $event)"
+                  />
+                  <span>Transparent background (border only)</span>
+                </label>
               } @else if (sel.data.shape !== 'background-image') {
                 <label class="field">
                   <span>Color</span>
@@ -666,7 +697,12 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
 
     <dialog #deviceDlg class="device-picker-dialog" (cancel)="pickerTarget.set(null)">
       <h3>Pick a device</h3>
-      <app-device-picker placeholder="Search device…" (selected)="onDevicePicked($event)" />
+      <app-device-picker
+        placeholder="Search device…"
+        [currentAreaId]="areaId()"
+        [clearOnSelect]="true"
+        (selected)="onDevicePicked($event)"
+      />
       <div class="actions">
         <button type="button" class="btn secondary" (click)="closeDeviceDialog()">Cancel</button>
       </div>
@@ -701,6 +737,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       [contextDevicePair]="connectionContextDevicePair()"
       [contextDevice]="connectionContextSingleDevice()"
       [contextLabel]="connectionContextLabel()"
+      [contextType]="connectionContextType()"
       (closed)="pickerTarget.set(null)"
       (picked)="onConnectionPicked($event)"
     />
@@ -998,6 +1035,7 @@ export class DiagramCanvasComponent implements OnDestroy {
   private readonly diagramService = inject(NgDiagramService);
   private readonly selectionService = inject(NgDiagramSelectionService);
   private readonly viewportService = inject(NgDiagramViewportService);
+  private readonly viewState = inject(DiagramViewState);
   private readonly deviceDlg = viewChild.required<ElementRef<HTMLDialogElement>>('deviceDlg');
   private readonly canvasEl = viewChild<unknown, ElementRef<HTMLElement>>('canvasEl', { read: ElementRef });
 
@@ -1019,8 +1057,9 @@ export class DiagramCanvasComponent implements OnDestroy {
   /** Diagrams open read-only; "Edit" unlocks dragging/resizing/linking and the
    *  editing toolbar, "Save" persists and locks it back down. Clicking a
    *  linked node while read-only navigates to the link immediately instead
-   *  of selecting it. */
-  protected readonly readOnly = signal(true);
+   *  of selecting it. Backed by DiagramViewState's own signal (not a plain
+   *  local one) so node templates can read the same state via DI. */
+  protected readonly readOnly = this.viewState.readOnly;
   protected readonly title = signal('');
   protected readonly saving = signal(false);
   protected readonly dirty = signal(false);
@@ -1087,6 +1126,17 @@ export class DiagramCanvasComponent implements OnDestroy {
     if (target?.kind !== 'edge-connection') return '';
     return this.modelService.getEdgeById<EdgeData>(target.edgeId)?.data?.label ?? '';
   });
+  /** The wire's own type, when linking an edge — pre-fills "Create new
+   *  connection"'s type so it doesn't default to the first entry in the list.
+   *  Only a whole-cable ConnectionType carries over; a single-conductor
+   *  WireType (L1, PE, ...) isn't a valid Connection type to preset. */
+  protected readonly connectionContextType = computed<ConnectionType | ''>(() => {
+    const target = this.pickerTarget();
+    if (target?.kind !== 'edge-connection') return '';
+    const type = this.modelService.getEdgeById<EdgeData>(target.edgeId)?.data?.type;
+    if (!type || (WIRE_TYPES as readonly string[]).includes(type)) return '';
+    return type as ConnectionType;
+  });
   /** Device links aren't scoped to this diagram's area/device (the picker
    *  searches all devices), so resolving a linked device's name needs the
    *  full list rather than something already loaded for this page. */
@@ -1133,6 +1183,8 @@ export class DiagramCanvasComponent implements OnDestroy {
     close: mdiClose,
     up: mdiChevronUp,
     down: mdiChevronDown,
+    bringToFront: mdiArrangeBringToFront,
+    sendToBack: mdiArrangeSendToBack,
   };
 
   private version = 1;
@@ -1907,6 +1959,11 @@ export class DiagramCanvasComponent implements OnDestroy {
     this.updateSelectedNodeData(nodeId, { ...data, borderColor });
   }
 
+  protected setNodeTransparent(nodeId: string, data: NodeData, event: Event): void {
+    const transparent = (event.target as HTMLInputElement).checked;
+    this.updateSelectedNodeData(nodeId, { ...data, transparent });
+  }
+
   protected setEdgeLabel(edgeId: string, event: Event): void {
     const label = (event.target as HTMLInputElement).value;
     const sel = this.selection();
@@ -2039,6 +2096,20 @@ export class DiagramCanvasComponent implements OnDestroy {
       this.modelService.deleteEdges([sel.id]);
     }
     this.selection.set(null);
+  }
+
+  protected bringSelectionToFront(): void {
+    const sel = this.selection();
+    if (!sel) return;
+    if (sel.kind === 'node') this.nodeService.bringToFront([sel.id]);
+    else this.nodeService.bringToFront([], [sel.id]);
+  }
+
+  protected sendSelectionToBack(): void {
+    const sel = this.selection();
+    if (!sel) return;
+    if (sel.kind === 'node') this.nodeService.sendToBack([sel.id]);
+    else this.nodeService.sendToBack([], [sel.id]);
   }
 
   protected renameTitle(event: Event): void {

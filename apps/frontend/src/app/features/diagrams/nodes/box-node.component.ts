@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Node as NgNode, NgDiagramBaseNodeTemplateComponent, NgDiagramNodeTemplate, NgDiagramPortComponent } from 'ng-diagram';
 import { BoxNodeData } from '@smart-home-inventory/shared';
 import { attachmentUrl } from '../../../core/api/api.services';
+import { DiagramViewState } from '../diagram-view-state.service';
 
 /**
  * The "Box" shape. With no link (or a device/diagram link) it's a plain
@@ -9,13 +10,27 @@ import { attachmentUrl } from '../../../core/api/api.services';
  * the same box, different content. Wrapped in ng-diagram-base-node-template
  * so it keeps the default node's selection styling, resize handles and ports
  * (which supplies left/right; top/bottom are added here).
+ *
+ * Read-only mode nulls out the ports' color/border (not --ngd-port-size —
+ * collapsing these library-positioned ports to 0×0 stalls ng-diagram's own
+ * size measurement and made the read-only view time out) and pins the hover
+ * border color to the resting one, so the box doesn't keep offering
+ * drag/link affordances once viewing is all it can do.
  */
 @Component({
   selector: 'app-box-node',
   imports: [NgDiagramBaseNodeTemplateComponent, NgDiagramPortComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ng-diagram-base-node-template [node]="node()" [style.--ngd-node-border-color]="data().borderColor">
+    <ng-diagram-base-node-template
+      [node]="node()"
+      [style.--ngd-node-border-color]="data().borderColor"
+      [style.--ngd-node-border-color-hover]="readOnly() ? 'var(--ngd-node-border-color)' : null"
+      [style.--ngd-port-background-color]="readOnly() ? 'transparent' : null"
+      [style.--ngd-port-border-size]="readOnly() ? '0' : null"
+      [style.--ngd-port-background-color-hover]="readOnly() ? 'transparent' : null"
+      [style.--ngd-port-border-size-hover]="readOnly() ? '0' : null"
+    >
       <div class="content">
         @if (imageUrl(); as url) {
           <img [src]="url" [alt]="data().label || 'Image'" crossorigin="anonymous" />
@@ -23,7 +38,11 @@ import { attachmentUrl } from '../../../core/api/api.services';
             <div class="image-label">{{ data().label }}</div>
           }
         } @else {
-          <div class="box-label" [style.background]="data().color || '#03a9f4'">
+          <div
+            class="box-label"
+            [class.transparent]="data().transparent"
+            [style.background]="data().transparent ? 'transparent' : data().color || '#03a9f4'"
+          >
             {{ data().label || 'Box' }}
           </div>
         }
@@ -77,10 +96,16 @@ import { attachmentUrl } from '../../../core/api/api.services';
       text-align: center;
       box-sizing: border-box;
     }
+    .box-label.transparent {
+      /* white text (readable on a solid fill) disappears against a
+         transparent background — fall back to the theme's text color. */
+      color: var(--primary-text-color);
+    }
   `,
 })
 export class BoxNodeComponent implements NgDiagramNodeTemplate<BoxNodeData> {
   readonly node = input.required<NgNode<BoxNodeData>>();
+  protected readonly readOnly = inject(DiagramViewState).readOnly;
 
   protected readonly data = computed(() => this.node().data);
   protected readonly imageUrl = computed(() => {

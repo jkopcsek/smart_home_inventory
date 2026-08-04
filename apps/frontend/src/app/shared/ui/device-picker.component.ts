@@ -76,6 +76,11 @@ export class DevicePickerComponent {
   readonly exclude = input<string[]>([]);
   /** Area id whose devices should be sorted to the top of the results. */
   readonly currentAreaId = input<string | null>(null);
+  /** Empties the search box on pick instead of filling it with the picked
+   *  device's name — for callers that close/reset around each pick (so a
+   *  lingering name would otherwise resurface, confusingly, on next use)
+   *  rather than keeping the picker visible as a record of the selection. */
+  readonly clearOnSelect = input(false);
   readonly selected = output<DeviceDto>();
 
   protected readonly query = signal('');
@@ -108,7 +113,7 @@ export class DevicePickerComponent {
   }
 
   protected pick(device: DeviceDto): void {
-    this.query.set(device.name);
+    this.query.set(this.clearOnSelect() ? '' : device.name);
     this.open.set(false);
     this.selected.emit(device);
   }

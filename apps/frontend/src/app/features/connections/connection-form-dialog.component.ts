@@ -146,6 +146,8 @@ export class ConnectionFormDialogComponent {
   readonly fixedPair = input<{ from: DeviceDto; to: DeviceDto } | null>(null);
   /** Pre-fills the label, e.g. with the diagram edge/wire's own label. */
   readonly initialLabel = input('');
+  /** Pre-fills the type, e.g. with the diagram edge/wire's own type. */
+  readonly initialType = input<ConnectionType | ''>('');
   readonly closed = output<void>();
   readonly saved = output<ConnectionDto>();
 
@@ -172,7 +174,7 @@ export class ConnectionFormDialogComponent {
     effect(() => {
       const el = this.dlg().nativeElement;
       if (this.open()) {
-        this.type = this.connectionTypes.types()[0]?.key ?? '';
+        this.type = this.initialType() || this.connectionTypes.types()[0]?.key || '';
         this.fixedIsSource = false;
         this.label = this.initialLabel();
         this.notes = '';

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, effect, inject, input, output, signal, viewChild } from '@angular/core';
-import { ConnectionDto, DeviceDto } from '@smart-home-inventory/shared';
+import { ConnectionDto, ConnectionType, DeviceDto } from '@smart-home-inventory/shared';
 import { ConnectionTypesStore } from '../../../core/connection-types/connection-types.store';
 import { IconComponent } from '../../../shared/ui/icon.component';
 import { mdiPlus, mdiTransitConnectionVariant } from '@mdi/js';
@@ -44,6 +44,7 @@ import { ConnectionFormDialogComponent } from '../../connections/connection-form
       [fixedDevice]="contextDevice()"
       [fixedPair]="formFixedPair()"
       [initialLabel]="contextLabel()"
+      [initialType]="contextType()"
       (closed)="formOpen.set(false)"
       (saved)="onCreated($event)"
     />
@@ -106,6 +107,9 @@ export class ConnectionPickerDialogComponent {
   readonly contextDevicePair = input<[DeviceDto, DeviceDto] | null>(null);
   /** The edge/wire's own label, if any — pre-fills "Create new connection"'s label. */
   readonly contextLabel = input('');
+  /** The edge/wire's own type, if it maps to a real Connection type — pre-fills
+   *  "Create new connection"'s type. */
+  readonly contextType = input<ConnectionType | ''>('');
   readonly closed = output<void>();
   readonly picked = output<ConnectionDto>();
 

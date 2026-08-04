@@ -57,6 +57,9 @@ const NodeDataBase = z.object({
   label: z.string().max(200).optional(),
   color: z.string().optional(),
   borderColor: z.string().optional(),
+  /** When set, a 'box' renders border-only (no fill) — lets boxes be used
+   *  as plain grouping outlines without hiding whatever's behind them. */
+  transparent: z.boolean().optional(),
   link: NodeLinkSchema.optional(),
 });
 
@@ -117,6 +120,9 @@ export const DiagramNodeSchema = z.object({
   resizable: z.boolean().optional(),
   /** false = locked in place (no drag/resize) — handy for a photo used as a backdrop. */
   draggable: z.boolean().optional(),
+  /** Set by ng-diagram's bringToFront/sendToBack commands — must round-trip
+   *  through save/load or layering resets every time the diagram reopens. */
+  zOrder: z.number().optional(),
   data: NodeDataSchema,
 });
 export type DiagramNode = z.infer<typeof DiagramNodeSchema>;
@@ -140,6 +146,9 @@ export const DiagramEdgeSchema = z.object({
   /** 'manual' after the user drags a segment — the route is then taken as-is
    *  instead of recomputed by the routing algorithm on every change. */
   routingMode: z.enum(['manual', 'auto']).optional(),
+  /** Set by ng-diagram's bringToFront/sendToBack commands — must round-trip
+   *  through save/load or layering resets every time the diagram reopens. */
+  zOrder: z.number().optional(),
   data: EdgeDataSchema.optional(),
 });
 export type DiagramEdge = z.infer<typeof DiagramEdgeSchema>;
