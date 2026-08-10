@@ -104,6 +104,11 @@ import { ConfirmDialogComponent } from './core/confirm/confirm-dialog.component'
       max-width: 1100px;
       margin: 0 auto;
     }
+    /* The diagram editor wants the full viewport below the nav bar — no
+       padding, no content-width cap (see diagrams-page.component.ts). */
+    main:has(app-diagrams-page) {
+      padding: 0;
+    }
   `,
 })
 export class App {

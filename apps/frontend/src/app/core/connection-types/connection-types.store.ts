@@ -58,4 +58,8 @@ export class ConnectionTypesStore implements ConnectionTypeLookup {
   color(key: string): string | null {
     return this.byKey()[key]?.color ?? null;
   }
+
+  dash(key: string): string | null {
+    return this.byKey()[key]?.dash ?? null;
+  }
 }

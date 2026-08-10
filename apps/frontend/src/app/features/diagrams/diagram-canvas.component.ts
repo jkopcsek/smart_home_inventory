@@ -31,12 +31,16 @@ import {
   NgDiagramMinimapComponent,
   NgDiagramModelService,
   NgDiagramNodeService,
+  NgDiagramPaletteItem,
+  NgDiagramPaletteItemComponent,
   NgDiagramService,
   NgDiagramNodeTemplateMap,
   NgDiagramSelectionService,
   NgDiagramViewportService,
   Node as NgNode,
   NodeDragEndedEvent,
+  PaletteItemDroppedEvent,
+  Point,
   provideNgDiagram,
   SelectionChangedEvent,
   SelectionMovedEvent,
@@ -48,6 +52,9 @@ import {
   BoxPortsNodeData,
   ConnectionDto,
   ConnectionType,
+  DASH_STYLES,
+  DASH_STYLE_LABELS,
+  DashStyle,
   DeviceDto,
   DiagramContent,
   DiagramDto,
@@ -60,6 +67,7 @@ import {
   PortDirection,
   WIRE_TYPES,
   wireOrCableColor,
+  wireOrCableDash,
   WireOrCableType,
 } from '@smart-home-inventory/shared';
 import {
@@ -77,8 +85,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
 import { DevicePickerComponent } from '../../shared/ui/device-picker.component';
 import { DotNodeComponent } from './nodes/dot-node.component';
 import { BoxNodeComponent } from './nodes/box-node.component';
+import { ImageNodeComponent } from './nodes/image-node.component';
 import { BoxPortsNodeComponent } from './nodes/box-ports-node.component';
 import { BackgroundImageNodeComponent } from './nodes/background-image-node.component';
+import { AnchorNodeComponent, ANCHOR_PORT_ID } from './nodes/anchor-node.component';
+import { DEFAULT_BODY_COLOR, DEFAULT_BORDER_COLOR, DEFAULT_NODE_COLOR, DEFAULT_PORTS_BG_COLOR } from './nodes/node-defaults';
+import { NODE_ICONS } from './nodes/node-icons';
 import { WireEdgeComponent } from './edges/wire-edge.component';
 import { AreaPickerDialogComponent } from './pickers/area-picker-dialog.component';
 import { AttachmentPickerDialogComponent } from './pickers/attachment-picker-dialog.component';
@@ -92,27 +104,57 @@ import { applyEdgeStretchOnSelectionMoved } from './edge-reshaping/middleware/ed
 import {
   mdiArrangeBringToFront,
   mdiArrangeSendToBack,
+  mdiArrowLeft,
   mdiChevronDown,
   mdiChevronUp,
-  mdiCircleOutline,
   mdiClose,
   mdiContentSave,
   mdiDelete,
   mdiDevices,
-  mdiElectricSwitch,
   mdiFloorPlan,
   mdiImagePlus,
   mdiLinkVariant,
   mdiLock,
   mdiLockOpenVariantOutline,
+  mdiMagnifyMinusOutline,
+  mdiMagnifyPlusOutline,
+  mdiMap,
   mdiOpenInNew,
   mdiPencil,
-  mdiShapeOutline,
   mdiTransitConnectionVariant,
   mdiTune,
 } from '@mdi/js';
 
-type Shape = 'dot' | 'box' | 'box-ports';
+type Shape = 'dot' | 'box' | 'box-ports' | 'image';
+
+/** A freshly-added 'box' has no content to autoSize against, so it'd default
+ *  to a tiny sliver — start it at roughly the footprint of a two-port
+ *  'box-ports' node instead, so the two shapes read as comparable building
+ *  blocks rather than one dwarfing the other. Still user-resizable after. */
+const BOX_DEFAULT_SIZE = { width: 210, height: 100 };
+
+/** Fixed footprint for a line/polyline's draggable endpoint markers — see
+ *  AnchorNodeComponent. Not resizable, so this is the only place it's set. */
+const ANCHOR_SIZE = { width: 14, height: 14 };
+
+/** Clicking within this many *screen* px (converted to flow px by dividing
+ *  by the current zoom, so it feels the same at any zoom level) of the
+ *  line tool's last-placed point ends the chain instead of adding another
+ *  point on top of it. */
+const LINE_END_CLICK_SCREEN_RADIUS = 10;
+
+/** ng-diagram-palette-item's `[item]` input defaults its generic to
+ *  BasePaletteItemData, which requires a `label: string` — our node data has
+ *  no such field (label is optional, shown on the node itself, not the
+ *  palette item), so the structural type never lines up. One cast, localized
+ *  here, instead of sprinkling `as unknown` through the template data. */
+function nodePaletteItem(
+  type: Shape,
+  data: NodeData,
+  overrides?: { size?: { width: number; height: number }; autoSize?: boolean }
+): NgDiagramPaletteItem {
+  return { type, data, ...overrides } as unknown as NgDiagramPaletteItem;
+}
 
 /** Every model action that mutates the diagram (as opposed to viewing/navigating
  *  it) — blocked at the engine level in read-only mode. This is the actual
@@ -165,6 +207,8 @@ type PickerTarget =
   | { kind: 'link-image'; nodeId: string }
   | { kind: 'link-connection'; nodeId: string }
   | { kind: 'set-diagram-background' }
+  | { kind: 'set-image'; nodeId: string }
+  | { kind: 'add-image-node' }
   | { kind: 'edge-connection'; edgeId: string };
 
 
@@ -219,6 +263,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
     NgDiagramBackgroundComponent,
     NgDiagramMarkerComponent,
     NgDiagramMinimapComponent,
+    NgDiagramPaletteItemComponent,
     IconComponent,
     DevicePickerComponent,
     AreaPickerDialogComponent,
@@ -242,29 +287,110 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
           (selectionMoved)="onSelectionMoved($event)"
           (nodeDragEnded)="onNodeDragEnded($event)"
           (viewportChanged)="onViewportChanged($event)"
+          (paletteItemDropped)="onPaletteItemDropped($event)"
         >
           <ng-diagram-background type="dots" />
-          <ng-diagram-marker>
-            <svg>
-              <defs>
-                <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
-                </marker>
-              </defs>
-            </svg>
-          </ng-diagram-marker>
         </ng-diagram>
-        <ng-diagram-minimap position="bottom-right" [width]="180" [height]="130" [showZoomControls]="true" />
-        <div class="overlay zoom-reset-overlay">
-          <button class="btn secondary" title="Reset zoom to 100%" (click)="resetZoom()">100%</button>
+        <!-- NOT nested inside <ng-diagram> — its own template projects only
+             ng-diagram-background-selected content, so anything else placed
+             inside it (this included) silently never mounts and its marker
+             never actually registers. Registration only needs this
+             component to render somewhere, not to be inside <ng-diagram>
+             itself — see MarkerRegistryService, a plain root-provided
+             singleton keyed by marker id. -->
+        <ng-diagram-marker>
+          <svg>
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
+              </marker>
+              <marker id="dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6">
+                <path d="M 1 5 A 4 4 0 1 0 9 5 A 4 4 0 1 0 1 5 Z" fill="context-stroke" />
+              </marker>
+            </defs>
+          </svg>
+        </ng-diagram-marker>
+        <div class="overlay minimap-panel-overlay card">
+          <div class="minimap-canvas" [class.collapsed]="!minimapVisible()">
+            <ng-diagram-minimap position="bottom-right" [width]="180" [height]="130" [showZoomControls]="false" />
+          </div>
+          <div class="minimap-actions">
+            @if (diagramInitialized()) {
+              <button class="btn icon-only" title="Zoom out" [disabled]="!viewportService.canZoomOut()" (click)="zoomBy(-0.1)">
+                <app-icon [path]="icons.zoomOut" [size]="18" />
+              </button>
+              <button class="btn secondary zoom-percentage" title="Reset zoom to 100%" (click)="resetZoom()">
+                {{ zoomPercentage() }}%
+              </button>
+              <button class="btn icon-only" title="Zoom in" [disabled]="!viewportService.canZoomIn()" (click)="zoomBy(0.1)">
+                <app-icon [path]="icons.zoomIn" [size]="18" />
+              </button>
+              <div class="v-divider"></div>
+            }
+            <button
+              class="btn icon-only"
+              [class.active-toggle]="minimapVisible()"
+              title="Show/hide minimap"
+              (click)="minimapVisible.set(!minimapVisible())"
+            >
+              <app-icon [path]="icons.minimap" [size]="18" />
+            </button>
+          </div>
         </div>
         @if (!readOnly()) {
           <app-edge-reshape-overlay />
+          <div class="overlay palette-overlay card">
+            @for (item of paletteItems; track item.shape) {
+              <ng-diagram-palette-item [item]="item.paletteItem">
+                <div
+                  class="palette-item"
+                  role="button"
+                  tabindex="0"
+                  [title]="'Drag onto the canvas, or click to add — ' + item.label"
+                  (click)="addNode(item.shape)"
+                  (keydown.enter)="addNode(item.shape)"
+                  (keydown.space)="addNode(item.shape); $event.preventDefault()"
+                >
+                  <span class="palette-preview" [class]="'preview-' + item.shape"></span>
+                  <span>{{ item.label }}</span>
+                </div>
+              </ng-diagram-palette-item>
+            }
+            <div class="h-divider"></div>
+            <button
+              type="button"
+              class="palette-item"
+              [class.active-toggle]="drawingLine()"
+              [title]="
+                drawingLine()
+                  ? 'Click to place points, click the last point again (or Esc) to finish'
+                  : 'Draw an annotation line or polyline'
+              "
+              (click)="toggleDrawLine()"
+            >
+              <span class="palette-preview preview-line"></span>
+              <span>Line</span>
+            </button>
+          </div>
+        }
+        @if (drawingLine()) {
+          <div
+            class="overlay draw-overlay"
+            role="application"
+            tabindex="0"
+            title="Click to place points — click the last point again (or Esc) to finish"
+            (click)="onDrawClick($event)"
+            (keydown.escape)="onEscapeKey()"
+          ></div>
         }
       }
 
-      @if (!readOnly()) {
-        <div class="overlay toolbar-overlay card">
+      <div class="overlay toolbar-overlay card">
+        <button class="btn icon-only" title="Back" (click)="back.emit()">
+          <app-icon [path]="icons.back" [size]="20" />
+        </button>
+        @if (!readOnly()) {
+          <div class="v-divider"></div>
           <button
             class="btn icon-only"
             [class.active-toggle]="propertiesOpen()"
@@ -272,16 +398,6 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
             (click)="propertiesOpen.set(!propertiesOpen())"
           >
             <app-icon [path]="icons.properties" [size]="20" />
-          </button>
-          <div class="v-divider"></div>
-          <button class="btn icon-only" title="Add dot marker" (click)="addNode('dot')">
-            <app-icon [path]="icons.dot" [size]="20" />
-          </button>
-          <button class="btn icon-only" title="Add box" (click)="addNode('box')">
-            <app-icon [path]="icons.shape" [size]="20" />
-          </button>
-          <button class="btn icon-only" title="Add box with ports" (click)="addNode('box-ports')">
-            <app-icon [path]="icons.ports" [size]="20" />
           </button>
           <div class="v-divider"></div>
           <button
@@ -309,8 +425,10 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
           >
             <app-icon [path]="icons.delete" [size]="20" />
           </button>
-        </div>
-      }
+        }
+        <div class="v-divider"></div>
+        <span class="diagram-title">{{ title() }}</span>
+      </div>
 
       <div class="overlay save-overlay">
         @if (readOnly()) {
@@ -371,51 +489,124 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
           <div class="overlay panel selection-overlay card">
             @if (sel.kind === 'node') {
               <h3>{{ sel.data.shape === 'background-image' ? 'Background image' : sel.data.shape }}</h3>
-              <label class="field">
-                <span>Label</span>
-                <input
-                  class="text"
-                  [value]="sel.data.label ?? ''"
-                  (change)="setNodeLabel(sel.id, sel.data, $event)"
-                />
-              </label>
+              @if (sel.data.shape !== 'anchor') {
+                <label class="field">
+                  <span>Label</span>
+                  <input
+                    class="text"
+                    [value]="sel.data.label ?? ''"
+                    (change)="setNodeLabel(sel.id, sel.data, $event)"
+                  />
+                </label>
+              }
 
               @if (sel.data.shape === 'box') {
                 <div class="fields-inline">
-                  <label class="field">
+                  <div class="field">
                     <span>Color</span>
-                    <input
-                      type="color"
-                      [disabled]="sel.data.transparent"
-                      [value]="sel.data.color ?? '#03a9f4'"
-                      (change)="setNodeColor(sel.id, sel.data, $event)"
-                    />
-                  </label>
+                    <div class="color-with-toggle">
+                      <input
+                        type="color"
+                        [disabled]="sel.data.transparent"
+                        [value]="sel.data.color ?? defaultBodyColor"
+                        (change)="setNodeColor(sel.id, sel.data, $event)"
+                      />
+                      <label class="transparent-toggle" title="No fill — border only">
+                        <input
+                          type="checkbox"
+                          [checked]="sel.data.transparent ?? false"
+                          (change)="setNodeTransparent(sel.id, sel.data, $event)"
+                        />
+                        <span>None</span>
+                      </label>
+                    </div>
+                  </div>
                   <label class="field">
                     <span>Border color</span>
                     <input
                       type="color"
-                      [value]="sel.data.borderColor ?? '#03a9f4'"
+                      [value]="sel.data.borderColor ?? defaultBorderColor"
                       (change)="setNodeBorderColor(sel.id, sel.data, $event)"
                     />
                   </label>
                 </div>
-                <label class="field-row">
-                  <input
-                    type="checkbox"
-                    [checked]="sel.data.transparent ?? false"
-                    (change)="setNodeTransparent(sel.id, sel.data, $event)"
-                  />
-                  <span>Transparent background (border only)</span>
-                </label>
-              } @else if (sel.data.shape !== 'background-image') {
+              } @else if (sel.data.shape === 'image') {
+                <div class="field">
+                  <span>Image</span>
+                  @if (sel.data.imageAttachmentId; as attachmentId) {
+                    <div class="link-image">
+                      <img
+                        class="link-thumb"
+                        [src]="linkImageUrl(attachmentId)"
+                        alt=""
+                        title="Open image"
+                        role="button"
+                        tabindex="0"
+                        (click)="openImage(attachmentId)"
+                        (keydown.enter)="openImage(attachmentId)"
+                      />
+                      <button
+                        type="button"
+                        class="link-image-remove"
+                        title="Remove image"
+                        (click)="setNodeImageAttachment(sel.id, sel.data, null)"
+                      >
+                        <app-icon [path]="icons.close" [size]="14" />
+                      </button>
+                    </div>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn secondary"
+                      (click)="openPicker({ kind: 'set-image', nodeId: sel.id })"
+                    >
+                      <app-icon [path]="icons.image" [size]="16" /> Set image
+                    </button>
+                  }
+                </div>
+              } @else if (sel.data.shape === 'box-ports') {
+                <div class="fields-inline">
+                  <label class="field">
+                    <span>Border color</span>
+                    <input
+                      type="color"
+                      [value]="sel.data.color ?? defaultBorderColor"
+                      (change)="setNodeColor(sel.id, sel.data, $event)"
+                    />
+                  </label>
+                  <label class="field">
+                    <span>Header color</span>
+                    <input
+                      type="color"
+                      [value]="sel.data.headerColor ?? defaultBodyColor"
+                      (change)="setNodeHeaderColor(sel.id, sel.data, $event)"
+                    />
+                  </label>
+                </div>
+              } @else if (sel.data.shape !== 'background-image' && sel.data.shape !== 'anchor') {
                 <label class="field">
                   <span>Color</span>
                   <input
                     type="color"
-                    [value]="sel.data.color ?? '#03a9f4'"
+                    [value]="sel.data.color ?? defaultNodeColor"
                     (change)="setNodeColor(sel.id, sel.data, $event)"
                   />
+                </label>
+              }
+
+              @if (
+                sel.data.shape !== 'background-image' &&
+                sel.data.shape !== 'anchor' &&
+                sel.data.shape !== 'image'
+              ) {
+                <label class="field">
+                  <span>Icon</span>
+                  <select class="text" (change)="setNodeIcon(sel.id, sel.data, $event)">
+                    <option value="" [selected]="!sel.data.icon">None</option>
+                    @for (opt of nodeIcons; track opt.key) {
+                      <option [value]="opt.key" [selected]="sel.data.icon === opt.key">{{ opt.label }}</option>
+                    }
+                  </select>
                 </label>
               }
 
@@ -539,7 +730,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                 </div>
               }
 
-              @if (sel.data.shape !== 'background-image') {
+              @if (sel.data.shape !== 'background-image' && sel.data.shape !== 'anchor') {
                 <div class="link-section">
                   @if (sel.data.link; as link) {
                     @if (link.kind === 'image') {
@@ -583,9 +774,11 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                     <button class="btn secondary" (click)="openPicker({ kind: 'link-device', nodeId: sel.id })">
                       <app-icon [path]="icons.device" [size]="16" /> Link to device
                     </button>
-                    <button class="btn secondary" (click)="openPicker({ kind: 'link-image', nodeId: sel.id })">
-                      <app-icon [path]="icons.image" [size]="16" /> Link to image
-                    </button>
+                    @if (sel.data.shape !== 'image') {
+                      <button class="btn secondary" (click)="openPicker({ kind: 'link-image', nodeId: sel.id })">
+                        <app-icon [path]="icons.image" [size]="16" /> Link to image
+                      </button>
+                    }
                     @if (siblingDiagrams().length > 0) {
                       <button class="btn secondary" (click)="openPicker({ kind: 'link-diagram', nodeId: sel.id })">
                         <app-icon [path]="icons.link" [size]="16" /> Link to diagram
@@ -608,22 +801,56 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                 <span>Label</span>
                 <input class="text" [value]="sel.data.label ?? ''" (change)="setEdgeLabel(sel.id, $event)" />
               </label>
-              <label class="field-row">
-                <input
-                  type="checkbox"
-                  [checked]="!!sel.sourceArrowhead"
-                  (change)="setEdgeArrowhead(sel.id, 'source', $event)"
-                />
-                <span>Arrow at start</span>
-              </label>
-              <label class="field-row">
-                <input
-                  type="checkbox"
-                  [checked]="!!sel.targetArrowhead"
-                  (change)="setEdgeArrowhead(sel.id, 'target', $event)"
-                />
-                <span>Arrow at end</span>
-              </label>
+              <div class="field">
+                <div class="control-row">
+                  <div class="control-col">
+                    <span class="field-sublabel">Start</span>
+                    <div class="arrowhead-group" role="group" aria-label="Arrowhead at start">
+                      @for (opt of arrowheadOptions; track opt.label) {
+                        <button
+                          type="button"
+                          class="arrowhead-btn"
+                          [class.active]="(sel.sourceArrowhead || undefined) === opt.value"
+                          [title]="opt.label"
+                          (click)="setEdgeArrowhead(sel.id, 'source', opt.value)"
+                        >
+                          <svg viewBox="0 0 24 10" width="22" height="10">
+                            <line x1="1" y1="5" x2="18" y2="5" />
+                            @if (opt.value === 'arrow') {
+                              <path d="M 14 1 L 22 5 L 14 9 Z" fill="currentColor" stroke="none" />
+                            } @else if (opt.value === 'dot') {
+                              <circle cx="20" cy="5" r="3" fill="currentColor" stroke="none" />
+                            }
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                  <div class="control-col">
+                    <span class="field-sublabel">End</span>
+                    <div class="arrowhead-group" role="group" aria-label="Arrowhead at end">
+                      @for (opt of arrowheadOptions; track opt.label) {
+                        <button
+                          type="button"
+                          class="arrowhead-btn"
+                          [class.active]="(sel.targetArrowhead || undefined) === opt.value"
+                          [title]="opt.label"
+                          (click)="setEdgeArrowhead(sel.id, 'target', opt.value)"
+                        >
+                          <svg viewBox="0 0 24 10" width="22" height="10">
+                            <line x1="1" y1="5" x2="18" y2="5" />
+                            @if (opt.value === 'arrow') {
+                              <path d="M 14 1 L 22 5 L 14 9 Z" fill="currentColor" stroke="none" />
+                            } @else if (opt.value === 'dot') {
+                              <circle cx="20" cy="5" r="3" fill="currentColor" stroke="none" />
+                            }
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
               <label class="field">
                 <span>Type</span>
                 <select class="text" (change)="setEdgeType(sel.id, $event)">
@@ -643,25 +870,47 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                 </select>
               </label>
               <div class="field">
-                <span>Color</span>
-                <div class="wire-color-row">
-                  <input
-                    type="color"
-                    class="wire-color-input"
-                    [value]="sel.data.color || '#9e9e9e'"
-                    (change)="setEdgeColorFromInput(sel.id, $event)"
-                    title="Custom color"
-                  />
-                  @if (sel.data.color) {
-                    <button
-                      type="button"
-                      class="btn icon-only"
-                      title="Clear color"
-                      (click)="setEdgeColor(sel.id, undefined)"
-                    >
-                      <app-icon [path]="icons.close" [size]="14" />
-                    </button>
-                  }
+                <div class="control-row">
+                  <div class="control-col">
+                    <span class="field-sublabel">Color</span>
+                    <div class="wire-color-row">
+                      <input
+                        type="color"
+                        class="wire-color-input"
+                        [value]="sel.data.color || '#9e9e9e'"
+                        (change)="setEdgeColorFromInput(sel.id, $event)"
+                        title="Custom color"
+                      />
+                      @if (sel.data.color) {
+                        <button
+                          type="button"
+                          class="btn icon-only"
+                          title="Clear color"
+                          (click)="setEdgeColor(sel.id, undefined)"
+                        >
+                          <app-icon [path]="icons.close" [size]="14" />
+                        </button>
+                      }
+                    </div>
+                  </div>
+                  <div class="control-col">
+                    <span class="field-sublabel">Dash style</span>
+                    <div class="dash-style-group" role="group" aria-label="Dash style">
+                      @for (d of dashStyles; track d) {
+                        <button
+                          type="button"
+                          class="dash-style-btn"
+                          [class.active]="(sel.data.dash ?? 'solid') === d"
+                          [title]="dashStyleLabels[d]"
+                          (click)="setEdgeDash(sel.id, d)"
+                        >
+                          <svg viewBox="0 0 24 8" width="20" height="8">
+                            <line x1="1" y1="4" x2="23" y2="4" [attr.stroke-dasharray]="dashPreviewPatterns[d]" />
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  </div>
                 </div>
               </div>
               @if (sel.data.connectionId; as connectionId) {
@@ -716,7 +965,10 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
     />
     <app-attachment-picker-dialog
       [open]="
-        pickerTarget()?.kind === 'link-image' || pickerTarget()?.kind === 'set-diagram-background'
+        pickerTarget()?.kind === 'link-image' ||
+        pickerTarget()?.kind === 'set-diagram-background' ||
+        pickerTarget()?.kind === 'set-image' ||
+        pickerTarget()?.kind === 'add-image-node'
       "
       [attachments]="imageAttachments()"
       (closed)="pickerTarget.set(null)"
@@ -753,13 +1005,14 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
          definite parent height — min-height alone doesn't count.
          dvh (not vh) so mobile browser chrome collapsing/expanding doesn't
          leave the canvas measured against a viewport taller than what's
-         actually visible. */
-      height: calc(100vh - 160px);
-      height: calc(100dvh - 160px);
+         actually visible. 57px is the app shell's own top nav bar (56px
+         min-height + 1px border) — the only chrome left above this page,
+         which otherwise runs edge-to-edge (see main:has(app-diagrams-page)
+         in app.ts). */
+      height: calc(100vh - 57px);
+      height: calc(100dvh - 57px);
       min-height: 320px;
-      border-radius: var(--ha-card-border-radius);
       overflow: hidden;
-      border: 1px solid var(--ha-card-border-color);
     }
     ng-diagram {
       width: 100%;
@@ -777,6 +1030,15 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       align-items: center;
       gap: 2px;
       padding: 4px;
+      max-width: calc(100% - 24px);
+    }
+    .diagram-title {
+      min-width: 0;
+      padding: 0 10px 0 4px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .v-divider {
       width: 1px;
@@ -791,9 +1053,150 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       align-items: center;
       gap: 8px;
     }
-    .zoom-reset-overlay {
+    /* One panel — minimap canvas on top (collapsible), zoom controls +
+       minimap toggle always visible in the footer below it — rather than
+       two separately-floating overlays that would drift apart when the
+       minimap is hidden. */
+    .minimap-panel-overlay {
       bottom: 12px;
+      right: 12px;
+      display: flex;
+      flex-direction: column;
+      padding: 4px;
+      overflow: hidden;
+    }
+    .minimap-canvas {
+      display: grid;
+      grid-template-rows: 1fr;
+      transition: grid-template-rows 200ms ease;
+    }
+    .minimap-canvas.collapsed {
+      grid-template-rows: 0fr;
+    }
+    /* ng-diagram-minimap normally self-positions and draws its own
+       card (background/border/shadow/margin) — neutralize both so it
+       just contributes its SVG content to this panel instead of nesting
+       a second card inside this one. */
+    .minimap-canvas ng-diagram-minimap {
+      position: static;
+      overflow: hidden;
+      min-height: 0;
+      --ngd-minimap-background: transparent;
+      --ngd-minimap-border-color: transparent;
+      --ngd-minimap-shadow-color: transparent;
+      --ngd-minimap-border-radius: 0;
+      --ngd-minimap-margin: 0;
+    }
+    .minimap-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .zoom-percentage {
+      min-width: 48px;
+    }
+    .palette-overlay {
+      top: 60px;
       left: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 6px;
+    }
+    .palette-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      border: none;
+      background: none;
+      font: inherit;
+      text-align: left;
+      padding: 6px 10px 6px 6px;
+      border-radius: 6px;
+      cursor: grab;
+      font-size: 12px;
+      color: var(--primary-text-color);
+      /* Otherwise the browser's native drag ghost (a screenshot of this
+         element under the cursor) picks up whatever text got selected by an
+         accidental click-drag, instead of a clean drag image. */
+      user-select: none;
+    }
+    .palette-item:hover {
+      background: var(--hover-color);
+    }
+    .palette-item:active {
+      cursor: grabbing;
+    }
+    /* Small non-interactive previews of the actual node appearance — plain
+       mdi glyphs here read as "generic shape/marker/switch", not as what
+       dragging the item actually produces. */
+    .palette-preview {
+      flex-shrink: 0;
+      width: 24px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .preview-dot::before {
+      content: '';
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: ${DEFAULT_NODE_COLOR};
+    }
+    .preview-box::before {
+      content: '';
+      width: 100%;
+      height: 100%;
+      border-radius: 4px;
+      border: 2px solid ${DEFAULT_BORDER_COLOR};
+      background: ${DEFAULT_BODY_COLOR};
+      box-sizing: border-box;
+    }
+    .preview-box-ports::before {
+      content: '';
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      border: 2px solid ${DEFAULT_BORDER_COLOR};
+      border-radius: 3px;
+      background: ${DEFAULT_PORTS_BG_COLOR};
+      box-shadow:
+        -5px 0 0 -4px ${DEFAULT_BORDER_COLOR},
+        5px 0 0 -4px ${DEFAULT_BORDER_COLOR};
+    }
+    .preview-image::before {
+      content: '';
+      width: 100%;
+      height: 100%;
+      border-radius: 4px;
+      border: 2px solid ${DEFAULT_BORDER_COLOR};
+      background: ${DEFAULT_BODY_COLOR};
+      box-sizing: border-box;
+    }
+    .preview-line::before {
+      content: '';
+      width: 20px;
+      height: 2px;
+      background: ${DEFAULT_NODE_COLOR};
+      transform: rotate(-30deg);
+    }
+    .h-divider {
+      height: 1px;
+      background: var(--divider-color);
+      margin: 2px 4px;
+    }
+    /* Covers the canvas while the line tool is active — clicks place points
+       instead of selecting/panning, and being on top of <ng-diagram> (which
+       is static-positioned, not absolute) blocks pan/zoom gestures for free.
+       Lower z-index than the toolbar/palette/minimap overlays (10) so those
+       stay usable — e.g. to click the Line tool again to stop drawing. */
+    .draw-overlay {
+      inset: 0;
+      z-index: 5;
+      cursor: crosshair;
     }
     .dirty-dot {
       width: 8px;
@@ -893,6 +1296,19 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       gap: 4px;
       justify-content: flex-end;
     }
+    .color-with-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .transparent-toggle {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      cursor: pointer;
+    }
     .wire-color-row {
       display: flex;
       align-items: center;
@@ -906,6 +1322,82 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       border: none;
       background: none;
       cursor: pointer;
+    }
+    .dash-style-group {
+      display: flex;
+      gap: 2px;
+      border: 1px solid var(--divider-color);
+      border-radius: 6px;
+      padding: 2px;
+    }
+    .dash-style-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 20px;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      background: none;
+      color: var(--secondary-text-color);
+      cursor: pointer;
+    }
+    .dash-style-btn svg {
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
+    .dash-style-btn:hover {
+      background: var(--secondary-background-color);
+    }
+    .dash-style-btn.active {
+      background: var(--accent-color);
+      color: var(--text-primary-color, #fff);
+    }
+    .control-row {
+      display: flex;
+      gap: 12px;
+    }
+    .control-col {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .field-sublabel {
+      font-size: 11px;
+      color: var(--secondary-text-color);
+    }
+    .arrowhead-group {
+      display: flex;
+      gap: 2px;
+      border: 1px solid var(--divider-color);
+      border-radius: 6px;
+      padding: 2px;
+    }
+    .arrowhead-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 20px;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      background: none;
+      color: var(--secondary-text-color);
+      cursor: pointer;
+    }
+    .arrowhead-btn svg {
+      stroke: currentColor;
+      stroke-width: 1.5;
+    }
+    .arrowhead-btn:hover {
+      background: var(--secondary-background-color);
+    }
+    .arrowhead-btn.active {
+      background: var(--accent-color);
+      color: var(--text-primary-color, #fff);
     }
     .link-chip {
       display: flex;
@@ -1009,13 +1501,6 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
         width: auto;
         max-height: 45%;
       }
-      .canvas-wrap {
-        /* The header wraps to multiple lines at this width, eating into the
-           160px budget above — give the canvas a fixed, generous floor
-           instead of trusting the desktop-tuned offset. */
-        height: 70dvh;
-        min-height: 280px;
-      }
     }
   `,
 })
@@ -1034,7 +1519,11 @@ export class DiagramCanvasComponent implements OnDestroy {
   private readonly nodeService = inject(NgDiagramNodeService);
   private readonly diagramService = inject(NgDiagramService);
   private readonly selectionService = inject(NgDiagramSelectionService);
-  private readonly viewportService = inject(NgDiagramViewportService);
+  protected readonly viewportService = inject(NgDiagramViewportService);
+  protected readonly zoomPercentage = computed(() => Math.round(100 * this.viewportService.scale()));
+  /** viewportService's canZoomIn/canZoomOut/scale throw until this is true (same
+   *  guard the library's own — now-replaced — zoom controls used internally). */
+  protected readonly diagramInitialized = this.diagramService.isInitialized;
   private readonly viewState = inject(DiagramViewState);
   private readonly deviceDlg = viewChild.required<ElementRef<HTMLDialogElement>>('deviceDlg');
   private readonly canvasEl = viewChild<unknown, ElementRef<HTMLElement>>('canvasEl', { read: ElementRef });
@@ -1044,15 +1533,37 @@ export class DiagramCanvasComponent implements OnDestroy {
   readonly deviceId = input<string | null>(null);
   readonly saved = output<DiagramDto>();
   readonly deleted = output<void>();
+  readonly back = output<void>();
 
   protected readonly nodeTemplateMap = new NgDiagramNodeTemplateMap([
     ['dot', DotNodeComponent],
     ['box', BoxNodeComponent],
     ['box-ports', BoxPortsNodeComponent],
     ['background-image', BackgroundImageNodeComponent],
+    ['anchor', AnchorNodeComponent],
+    ['image', ImageNodeComponent],
   ]);
   protected readonly edgeTemplateMap = new NgDiagramEdgeTemplateMap([['wire', WireEdgeComponent]]);
   protected readonly wireTypes = WIRE_TYPES;
+  protected readonly defaultNodeColor = DEFAULT_NODE_COLOR;
+  protected readonly defaultBodyColor = DEFAULT_BODY_COLOR;
+  protected readonly defaultBorderColor = DEFAULT_BORDER_COLOR;
+  protected readonly dashStyles = DASH_STYLES;
+  protected readonly dashStyleLabels = DASH_STYLE_LABELS;
+  /** Scaled down for a 24x8 icon preview — DASH_STYLE_PATTERNS' coordinates
+   *  are sized for real edge strokes and read as near-solid at this size. */
+  protected readonly dashPreviewPatterns: Record<DashStyle, string | undefined> = {
+    solid: undefined,
+    dashed: '4 2',
+    dotted: '1 2',
+    'dash-dot': '4 2 1 2',
+  };
+  /** Marker ids — must match the ids registered on <ng-diagram-marker> above. */
+  protected readonly arrowheadOptions: { value: string | undefined; label: string }[] = [
+    { value: undefined, label: 'None' },
+    { value: 'arrow', label: 'Arrow' },
+    { value: 'dot', label: 'Dot' },
+  ];
   protected readonly model = signal<ModelAdapter | null>(null);
   /** Diagrams open read-only; "Edit" unlocks dragging/resizing/linking and the
    *  editing toolbar, "Save" persists and locks it back down. Clicking a
@@ -1067,6 +1578,11 @@ export class DiagramCanvasComponent implements OnDestroy {
    *  can read it for its CanDeactivate guard — see diagrams-deactivate.guard.ts. */
   readonly hasUnsavedChanges = computed(() => !this.readOnly() && this.dirty());
   protected readonly propertiesOpen = signal(false);
+  protected readonly minimapVisible = signal(true);
+  protected readonly drawingLine = signal(false);
+  /** Anchors placed so far in the line/polyline currently being drawn, in
+   *  click order — empty whenever the tool isn't mid-chain. */
+  private lineAnchorPositions: { id: string; position: Point }[] = [];
   protected readonly pickerTarget = signal<PickerTarget | null>(null);
   protected readonly imageAttachments = signal<AttachmentDto[]>([]);
   protected readonly siblingDiagrams = signal<DiagramDto[]>([]);
@@ -1165,9 +1681,6 @@ export class DiagramCanvasComponent implements OnDestroy {
   );
 
   protected readonly icons = {
-    dot: mdiCircleOutline,
-    shape: mdiShapeOutline,
-    ports: mdiElectricSwitch,
     area: mdiFloorPlan,
     device: mdiDevices,
     connection: mdiTransitConnectionVariant,
@@ -1183,12 +1696,47 @@ export class DiagramCanvasComponent implements OnDestroy {
     close: mdiClose,
     up: mdiChevronUp,
     down: mdiChevronDown,
+    back: mdiArrowLeft,
     bringToFront: mdiArrangeBringToFront,
     sendToBack: mdiArrangeSendToBack,
+    zoomIn: mdiMagnifyPlusOutline,
+    zoomOut: mdiMagnifyMinusOutline,
+    minimap: mdiMap,
   };
+  protected readonly nodeIcons = NODE_ICONS;
+  /** Static templates for ng-diagram's own palette drag-and-drop (see
+   *  PaletteDropDirective, host-bundled into <ng-diagram> itself) — dropping
+   *  one creates a node with this exact data, positioned wherever it was
+   *  dropped. Reused across drops as-is: box/dot's data has no per-instance
+   *  fields, and box-ports' port ids only need to be unique within their own
+   *  node (every lookup pairs a port id with its owning node id — see
+   *  findPort/propagateFromPort below), so a fixed template is safe. */
+  protected readonly paletteItems: { shape: Shape; label: string; paletteItem: NgDiagramPaletteItem }[] = [
+    { shape: 'dot', label: 'Marker', paletteItem: nodePaletteItem('dot', { shape: 'dot' }) },
+    {
+      shape: 'box',
+      label: 'Box',
+      paletteItem: nodePaletteItem('box', { shape: 'box' }, { size: BOX_DEFAULT_SIZE, autoSize: false }),
+    },
+    {
+      shape: 'box-ports',
+      label: 'Box with ports',
+      paletteItem: nodePaletteItem('box-ports', {
+        shape: 'box-ports',
+        ports: [
+          { id: 'in-1', label: 'In 1', direction: 'in' },
+          { id: 'out-1', label: 'Out 1', direction: 'out' },
+        ],
+      }),
+    },
+    {
+      shape: 'image',
+      label: 'Image',
+      paletteItem: nodePaletteItem('image', { shape: 'image' }, { size: BOX_DEFAULT_SIZE, autoSize: false }),
+    },
+  ];
 
   private version = 1;
-  private addCount = 0;
   /**
    * Plain (non-signal) reference to the live model, used only for cleanup.
    * `load()` runs inside an effect watching `diagramId()` — reading the
@@ -1490,6 +2038,7 @@ export class DiagramCanvasComponent implements OnDestroy {
         ...edgeData,
         type: value,
         color: wireOrCableColor(value, this.connectionTypes) ?? edgeData.color,
+        dash: wireOrCableDash(value, this.connectionTypes) ?? edgeData.dash,
       });
     }
     if (targetPort && !targetPort.type && value) {
@@ -1511,6 +2060,13 @@ export class DiagramCanvasComponent implements OnDestroy {
   protected resetZoom(): void {
     const v = this.viewportService.viewport();
     this.viewportService.setViewport(v.x, v.y, 1);
+  }
+
+  /** Same step size and factor math as ng-diagram's own (internal, unstyleable)
+   *  zoom-controls component, since ours replaces it — see zoom-controls-overlay. */
+  protected zoomBy(step: number): void {
+    const scale = this.viewportService.scale();
+    this.viewportService.zoom((scale + step) / scale);
   }
 
   /** In read-only (view) mode there's no edit/save flow to piggyback on, so
@@ -1561,10 +2117,14 @@ export class DiagramCanvasComponent implements OnDestroy {
     return toContent(model.getNodes(), model.getEdges(), viewport ?? this.viewportService.viewport());
   }
 
-  private nextPosition() {
-    const v = this.viewportService.viewport();
-    this.addCount++;
-    return { x: v.x + (this.addCount % 5) * 30, y: v.y + Math.floor(this.addCount / 5) * 30 };
+  /** Center of the currently visible canvas, in flow coordinates — where a
+   *  palette click (as opposed to a drag-drop, which lands exactly under the
+   *  cursor) drops a new node, so it lands somewhere visible instead of a
+   *  fixed spot the user has to go hunt for. */
+  private viewportCenterPosition(): Point {
+    const rect = this.canvasEl()?.nativeElement.getBoundingClientRect();
+    if (!rect) return this.viewportService.viewport();
+    return this.viewportService.clientToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
   }
 
   /** crypto.randomUUID() only exists in secure contexts (HTTPS/localhost) — fall back on plain HTTP LAN access. */
@@ -1583,7 +2143,19 @@ export class DiagramCanvasComponent implements OnDestroy {
     }
   }
 
+  /** Click-to-add path (palette drag-and-drop bypasses this entirely — the
+   *  dropped node is created directly by ng-diagram's own palette machinery,
+   *  see paletteItems below). Drops the node at the center of the current
+   *  viewport, so it lands somewhere visible instead of a fixed spot the
+   *  user has to go hunt for. */
   protected addNode(shape: Shape): void {
+    // Image nodes only make sense once an attachment is chosen — same
+    // creation flow as the background image (open the picker; addImageNode
+    // creates the node itself once one's picked). No empty node otherwise.
+    if (shape === 'image') {
+      this.pickerTarget.set({ kind: 'add-image-node' });
+      return;
+    }
     const data: NodeData =
       shape === 'box-ports'
         ? {
@@ -1595,11 +2167,96 @@ export class DiagramCanvasComponent implements OnDestroy {
               { id: this.generateId(), label: 'Out 1', direction: 'out' },
             ],
           }
-        : // No label by default here either — dot-node/box-node fall back to
-          // "Marker"/"Box" on the canvas, which leaves the label free to be
-          // set from a linked entity's name instead of overwriting a placeholder.
-          { shape, color: '#03a9f4' };
-    this.modelService.addNodes([{ id: this.generateId(), type: shape, position: this.nextPosition(), data }]);
+        : // No label by default here either — dot/box node components fall
+          // back to "Marker"/"Box" on the canvas, which leaves the label
+          // free to be set from a linked entity's name instead of
+          // overwriting a placeholder.
+          { shape };
+    const id = this.generateId();
+    this.modelService.addNodes([
+      {
+        id,
+        type: shape,
+        position: this.viewportCenterPosition(),
+        data,
+        ...(shape === 'box' ? { size: BOX_DEFAULT_SIZE, autoSize: false } : {}),
+      },
+    ]);
+    this.selectionService.select([id]);
+  }
+
+  /** Selects a node dropped from the palette so its properties panel opens
+   *  immediately, same as addNode's click-to-add path. */
+  protected onPaletteItemDropped(event: PaletteItemDroppedEvent): void {
+    this.selectionService.select([event.node.id]);
+  }
+
+  protected toggleDrawLine(): void {
+    if (this.drawingLine()) {
+      this.endLineChain();
+      return;
+    }
+    this.lineAnchorPositions = [];
+    this.drawingLine.set(true);
+  }
+
+  /** Each click places another anchor and — once there's a previous one —
+   *  a straight ('polyline' routing, i.e. no orthogonal snapping) edge
+   *  connecting it to the new one. Clicking back on the last-placed anchor
+   *  ends the chain instead of adding a zero-length segment there. */
+  protected onDrawClick(event: MouseEvent): void {
+    const position = this.viewportService.clientToFlowPosition({ x: event.clientX, y: event.clientY });
+    const last = this.lineAnchorPositions[this.lineAnchorPositions.length - 1];
+    const endClickRadius = LINE_END_CLICK_SCREEN_RADIUS / this.viewportService.scale();
+    if (last && Math.hypot(position.x - last.position.x, position.y - last.position.y) <= endClickRadius) {
+      this.endLineChain();
+      return;
+    }
+
+    const id = this.generateId();
+    this.modelService.addNodes([
+      {
+        id,
+        type: 'anchor',
+        position: { x: position.x - ANCHOR_SIZE.width / 2, y: position.y - ANCHOR_SIZE.height / 2 },
+        size: ANCHOR_SIZE,
+        autoSize: false,
+        resizable: false,
+        rotatable: false,
+        data: { shape: 'anchor' },
+      },
+    ]);
+    if (last) {
+      this.modelService.addEdges([
+        {
+          id: this.generateId(),
+          source: last.id,
+          sourcePort: ANCHOR_PORT_ID,
+          target: id,
+          targetPort: ANCHOR_PORT_ID,
+          type: 'wire',
+          routing: 'polyline',
+          data: {},
+        },
+      ]);
+    }
+    this.lineAnchorPositions.push({ id, position });
+  }
+
+  /** Escape, clicking the last-placed point again, and toggling the tool
+   *  off all funnel here. A single unconnected point (no second click yet)
+   *  is discarded rather than left behind as a stray, edge-less dot. */
+  private endLineChain(): void {
+    if (this.lineAnchorPositions.length === 1) {
+      this.modelService.deleteNodes([this.lineAnchorPositions[0].id]);
+    }
+    this.lineAnchorPositions = [];
+    this.drawingLine.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscapeKey(): void {
+    if (this.drawingLine()) this.endLineChain();
   }
 
   protected addPort(nodeId: string, data: BoxPortsNodeData, direction: PortDirection): void {
@@ -1660,6 +2317,7 @@ export class DiagramCanvasComponent implements OnDestroy {
       ...data,
       type: connectionType,
       color: wireOrCableColor(connectionType, this.connectionTypes) ?? data.color,
+      dash: wireOrCableDash(connectionType, this.connectionTypes) ?? data.dash,
     });
     this.cascadeTypeFromEdge(edgeId, undefined, connectionType);
   }
@@ -1711,7 +2369,12 @@ export class DiagramCanvasComponent implements OnDestroy {
       this.modelService.updateEdgeData(edge.id, {
         ...edgeData,
         type: newType,
-        ...(newType ? { color: wireOrCableColor(newType, this.connectionTypes) ?? edgeData.color } : {}),
+        ...(newType
+          ? {
+              color: wireOrCableColor(newType, this.connectionTypes) ?? edgeData.color,
+              dash: wireOrCableDash(newType, this.connectionTypes) ?? edgeData.dash,
+            }
+          : {}),
       });
       this.propagateFromEdge(edge.id, oldType, newType, visitedPorts, visitedEdges);
     }
@@ -1850,6 +2513,8 @@ export class DiagramCanvasComponent implements OnDestroy {
     if (!target) return;
     if (target.kind === 'set-diagram-background') {
       this.addBackgroundImageNode(attachment);
+    } else if (target.kind === 'add-image-node') {
+      this.addImageNode(attachment);
     } else if (target.kind === 'link-image') {
       const existing = this.modelService.getNodeById<NodeData>(target.nodeId)?.data;
       if (existing) {
@@ -1859,8 +2524,36 @@ export class DiagramCanvasComponent implements OnDestroy {
           label: existing.label || attachment.title || attachment.originalName,
         });
       }
+    } else if (target.kind === 'set-image') {
+      const existing = this.modelService.getNodeById<NodeData>(target.nodeId)?.data;
+      if (existing && existing.shape === 'image') {
+        this.updateSelectedNodeData(target.nodeId, {
+          ...existing,
+          imageAttachmentId: attachment.id,
+          label: existing.label || attachment.title || attachment.originalName,
+        });
+      }
     }
     this.pickerTarget.set(null);
+  }
+
+  private addImageNode(attachment: AttachmentDto): void {
+    const id = this.generateId();
+    this.modelService.addNodes([
+      {
+        id,
+        type: 'image',
+        position: this.viewportCenterPosition(),
+        size: BOX_DEFAULT_SIZE,
+        autoSize: false,
+        data: {
+          shape: 'image',
+          imageAttachmentId: attachment.id,
+          label: attachment.title ?? attachment.originalName,
+        },
+      },
+    ]);
+    this.selectionService.select([id]);
   }
 
   protected onAreaLinkPicked(area: AreaDto): void {
@@ -1959,9 +2652,24 @@ export class DiagramCanvasComponent implements OnDestroy {
     this.updateSelectedNodeData(nodeId, { ...data, borderColor });
   }
 
+  protected setNodeHeaderColor(nodeId: string, data: NodeData, event: Event): void {
+    const headerColor = (event.target as HTMLInputElement).value;
+    this.updateSelectedNodeData(nodeId, { ...data, headerColor });
+  }
+
+  protected setNodeImageAttachment(nodeId: string, data: NodeData, attachmentId: string | null): void {
+    if (data.shape !== 'image') return;
+    this.updateSelectedNodeData(nodeId, { ...data, imageAttachmentId: attachmentId ?? undefined });
+  }
+
   protected setNodeTransparent(nodeId: string, data: NodeData, event: Event): void {
     const transparent = (event.target as HTMLInputElement).checked;
     this.updateSelectedNodeData(nodeId, { ...data, transparent });
+  }
+
+  protected setNodeIcon(nodeId: string, data: NodeData, event: Event): void {
+    const icon = (event.target as HTMLSelectElement).value || undefined;
+    this.updateSelectedNodeData(nodeId, { ...data, icon });
   }
 
   protected setEdgeLabel(edgeId: string, event: Event): void {
@@ -1971,9 +2679,7 @@ export class DiagramCanvasComponent implements OnDestroy {
     this.modelService.updateEdgeData(edgeId, { ...sel.data, label });
   }
 
-  protected setEdgeArrowhead(edgeId: string, end: 'source' | 'target', event: Event): void {
-    const checked = (event.target as HTMLInputElement).checked;
-    const arrowhead = checked ? 'arrow' : undefined;
+  protected setEdgeArrowhead(edgeId: string, end: 'source' | 'target', arrowhead: string | undefined): void {
     const sel = this.selection();
     if (sel?.kind !== 'edge') return;
     const key = end === 'source' ? 'sourceArrowhead' : 'targetArrowhead';
@@ -2007,11 +2713,24 @@ export class DiagramCanvasComponent implements OnDestroy {
     const data: EdgeData = {
       ...sel.data,
       type,
-      ...(type ? { color: wireOrCableColor(type, this.connectionTypes) ?? sel.data.color } : {}),
+      ...(type
+        ? {
+            color: wireOrCableColor(type, this.connectionTypes) ?? sel.data.color,
+            dash: wireOrCableDash(type, this.connectionTypes) ?? sel.data.dash,
+          }
+        : {}),
     };
     this.modelService.updateEdgeData(edgeId, data);
     this.selection.set({ ...sel, data });
     this.cascadeTypeFromEdge(edgeId, oldType, type);
+  }
+
+  protected setEdgeDash(edgeId: string, dash: DashStyle): void {
+    const sel = this.selection();
+    if (sel?.kind !== 'edge') return;
+    const data = { ...sel.data, dash };
+    this.modelService.updateEdgeData(edgeId, data);
+    this.selection.set({ ...sel, data });
   }
 
   /** Drops any manually reshaped route and reverts to auto-routing. */

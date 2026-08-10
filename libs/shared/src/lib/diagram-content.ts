@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ConnectionTypeSchema } from './enums';
+import { DashStyleSchema } from './dash-style';
 
 /**
  * Structural node/edge fields (id, position, size, source, target, ...) are
@@ -57,10 +58,18 @@ const NodeDataBase = z.object({
   label: z.string().max(200).optional(),
   color: z.string().optional(),
   borderColor: z.string().optional(),
-  /** When set, a 'box' renders border-only (no fill) — lets boxes be used
-   *  as plain grouping outlines without hiding whatever's behind them. */
+  /** Box-ports only: the header bar's background, independent of `color`
+   *  (which drives the card's border there). Meaningless on other shapes. */
+  headerColor: z.string().optional(),
+  /** When set, a 'box'/'image' renders border-only (no fill) — lets them be
+   *  used as plain grouping outlines without hiding whatever's behind them. */
   transparent: z.boolean().optional(),
   link: NodeLinkSchema.optional(),
+  /** Key into the frontend's curated node-icon registry (see node-icons.ts)
+   *  — not raw SVG/path data, so the registry can change without touching
+   *  saved diagrams. Supported by dot/box/box-ports/image; meaningless on a
+   *  background-image node so the UI doesn't offer it there. */
+  icon: z.string().optional(),
 });
 
 /** A small labeled marker. */
@@ -80,6 +89,19 @@ export const BoxPortsNodeDataSchema = NodeDataBase.extend({
 });
 export type BoxPortsNodeData = z.infer<typeof BoxPortsNodeDataSchema>;
 
+/** A freely draggable/resizable photo — unlike the locked full-bleed
+ *  'background-image' shape it's otherwise modeled on. The photo is its own
+ *  `imageAttachmentId` field, deliberately separate from `link` — so the
+ *  node can ALSO link to a real Area/Device/Diagram/Connection without that
+ *  competing with what photo it shows (link's own 'image' kind still exists
+ *  for other shapes, e.g. a 'box' rendering a photo in place of its label).
+ *  No color/border/icon — see ImageNodeComponent. */
+export const ImageNodeDataSchema = NodeDataBase.extend({
+  shape: z.literal('image'),
+  imageAttachmentId: z.string().optional(),
+});
+export type ImageNodeData = z.infer<typeof ImageNodeDataSchema>;
+
 /** A full-bleed backdrop image (e.g. a floor plan) — no ports, sent to the
  *  back of the stack. Usually locked (not draggable/resizable) so it doesn't
  *  get bumped while working on the diagram; unlock it to reposition/resize. */
@@ -88,11 +110,21 @@ export const BackgroundImageNodeDataSchema = NodeDataBase.extend({
 });
 export type BackgroundImageNodeData = z.infer<typeof BackgroundImageNodeDataSchema>;
 
+/** A minimal draggable point — not labeled, colored, iconed, or linkable.
+ *  Exists only as one end of an annotation Line/polyline (see the diagram
+ *  canvas's line-drawing tool): the line itself is a plain 'wire' edge
+ *  between two of these, so each vertex stays independently draggable for
+ *  free instead of needing custom multi-point-edge handle logic. */
+export const AnchorNodeDataSchema = NodeDataBase.extend({ shape: z.literal('anchor') });
+export type AnchorNodeData = z.infer<typeof AnchorNodeDataSchema>;
+
 export const NodeDataSchema = z.discriminatedUnion('shape', [
   DotNodeDataSchema,
   BoxNodeDataSchema,
   BoxPortsNodeDataSchema,
   BackgroundImageNodeDataSchema,
+  AnchorNodeDataSchema,
+  ImageNodeDataSchema,
 ]);
 export type NodeData = z.infer<typeof NodeDataSchema>;
 
@@ -105,6 +137,9 @@ export const EdgeDataSchema = z.object({
    *  changed independently without affecting or clearing the type. See
    *  NodePort.type — same field, same reasoning. */
   type: WireOrCableTypeSchema.optional(),
+  /** Same one-shot-preset-then-independently-editable treatment as color —
+   *  see DashStyle. */
+  dash: DashStyleSchema.optional(),
 });
 export type EdgeData = z.infer<typeof EdgeDataSchema>;
 
@@ -113,7 +148,7 @@ const Size = z.object({ width: z.number(), height: z.number() });
 
 export const DiagramNodeSchema = z.object({
   id: z.string().min(1),
-  type: z.enum(['dot', 'box', 'box-ports', 'background-image']).optional(),
+  type: z.enum(['dot', 'box', 'box-ports', 'background-image', 'anchor', 'image']).optional(),
   position: Point,
   size: Size.optional(),
   autoSize: z.boolean().optional(),

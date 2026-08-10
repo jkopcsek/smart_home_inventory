@@ -1,7 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Node as NgNode, NgDiagramNodeTemplate, NgDiagramPortComponent } from 'ng-diagram';
+import { mdiLinkVariant } from '@mdi/js';
 import { BoxPortsNodeData, NodePort, wireOrCableColor, wireOrCableLabel } from '@smart-home-inventory/shared';
 import { ConnectionTypesStore } from '../../../core/connection-types/connection-types.store';
+import { IconComponent } from '../../../shared/ui/icon.component';
+import { DEFAULT_BODY_COLOR, DEFAULT_BORDER_COLOR, DEFAULT_PORTS_BG_COLOR, DEFAULT_SEPARATOR_COLOR } from './node-defaults';
+import { nodeIconPath } from './node-icons';
 
 /**
  * The "Box with ports" shape: a user-configurable number of named
@@ -13,12 +17,22 @@ import { ConnectionTypesStore } from '../../../core/connection-types/connection-
  */
 @Component({
   selector: 'app-box-ports-node',
-  imports: [NgDiagramPortComponent],
+  imports: [NgDiagramPortComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="box-ports" [style.borderColor]="data().color || '#03a9f4'">
-      <div class="header" [style.background]="data().color || '#03a9f4'">
+    <div
+      class="box-ports"
+      [class.selected]="node().selected"
+      [style.borderColor]="data().color || defaultBorderColor"
+    >
+      <div class="header" [style.background]="data().headerColor || defaultHeaderColor">
+        @if (iconPath(); as p) {
+          <app-icon class="header-icon" [path]="p" [size]="16" />
+        }
         {{ data().label || 'Switch box' }}
+        @if (data().link) {
+          <app-icon class="link-badge" [path]="linkIcon" [size]="12" title="Linked to a real item" />
+        }
       </div>
       <div class="columns">
         <div class="column">
@@ -68,13 +82,22 @@ import { ConnectionTypesStore } from '../../../core/connection-types/connection-
   `,
   styles: `
     .box-ports {
-      background: var(--card-background-color);
+      background: ${DEFAULT_PORTS_BG_COLOR};
       border: 2px solid;
       border-radius: 8px;
       min-width: 210px;
       overflow: visible;
     }
+    /* The library's default selection ring only applies via
+       ng-diagram-base-node-template, which this custom shape doesn't use —
+       draw our own around the whole box. Accent (not primary) color —
+       primary is also the default border/header color, so a same-colored
+       ring would blend in on an unstyled box. */
+    .box-ports.selected {
+      box-shadow: 0 0 0 3px var(--accent-color);
+    }
     .header {
+      position: relative;
       color: #fff;
       font-size: 14px;
       font-weight: 500;
@@ -82,6 +105,16 @@ import { ConnectionTypesStore } from '../../../core/connection-types/connection-
       border-radius: 6px 6px 0 0;
       text-align: center;
       letter-spacing: 0.02em;
+    }
+    .header-icon {
+      vertical-align: -3px;
+      margin-right: 4px;
+    }
+    .link-badge {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
     }
     .columns {
       display: flex;
@@ -94,7 +127,7 @@ import { ConnectionTypesStore } from '../../../core/connection-types/connection-
       padding: 10px 0;
     }
     .column:first-child {
-      border-right: 1px solid var(--divider-color);
+      border-right: 1px solid ${DEFAULT_SEPARATOR_COLOR};
     }
     .align-right {
       align-items: flex-end;
@@ -108,7 +141,7 @@ import { ConnectionTypesStore } from '../../../core/connection-types/connection-
       box-sizing: border-box;
       min-height: 36px;
       padding: 6px 14px;
-      border-bottom: 1px solid var(--divider-color);
+      border-bottom: 1px solid ${DEFAULT_SEPARATOR_COLOR};
     }
     .port-row--last {
       border-bottom: none;
@@ -140,7 +173,7 @@ import { ConnectionTypesStore } from '../../../core/connection-types/connection-
     .port-shape {
       width: 10px;
       height: 16px;
-      background: var(--card-background-color);
+      background: ${DEFAULT_PORTS_BG_COLOR};
       border: 1px solid var(--secondary-text-color);
       transition:
         background-color 120ms ease,
@@ -189,8 +222,12 @@ import { ConnectionTypesStore } from '../../../core/connection-types/connection-
 export class BoxPortsNodeComponent implements NgDiagramNodeTemplate<BoxPortsNodeData> {
   readonly node = input.required<NgNode<BoxPortsNodeData>>();
   protected readonly connectionTypes = inject(ConnectionTypesStore);
+  protected readonly linkIcon = mdiLinkVariant;
+  protected readonly defaultBorderColor = DEFAULT_BORDER_COLOR;
+  protected readonly defaultHeaderColor = DEFAULT_BODY_COLOR;
 
   protected readonly data = computed(() => this.node().data);
+  protected readonly iconPath = computed(() => nodeIconPath(this.data().icon));
   protected readonly inputPorts = computed(() => this.portsByDirection('in'));
   protected readonly outputPorts = computed(() => this.portsByDirection('out'));
   protected readonly wireOrCableLabel = wireOrCableLabel;

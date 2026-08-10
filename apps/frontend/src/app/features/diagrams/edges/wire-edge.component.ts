@@ -6,8 +6,10 @@ import {
   NgDiagramEdgeTemplate,
   Point,
 } from 'ng-diagram';
-import { EdgeData, wireOrCableLabel } from '@smart-home-inventory/shared';
+import { mdiLinkVariant } from '@mdi/js';
+import { DASH_STYLE_PATTERNS, EdgeData, wireOrCableLabel } from '@smart-home-inventory/shared';
 import { ConnectionTypesStore } from '../../../core/connection-types/connection-types.store';
+import { IconComponent } from '../../../shared/ui/icon.component';
 
 /**
  * The 'wire' edge template — same look as ng-diagram's default edge, except
@@ -20,23 +22,37 @@ import { ConnectionTypesStore } from '../../../core/connection-types/connection-
  */
 @Component({
   selector: 'app-wire-edge',
-  imports: [NgDiagramBaseEdgeComponent, NgDiagramBaseEdgeLabelComponent],
+  imports: [NgDiagramBaseEdgeComponent, NgDiagramBaseEdgeLabelComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-diagram-base-edge
       [edge]="edge()"
       [stroke]="strokeColor()"
+      [strokeDasharray]="strokeDasharray()"
       [sourceArrowhead]="edge().sourceArrowhead"
       [targetArrowhead]="edge().targetArrowhead"
     >
-      @if (label() || typeLabel()) {
+      @if (label() || typeLabel() || linked()) {
         <ng-diagram-base-edge-label [id]="edge().id + '-info'" [positionOnEdge]="0.5">
           <div class="edge-info" [style.transform]="labelOffsetTransform()">
             @if (label()) {
-              <span class="label">{{ label() }}</span>
+              <span class="label">
+                {{ label() }}
+                @if (linked() && !typeLabel()) {
+                  <app-icon class="link-badge" [path]="linkIcon" [size]="11" title="Linked to a real connection" />
+                }
+              </span>
             }
             @if (typeLabel()) {
-              <span class="type">{{ typeLabel() }}</span>
+              <span class="type">
+                {{ typeLabel() }}
+                @if (linked()) {
+                  <app-icon class="link-badge" [path]="linkIcon" [size]="11" title="Linked to a real connection" />
+                }
+              </span>
+            }
+            @if (linked() && !label() && !typeLabel()) {
+              <app-icon class="link-badge" [path]="linkIcon" [size]="11" title="Linked to a real connection" />
             }
           </div>
         </ng-diagram-base-edge-label>
@@ -61,17 +77,29 @@ import { ConnectionTypesStore } from '../../../core/connection-types/connection-
     .type {
       color: color-mix(in srgb, var(--primary-text-color) 75%, black);
     }
+    .link-badge {
+      margin-left: 3px;
+      color: var(--secondary-text-color);
+      vertical-align: -1px;
+    }
   `,
 })
 export class WireEdgeComponent implements NgDiagramEdgeTemplate<EdgeData> {
   edge = input.required<NgEdge<EdgeData>>();
   private readonly connectionTypes = inject(ConnectionTypesStore);
+  protected readonly linkIcon = mdiLinkVariant;
 
+  /** Accent (not primary) color — primary is also a common conductor wire
+   *  color (data.color), so a same-colored selected stroke could blend in. */
   protected readonly strokeColor = computed(() =>
-    this.edge().selected ? 'var(--primary-color)' : this.edge().data?.color || 'var(--ngd-default-edge-stroke)'
+    this.edge().selected ? 'var(--accent-color)' : this.edge().data?.color || 'var(--ngd-default-edge-stroke)'
+  );
+  protected readonly strokeDasharray = computed(
+    () => DASH_STYLE_PATTERNS[this.edge().data?.dash ?? 'solid']
   );
   protected readonly label = computed(() => this.edge().data?.label || '');
   protected readonly typeLabel = computed(() => wireOrCableLabel(this.edge().data?.type, this.connectionTypes) || '');
+  protected readonly linked = computed(() => !!this.edge().data?.connectionId);
 
   /** Nudges the label off the wire it's centered on (`positionOnEdge` only
    *  controls the position *along* the edge, not sideways) so the line

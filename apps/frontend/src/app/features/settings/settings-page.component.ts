@@ -13,6 +13,9 @@ import {
   CONNECTION_TYPE_GROUPS,
   ConnectionTypeDto,
   ConnectionTypeGroup,
+  DASH_STYLES,
+  DASH_STYLE_LABELS,
+  DashStyle,
   HaStatusDto,
   SyncResultDto,
 } from '@smart-home-inventory/shared';
@@ -168,6 +171,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
               <td>
                 <span class="swatch" [style.background]="type.color"></span>
               </td>
+              <td class="muted">{{ dashLabel(type.dash) }}</td>
               <td class="muted">
                 {{ type.connectionCount }} connection{{ type.connectionCount === 1 ? '' : 's' }}
               </td>
@@ -201,6 +205,11 @@ import { IconComponent } from '../../shared/ui/icon.component';
           }
         </select>
         <input class="color" type="color" name="ctColor" [(ngModel)]="newTypeColor" />
+        <select class="text" name="ctDash" [(ngModel)]="newTypeDash">
+          @for (d of dashStyles; track d) {
+            <option [value]="d">{{ dashStyleLabels[d] }}</option>
+          }
+        </select>
         <button
           class="btn"
           type="submit"
@@ -281,6 +290,9 @@ export class SettingsPageComponent implements OnInit {
   protected newTypeLabel = '';
   protected newTypeGroup: ConnectionTypeGroup = 'other';
   protected newTypeColor = '#757575';
+  protected newTypeDash: DashStyle = 'solid';
+  protected readonly dashStyles = DASH_STYLES;
+  protected readonly dashStyleLabels = DASH_STYLE_LABELS;
 
   ngOnInit(): void {
     this.haApi.status().subscribe((status) => {
@@ -330,12 +342,16 @@ export class SettingsPageComponent implements OnInit {
     this.capabilitiesApi.removeType(cap.id).subscribe(() => this.loadCapabilities());
   }
 
+  protected dashLabel(dash: string): string {
+    return (DASH_STYLE_LABELS as Record<string, string>)[dash] ?? dash;
+  }
+
   protected addConnectionType(): void {
     const key = this.newTypeKey.trim();
     const label = this.newTypeLabel.trim();
     if (!key || !label) return;
     this.connectionTypesApi
-      .create({ key, label, group: this.newTypeGroup, color: this.newTypeColor })
+      .create({ key, label, group: this.newTypeGroup, color: this.newTypeColor, dash: this.newTypeDash })
       .subscribe(() => {
         this.newTypeKey = '';
         this.newTypeLabel = '';

@@ -1218,6 +1218,7 @@ export const ConnectionTypeScalarFieldEnum = {
   label: 'label',
   group: 'group',
   color: 'color',
+  dash: 'dash',
   isSystem: 'isSystem'
 } as const
 

@@ -196,6 +196,13 @@ model ConnectionType {
   label    String
   group    ConnectionTypeGroup @default(other)
   color    String
+  // A DashStyle key ("solid" | "dashed" | "dotted" | "dash-dot", see
+  // libs/shared/src/lib/dash-style.ts) — not raw SVG stroke-dasharray
+  // coordinates, so retuning what "dashed" actually looks like is a
+  // one-place change instead of a data migration. Same
+  // one-shot-preset-then-independently-editable treatment as color, see
+  // EdgeDataSchema.dash in libs/shared.
+  dash     String              @default("solid")
   isSystem Boolean             @default(false)
 }
 

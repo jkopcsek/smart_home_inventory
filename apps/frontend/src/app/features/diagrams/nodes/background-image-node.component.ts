@@ -16,7 +16,12 @@ import { attachmentUrl } from '../../../core/api/api.services';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-diagram-node-resize-adornment>
-      <img [src]="imageUrl()" [alt]="data().label || 'Background image'" crossorigin="anonymous" />
+      <img
+        [src]="imageUrl()"
+        [alt]="data().label || 'Background image'"
+        crossorigin="anonymous"
+        draggable="false"
+      />
     </ng-diagram-node-resize-adornment>
   `,
   styles: `
@@ -30,6 +35,10 @@ import { attachmentUrl } from '../../../core/api/api.services';
       width: 100%;
       height: 100%;
       object-fit: cover;
+      /* See image-node.component.ts — <img> is natively draggable-as-a-file
+         by default, which fights ng-diagram's own node dragging. */
+      -webkit-user-drag: none;
+      user-drag: none;
     }
   `,
 })

@@ -30,6 +30,7 @@ export type ConnectionTypeMinAggregateOutputType = {
   label: string | null
   group: $Enums.ConnectionTypeGroup | null
   color: string | null
+  dash: string | null
   isSystem: boolean | null
 }
 
@@ -39,6 +40,7 @@ export type ConnectionTypeMaxAggregateOutputType = {
   label: string | null
   group: $Enums.ConnectionTypeGroup | null
   color: string | null
+  dash: string | null
   isSystem: boolean | null
 }
 
@@ -48,6 +50,7 @@ export type ConnectionTypeCountAggregateOutputType = {
   label: number
   group: number
   color: number
+  dash: number
   isSystem: number
   _all: number
 }
@@ -59,6 +62,7 @@ export type ConnectionTypeMinAggregateInputType = {
   label?: true
   group?: true
   color?: true
+  dash?: true
   isSystem?: true
 }
 
@@ -68,6 +72,7 @@ export type ConnectionTypeMaxAggregateInputType = {
   label?: true
   group?: true
   color?: true
+  dash?: true
   isSystem?: true
 }
 
@@ -77,6 +82,7 @@ export type ConnectionTypeCountAggregateInputType = {
   label?: true
   group?: true
   color?: true
+  dash?: true
   isSystem?: true
   _all?: true
 }
@@ -159,6 +165,7 @@ export type ConnectionTypeGroupByOutputType = {
   label: string
   group: $Enums.ConnectionTypeGroup
   color: string
+  dash: string
   isSystem: boolean
   _count: ConnectionTypeCountAggregateOutputType | null
   _min: ConnectionTypeMinAggregateOutputType | null
@@ -189,6 +196,7 @@ export type ConnectionTypeWhereInput = {
   label?: Prisma.StringFilter<"ConnectionType"> | string
   group?: Prisma.EnumConnectionTypeGroupFilter<"ConnectionType"> | $Enums.ConnectionTypeGroup
   color?: Prisma.StringFilter<"ConnectionType"> | string
+  dash?: Prisma.StringFilter<"ConnectionType"> | string
   isSystem?: Prisma.BoolFilter<"ConnectionType"> | boolean
 }
 
@@ -198,6 +206,7 @@ export type ConnectionTypeOrderByWithRelationInput = {
   label?: Prisma.SortOrder
   group?: Prisma.SortOrder
   color?: Prisma.SortOrder
+  dash?: Prisma.SortOrder
   isSystem?: Prisma.SortOrder
 }
 
@@ -210,6 +219,7 @@ export type ConnectionTypeWhereUniqueInput = Prisma.AtLeast<{
   label?: Prisma.StringFilter<"ConnectionType"> | string
   group?: Prisma.EnumConnectionTypeGroupFilter<"ConnectionType"> | $Enums.ConnectionTypeGroup
   color?: Prisma.StringFilter<"ConnectionType"> | string
+  dash?: Prisma.StringFilter<"ConnectionType"> | string
   isSystem?: Prisma.BoolFilter<"ConnectionType"> | boolean
 }, "id" | "key">
 
@@ -219,6 +229,7 @@ export type ConnectionTypeOrderByWithAggregationInput = {
   label?: Prisma.SortOrder
   group?: Prisma.SortOrder
   color?: Prisma.SortOrder
+  dash?: Prisma.SortOrder
   isSystem?: Prisma.SortOrder
   _count?: Prisma.ConnectionTypeCountOrderByAggregateInput
   _max?: Prisma.ConnectionTypeMaxOrderByAggregateInput
@@ -234,6 +245,7 @@ export type ConnectionTypeScalarWhereWithAggregatesInput = {
   label?: Prisma.StringWithAggregatesFilter<"ConnectionType"> | string
   group?: Prisma.EnumConnectionTypeGroupWithAggregatesFilter<"ConnectionType"> | $Enums.ConnectionTypeGroup
   color?: Prisma.StringWithAggregatesFilter<"ConnectionType"> | string
+  dash?: Prisma.StringWithAggregatesFilter<"ConnectionType"> | string
   isSystem?: Prisma.BoolWithAggregatesFilter<"ConnectionType"> | boolean
 }
 
@@ -243,6 +255,7 @@ export type ConnectionTypeCreateInput = {
   label: string
   group?: $Enums.ConnectionTypeGroup
   color: string
+  dash?: string
   isSystem?: boolean
 }
 
@@ -252,6 +265,7 @@ export type ConnectionTypeUncheckedCreateInput = {
   label: string
   group?: $Enums.ConnectionTypeGroup
   color: string
+  dash?: string
   isSystem?: boolean
 }
 
@@ -261,6 +275,7 @@ export type ConnectionTypeUpdateInput = {
   label?: Prisma.StringFieldUpdateOperationsInput | string
   group?: Prisma.EnumConnectionTypeGroupFieldUpdateOperationsInput | $Enums.ConnectionTypeGroup
   color?: Prisma.StringFieldUpdateOperationsInput | string
+  dash?: Prisma.StringFieldUpdateOperationsInput | string
   isSystem?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -270,6 +285,7 @@ export type ConnectionTypeUncheckedUpdateInput = {
   label?: Prisma.StringFieldUpdateOperationsInput | string
   group?: Prisma.EnumConnectionTypeGroupFieldUpdateOperationsInput | $Enums.ConnectionTypeGroup
   color?: Prisma.StringFieldUpdateOperationsInput | string
+  dash?: Prisma.StringFieldUpdateOperationsInput | string
   isSystem?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -279,6 +295,7 @@ export type ConnectionTypeCreateManyInput = {
   label: string
   group?: $Enums.ConnectionTypeGroup
   color: string
+  dash?: string
   isSystem?: boolean
 }
 
@@ -288,6 +305,7 @@ export type ConnectionTypeUpdateManyMutationInput = {
   label?: Prisma.StringFieldUpdateOperationsInput | string
   group?: Prisma.EnumConnectionTypeGroupFieldUpdateOperationsInput | $Enums.ConnectionTypeGroup
   color?: Prisma.StringFieldUpdateOperationsInput | string
+  dash?: Prisma.StringFieldUpdateOperationsInput | string
   isSystem?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -297,6 +315,7 @@ export type ConnectionTypeUncheckedUpdateManyInput = {
   label?: Prisma.StringFieldUpdateOperationsInput | string
   group?: Prisma.EnumConnectionTypeGroupFieldUpdateOperationsInput | $Enums.ConnectionTypeGroup
   color?: Prisma.StringFieldUpdateOperationsInput | string
+  dash?: Prisma.StringFieldUpdateOperationsInput | string
   isSystem?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -306,6 +325,7 @@ export type ConnectionTypeCountOrderByAggregateInput = {
   label?: Prisma.SortOrder
   group?: Prisma.SortOrder
   color?: Prisma.SortOrder
+  dash?: Prisma.SortOrder
   isSystem?: Prisma.SortOrder
 }
 
@@ -315,6 +335,7 @@ export type ConnectionTypeMaxOrderByAggregateInput = {
   label?: Prisma.SortOrder
   group?: Prisma.SortOrder
   color?: Prisma.SortOrder
+  dash?: Prisma.SortOrder
   isSystem?: Prisma.SortOrder
 }
 
@@ -324,6 +345,7 @@ export type ConnectionTypeMinOrderByAggregateInput = {
   label?: Prisma.SortOrder
   group?: Prisma.SortOrder
   color?: Prisma.SortOrder
+  dash?: Prisma.SortOrder
   isSystem?: Prisma.SortOrder
 }
 
@@ -339,6 +361,7 @@ export type ConnectionTypeSelect<ExtArgs extends runtime.Types.Extensions.Intern
   label?: boolean
   group?: boolean
   color?: boolean
+  dash?: boolean
   isSystem?: boolean
 }, ExtArgs["result"]["connectionType"]>
 
@@ -348,6 +371,7 @@ export type ConnectionTypeSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   label?: boolean
   group?: boolean
   color?: boolean
+  dash?: boolean
   isSystem?: boolean
 }, ExtArgs["result"]["connectionType"]>
 
@@ -357,6 +381,7 @@ export type ConnectionTypeSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   label?: boolean
   group?: boolean
   color?: boolean
+  dash?: boolean
   isSystem?: boolean
 }, ExtArgs["result"]["connectionType"]>
 
@@ -366,10 +391,11 @@ export type ConnectionTypeSelectScalar = {
   label?: boolean
   group?: boolean
   color?: boolean
+  dash?: boolean
   isSystem?: boolean
 }
 
-export type ConnectionTypeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "key" | "label" | "group" | "color" | "isSystem", ExtArgs["result"]["connectionType"]>
+export type ConnectionTypeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "key" | "label" | "group" | "color" | "dash" | "isSystem", ExtArgs["result"]["connectionType"]>
 
 export type $ConnectionTypePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "ConnectionType"
@@ -380,6 +406,7 @@ export type $ConnectionTypePayload<ExtArgs extends runtime.Types.Extensions.Inte
     label: string
     group: $Enums.ConnectionTypeGroup
     color: string
+    dash: string
     isSystem: boolean
   }, ExtArgs["result"]["connectionType"]>
   composites: {}
@@ -809,6 +836,7 @@ export interface ConnectionTypeFieldRefs {
   readonly label: Prisma.FieldRef<"ConnectionType", 'String'>
   readonly group: Prisma.FieldRef<"ConnectionType", 'ConnectionTypeGroup'>
   readonly color: Prisma.FieldRef<"ConnectionType", 'String'>
+  readonly dash: Prisma.FieldRef<"ConnectionType", 'String'>
   readonly isSystem: Prisma.FieldRef<"ConnectionType", 'Boolean'>
 }
     

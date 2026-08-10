@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DashStyleSchema } from '../dash-style';
 
 /** How a connection type clusters for display — a flat list mixes wired
  *  cables in with wireless protocols (e.g. Zigbee has no cable at all),
@@ -14,6 +15,7 @@ export interface ConnectionTypeDto {
   label: string;
   group: ConnectionTypeGroup;
   color: string;
+  dash: string;
   isSystem: boolean;
   connectionCount: number;
 }
@@ -27,6 +29,7 @@ export const CreateConnectionTypeSchema = z.object({
   label: z.string().min(1).max(100),
   group: ConnectionTypeGroupSchema.default('other'),
   color: z.string().min(1).max(30),
+  dash: DashStyleSchema.default('solid'),
 });
 export type CreateConnectionTypeDto = z.infer<typeof CreateConnectionTypeSchema>;
 
@@ -34,5 +37,6 @@ export const UpdateConnectionTypeSchema = z.object({
   label: z.string().min(1).max(100).optional(),
   group: ConnectionTypeGroupSchema.optional(),
   color: z.string().min(1).max(30).optional(),
+  dash: DashStyleSchema.optional(),
 });
 export type UpdateConnectionTypeDto = z.infer<typeof UpdateConnectionTypeSchema>;

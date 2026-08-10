@@ -8,25 +8,35 @@ import {
 import { ConnectionType } from '@smart-home-inventory/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Dashed by default for every built-in wireless type — a physical wire
+ *  (mains, DC, USB, Ethernet, KNX) draws solid, a radio-based connection
+ *  draws dashed, matching how the diagram already uses dashing informally
+ *  (nothing enforces it — this is just a sensible starting preset). Values
+ *  are DashStyle keys (see libs/shared/src/lib/dash-style.ts), not raw SVG
+ *  coordinates. */
+const DASHED = 'dashed';
+const SOLID = 'solid';
+
 const SYSTEM_CONNECTION_TYPES: Array<{
   key: string;
   label: string;
   group: ConnectionTypeGroup;
   color: string;
+  dash: string;
 }> = [
-  { key: 'mains_230v', label: '230V mains', group: 'wired', color: '#8b5a2b' },
-  { key: 'dc_24v', label: '24V DC', group: 'wired', color: '#c62828' },
-  { key: 'dc_12v', label: '12V DC', group: 'wired', color: '#e65100' },
-  { key: 'usb', label: 'USB', group: 'wired', color: '#455a64' },
-  { key: 'ethernet', label: 'Ethernet', group: 'wired', color: '#1565c0' },
-  { key: 'knx', label: 'KNX', group: 'wired', color: '#00897b' },
-  { key: 'wifi', label: 'Wi-Fi', group: 'wireless', color: '#6a1b9a' },
-  { key: 'zigbee_binding', label: 'Zigbee binding', group: 'wireless', color: '#66bb6a' },
-  { key: 'zigbee_network', label: 'Zigbee network', group: 'wireless', color: '#2e7d32' },
-  { key: 'zwave_network', label: 'Z-Wave network', group: 'wireless', color: '#4527a0' },
-  { key: 'matter_fabric', label: 'Matter fabric', group: 'wireless', color: '#212121' },
-  { key: 'thread', label: 'Thread', group: 'wireless', color: '#00838f' },
-  { key: 'other', label: 'Other', group: 'other', color: '#757575' },
+  { key: 'mains_230v', label: '230V mains', group: 'wired', color: '#8b5a2b', dash: SOLID },
+  { key: 'dc_24v', label: '24V DC', group: 'wired', color: '#c62828', dash: SOLID },
+  { key: 'dc_12v', label: '12V DC', group: 'wired', color: '#e65100', dash: SOLID },
+  { key: 'usb', label: 'USB', group: 'wired', color: '#455a64', dash: SOLID },
+  { key: 'ethernet', label: 'Ethernet', group: 'wired', color: '#1565c0', dash: SOLID },
+  { key: 'knx', label: 'KNX', group: 'wired', color: '#00897b', dash: SOLID },
+  { key: 'wifi', label: 'Wi-Fi', group: 'wireless', color: '#6a1b9a', dash: DASHED },
+  { key: 'zigbee_binding', label: 'Zigbee binding', group: 'wireless', color: '#66bb6a', dash: DASHED },
+  { key: 'zigbee_network', label: 'Zigbee network', group: 'wireless', color: '#2e7d32', dash: DASHED },
+  { key: 'zwave_network', label: 'Z-Wave network', group: 'wireless', color: '#4527a0', dash: DASHED },
+  { key: 'matter_fabric', label: 'Matter fabric', group: 'wireless', color: '#212121', dash: DASHED },
+  { key: 'thread', label: 'Thread', group: 'wireless', color: '#00838f', dash: DASHED },
+  { key: 'other', label: 'Other', group: 'other', color: '#757575', dash: SOLID },
 ];
 
 function toConnectionTypeDto(t: ConnectionType, connectionCount: number): ConnectionTypeDto {
@@ -36,6 +46,7 @@ function toConnectionTypeDto(t: ConnectionType, connectionCount: number): Connec
     label: t.label,
     group: t.group as ConnectionTypeGroup,
     color: t.color,
+    dash: t.dash,
     isSystem: t.isSystem,
     connectionCount,
   };
