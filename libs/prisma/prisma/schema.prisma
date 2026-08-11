@@ -37,6 +37,13 @@ enum DeviceCategory {
   network
   hub
   camera
+  valve
+  pump
+  water_heater
+  radiator
+  fan
+  air_handling_unit
+  meter
   other
 }
 
@@ -52,6 +59,8 @@ enum AttachmentKind {
 enum ConnectionTypeGroup {
   wired
   wireless
+  plumbing
+  ventilation
   other
 }
 

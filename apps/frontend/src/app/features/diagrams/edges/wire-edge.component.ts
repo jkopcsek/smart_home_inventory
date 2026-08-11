@@ -29,6 +29,7 @@ import { IconComponent } from '../../../shared/ui/icon.component';
       [edge]="edge()"
       [stroke]="strokeColor()"
       [strokeDasharray]="strokeDasharray()"
+      [strokeWidth]="strokeWidth()"
       [sourceArrowhead]="edge().sourceArrowhead"
       [targetArrowhead]="edge().targetArrowhead"
     >
@@ -97,6 +98,7 @@ export class WireEdgeComponent implements NgDiagramEdgeTemplate<EdgeData> {
   protected readonly strokeDasharray = computed(
     () => DASH_STYLE_PATTERNS[this.edge().data?.dash ?? 'solid']
   );
+  protected readonly strokeWidth = computed(() => this.edge().data?.width);
   protected readonly label = computed(() => this.edge().data?.label || '');
   protected readonly typeLabel = computed(() => wireOrCableLabel(this.edge().data?.type, this.connectionTypes) || '');
   protected readonly linked = computed(() => !!this.edge().data?.connectionId);

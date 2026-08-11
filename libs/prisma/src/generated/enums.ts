@@ -34,6 +34,13 @@ export const DeviceCategory = {
   network: 'network',
   hub: 'hub',
   camera: 'camera',
+  valve: 'valve',
+  pump: 'pump',
+  water_heater: 'water_heater',
+  radiator: 'radiator',
+  fan: 'fan',
+  air_handling_unit: 'air_handling_unit',
+  meter: 'meter',
   other: 'other'
 } as const
 
@@ -55,6 +62,8 @@ export type AttachmentKind = (typeof AttachmentKind)[keyof typeof AttachmentKind
 export const ConnectionTypeGroup = {
   wired: 'wired',
   wireless: 'wireless',
+  plumbing: 'plumbing',
+  ventilation: 'ventilation',
   other: 'other'
 } as const
 

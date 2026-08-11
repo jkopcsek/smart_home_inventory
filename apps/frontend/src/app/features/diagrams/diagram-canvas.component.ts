@@ -82,6 +82,7 @@ import { ToastService } from '../../core/toast/toast.service';
 import { ConfirmService } from '../../core/confirm/confirm.service';
 import { ConnectionTypesStore } from '../../core/connection-types/connection-types.store';
 import { IconComponent } from '../../shared/ui/icon.component';
+import { ColorPickerComponent } from '../../shared/ui/color-picker.component';
 import { DevicePickerComponent } from '../../shared/ui/device-picker.component';
 import { DotNodeComponent } from './nodes/dot-node.component';
 import { BoxNodeComponent } from './nodes/box-node.component';
@@ -90,12 +91,14 @@ import { BoxPortsNodeComponent } from './nodes/box-ports-node.component';
 import { BackgroundImageNodeComponent } from './nodes/background-image-node.component';
 import { AnchorNodeComponent, ANCHOR_PORT_ID } from './nodes/anchor-node.component';
 import { DEFAULT_BODY_COLOR, DEFAULT_BORDER_COLOR, DEFAULT_NODE_COLOR, DEFAULT_PORTS_BG_COLOR } from './nodes/node-defaults';
-import { NODE_ICONS } from './nodes/node-icons';
+import { nodeIconLabel, nodeIconPath } from './nodes/node-icons';
 import { WireEdgeComponent } from './edges/wire-edge.component';
+import { ARROWHEAD_SIZE_TIERS, arrowheadKind, arrowheadTieredId } from './edges/arrowhead-marker';
 import { AreaPickerDialogComponent } from './pickers/area-picker-dialog.component';
 import { AttachmentPickerDialogComponent } from './pickers/attachment-picker-dialog.component';
 import { DiagramLinkPickerDialogComponent } from './pickers/diagram-link-picker-dialog.component';
 import { ConnectionPickerDialogComponent } from './pickers/connection-picker-dialog.component';
+import { IconPickerDialogComponent } from './pickers/icon-picker-dialog.component';
 import { EdgeReshapeOverlayComponent } from './edge-reshaping/edge-reshape-overlay.component';
 import { EdgeCommandDispatcher } from './edge-reshaping/commands';
 import { EdgeReshapeHandler } from './edge-reshaping/handlers/edge-reshape.handler';
@@ -209,7 +212,8 @@ type PickerTarget =
   | { kind: 'set-diagram-background' }
   | { kind: 'set-image'; nodeId: string }
   | { kind: 'add-image-node' }
-  | { kind: 'edge-connection'; edgeId: string };
+  | { kind: 'edge-connection'; edgeId: string }
+  | { kind: 'node-icon'; nodeId: string };
 
 
 function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport): DiagramContent {
@@ -265,11 +269,13 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
     NgDiagramMinimapComponent,
     NgDiagramPaletteItemComponent,
     IconComponent,
+    ColorPickerComponent,
     DevicePickerComponent,
     AreaPickerDialogComponent,
     AttachmentPickerDialogComponent,
     DiagramLinkPickerDialogComponent,
     ConnectionPickerDialogComponent,
+    IconPickerDialogComponent,
     EdgeReshapeOverlayComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -301,12 +307,69 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
         <ng-diagram-marker>
           <svg>
             <defs>
-              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <!-- markerUnits="userSpaceOnUse" — the SVG default (strokeWidth)
+                   scales the marker 1:1 with the edge's stroke-width, which
+                   blew the arrowhead up way past readable at the thick end
+                   of the width picker (see setEdgeWidth). A fixed size looks
+                   disconnected from the line at the other end though, so
+                   three explicit size tiers stand in for true proportional
+                   scaling — sm/md/lg, picked per-edge by the edge's own
+                   width and baked directly into its stored sourceArrowhead/
+                   targetArrowhead (see arrowhead-marker.ts; ng-diagram
+                   resolves an edge's marker straight from that field, so a
+                   template-level size override alone would get shadowed).
+                   Plain 'arrow'/'dot' (sized to match the '-md' tier) stay
+                   registered alongside the tiered ones purely so diagrams
+                   saved before this tiering existed — still holding that
+                   bare id — keep resolving without a data migration. -->
+              <marker
+                id="arrow"
+                viewBox="0 0 10 10"
+                refX="8"
+                refY="5"
+                markerWidth="18"
+                markerHeight="18"
+                markerUnits="userSpaceOnUse"
+                orient="auto-start-reverse"
+              >
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
               </marker>
-              <marker id="dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6">
+              <marker
+                id="dot"
+                viewBox="0 0 10 10"
+                refX="5"
+                refY="5"
+                markerWidth="13"
+                markerHeight="13"
+                markerUnits="userSpaceOnUse"
+              >
                 <path d="M 1 5 A 4 4 0 1 0 9 5 A 4 4 0 1 0 1 5 Z" fill="context-stroke" />
               </marker>
+              @for (tier of arrowheadSizeTiers; track tier.suffix) {
+                <marker
+                  [attr.id]="'arrow' + tier.suffix"
+                  viewBox="0 0 10 10"
+                  refX="8"
+                  refY="5"
+                  [attr.markerWidth]="tier.arrow"
+                  [attr.markerHeight]="tier.arrow"
+                  markerUnits="userSpaceOnUse"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
+                </marker>
+                <marker
+                  [attr.id]="'dot' + tier.suffix"
+                  viewBox="0 0 10 10"
+                  refX="5"
+                  refY="5"
+                  [attr.markerWidth]="tier.dot"
+                  [attr.markerHeight]="tier.dot"
+                  markerUnits="userSpaceOnUse"
+                >
+                  <path d="M 1 5 A 4 4 0 1 0 9 5 A 4 4 0 1 0 1 5 Z" fill="context-stroke" />
+                </marker>
+              }
             </defs>
           </svg>
         </ng-diagram-marker>
@@ -505,11 +568,10 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                   <div class="field">
                     <span>Color</span>
                     <div class="color-with-toggle">
-                      <input
-                        type="color"
-                        [disabled]="sel.data.transparent"
+                      <app-color-picker
+                        [disabled]="sel.data.transparent ?? false"
                         [value]="sel.data.color ?? defaultBodyColor"
-                        (change)="setNodeColor(sel.id, sel.data, $event)"
+                        (valueChange)="setNodeColor(sel.id, sel.data, $event)"
                       />
                       <label class="transparent-toggle" title="No fill — border only">
                         <input
@@ -523,10 +585,9 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                   </div>
                   <label class="field">
                     <span>Border color</span>
-                    <input
-                      type="color"
+                    <app-color-picker
                       [value]="sel.data.borderColor ?? defaultBorderColor"
-                      (change)="setNodeBorderColor(sel.id, sel.data, $event)"
+                      (valueChange)="setNodeBorderColor(sel.id, sel.data, $event)"
                     />
                   </label>
                 </div>
@@ -568,28 +629,32 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                 <div class="fields-inline">
                   <label class="field">
                     <span>Border color</span>
-                    <input
-                      type="color"
+                    <app-color-picker
                       [value]="sel.data.color ?? defaultBorderColor"
-                      (change)="setNodeColor(sel.id, sel.data, $event)"
+                      (valueChange)="setNodeColor(sel.id, sel.data, $event)"
                     />
                   </label>
                   <label class="field">
                     <span>Header color</span>
-                    <input
-                      type="color"
+                    <app-color-picker
                       [value]="sel.data.headerColor ?? defaultBodyColor"
-                      (change)="setNodeHeaderColor(sel.id, sel.data, $event)"
+                      (valueChange)="setNodeHeaderColor(sel.id, sel.data, $event)"
                     />
                   </label>
                 </div>
+                <label class="field">
+                  <span>Layout</span>
+                  <select class="text" (change)="setBoxPortsLayout(sel.id, sel.data, $event)">
+                    <option value="vertical" [selected]="(sel.data.layout ?? 'vertical') === 'vertical'">Vertical</option>
+                    <option value="horizontal" [selected]="sel.data.layout === 'horizontal'">Horizontal</option>
+                  </select>
+                </label>
               } @else if (sel.data.shape !== 'background-image' && sel.data.shape !== 'anchor') {
                 <label class="field">
                   <span>Color</span>
-                  <input
-                    type="color"
+                  <app-color-picker
                     [value]="sel.data.color ?? defaultNodeColor"
-                    (change)="setNodeColor(sel.id, sel.data, $event)"
+                    (valueChange)="setNodeColor(sel.id, sel.data, $event)"
                   />
                 </label>
               }
@@ -601,12 +666,16 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
               ) {
                 <label class="field">
                   <span>Icon</span>
-                  <select class="text" (change)="setNodeIcon(sel.id, sel.data, $event)">
-                    <option value="" [selected]="!sel.data.icon">None</option>
-                    @for (opt of nodeIcons; track opt.key) {
-                      <option [value]="opt.key" [selected]="sel.data.icon === opt.key">{{ opt.label }}</option>
+                  <button
+                    type="button"
+                    class="icon-picker-trigger"
+                    (click)="openPicker({ kind: 'node-icon', nodeId: sel.id })"
+                  >
+                    @if (nodeIconPath(sel.data.icon); as p) {
+                      <app-icon [path]="p" [size]="16" />
                     }
-                  </select>
+                    <span>{{ nodeIconLabel(sel.data.icon) }}</span>
+                  </button>
                 </label>
               }
 
@@ -810,7 +879,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                         <button
                           type="button"
                           class="arrowhead-btn"
-                          [class.active]="(sel.sourceArrowhead || undefined) === opt.value"
+                          [class.active]="arrowheadKind(sel.sourceArrowhead) === opt.value"
                           [title]="opt.label"
                           (click)="setEdgeArrowhead(sel.id, 'source', opt.value)"
                         >
@@ -833,7 +902,7 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                         <button
                           type="button"
                           class="arrowhead-btn"
-                          [class.active]="(sel.targetArrowhead || undefined) === opt.value"
+                          [class.active]="arrowheadKind(sel.targetArrowhead) === opt.value"
                           [title]="opt.label"
                           (click)="setEdgeArrowhead(sel.id, 'target', opt.value)"
                         >
@@ -874,12 +943,9 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                   <div class="control-col">
                     <span class="field-sublabel">Color</span>
                     <div class="wire-color-row">
-                      <input
-                        type="color"
-                        class="wire-color-input"
+                      <app-color-picker
                         [value]="sel.data.color || '#9e9e9e'"
-                        (change)="setEdgeColorFromInput(sel.id, $event)"
-                        title="Custom color"
+                        (valueChange)="setEdgeColor(sel.id, $event)"
                       />
                       @if (sel.data.color) {
                         <button
@@ -906,6 +972,24 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
                         >
                           <svg viewBox="0 0 24 8" width="20" height="8">
                             <line x1="1" y1="4" x2="23" y2="4" [attr.stroke-dasharray]="dashPreviewPatterns[d]" />
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                  <div class="control-col">
+                    <span class="field-sublabel">Width</span>
+                    <div class="width-style-group" role="group" aria-label="Line width">
+                      @for (w of edgeWidths; track w) {
+                        <button
+                          type="button"
+                          class="width-style-btn"
+                          [class.active]="(sel.data.width ?? defaultEdgeWidth) === w"
+                          [title]="w + 'px'"
+                          (click)="setEdgeWidth(sel.id, w)"
+                        >
+                          <svg viewBox="0 0 24 12" width="20" height="12">
+                            <line x1="1" y1="6" x2="23" y2="6" [attr.stroke-width]="w" />
                           </svg>
                         </button>
                       }
@@ -992,6 +1076,12 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       [contextType]="connectionContextType()"
       (closed)="pickerTarget.set(null)"
       (picked)="onConnectionPicked($event)"
+    />
+    <app-icon-picker-dialog
+      [open]="pickerTarget()?.kind === 'node-icon'"
+      [current]="nodeIconPickerCurrent()"
+      (closed)="pickerTarget.set(null)"
+      (picked)="onNodeIconPicked($event)"
     />
   `,
   styles: `
@@ -1309,19 +1399,29 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       color: var(--secondary-text-color);
       cursor: pointer;
     }
+    .icon-picker-trigger {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      font: inherit;
+      color: var(--primary-text-color);
+      background: var(--input-fill-color);
+      border: 1px solid var(--divider-color);
+      border-radius: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .icon-picker-trigger:hover {
+      background: var(--hover-color);
+    }
     .wire-color-row {
       display: flex;
       align-items: center;
       gap: 6px;
       flex-wrap: wrap;
-    }
-    .wire-color-input {
-      width: 28px;
-      height: 22px;
-      padding: 0;
-      border: none;
-      background: none;
-      cursor: pointer;
     }
     .dash-style-group {
       display: flex;
@@ -1355,8 +1455,40 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       background: var(--accent-color);
       color: var(--text-primary-color, #fff);
     }
+    .width-style-group {
+      display: flex;
+      gap: 2px;
+      border: 1px solid var(--divider-color);
+      border-radius: 6px;
+      padding: 2px;
+    }
+    .width-style-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 20px;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      background: none;
+      color: var(--secondary-text-color);
+      cursor: pointer;
+    }
+    .width-style-btn svg {
+      stroke: currentColor;
+      fill: none;
+    }
+    .width-style-btn:hover {
+      background: var(--secondary-background-color);
+    }
+    .width-style-btn.active {
+      background: var(--accent-color);
+      color: var(--text-primary-color, #fff);
+    }
     .control-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 12px;
     }
     .control-col {
@@ -1558,6 +1690,16 @@ export class DiagramCanvasComponent implements OnDestroy {
     dotted: '1 2',
     'dash-dot': '4 2 1 2',
   };
+  protected readonly edgeWidths = [1, 2, 3, 4, 6, 8];
+  /** Matches ng-diagram's own unset-strokeWidth fallback (--edge-stroke-width, 2)
+   *  — kept in sync here purely so the width picker highlights the right button
+   *  when the edge has no explicit width set. */
+  protected readonly defaultEdgeWidth = 2;
+  protected readonly arrowheadSizeTiers = ARROWHEAD_SIZE_TIERS;
+  /** Strips a stored marker id's size tier back to its abstract 'arrow' |
+   *  'dot' kind — see arrowhead-marker.ts. Used to compare the stored value
+   *  against arrowheadOptions, which only ever deals in the abstract kind. */
+  protected readonly arrowheadKind = arrowheadKind;
   /** Marker ids — must match the ids registered on <ng-diagram-marker> above. */
   protected readonly arrowheadOptions: { value: string | undefined; label: string }[] = [
     { value: undefined, label: 'None' },
@@ -1653,6 +1795,11 @@ export class DiagramCanvasComponent implements OnDestroy {
     if (!type || (WIRE_TYPES as readonly string[]).includes(type)) return '';
     return type as ConnectionType;
   });
+  protected readonly nodeIconPickerCurrent = computed<string | undefined>(() => {
+    const target = this.pickerTarget();
+    if (target?.kind !== 'node-icon') return undefined;
+    return this.modelService.getNodeById<NodeData>(target.nodeId)?.data?.icon;
+  });
   /** Device links aren't scoped to this diagram's area/device (the picker
    *  searches all devices), so resolving a linked device's name needs the
    *  full list rather than something already loaded for this page. */
@@ -1703,7 +1850,8 @@ export class DiagramCanvasComponent implements OnDestroy {
     zoomOut: mdiMagnifyMinusOutline,
     minimap: mdiMap,
   };
-  protected readonly nodeIcons = NODE_ICONS;
+  protected readonly nodeIconPath = nodeIconPath;
+  protected readonly nodeIconLabel = nodeIconLabel;
   /** Static templates for ng-diagram's own palette drag-and-drop (see
    *  PaletteDropDirective, host-bundled into <ng-diagram> itself) — dropping
    *  one creates a node with this exact data, positioned wherever it was
@@ -2642,19 +2790,21 @@ export class DiagramCanvasComponent implements OnDestroy {
     this.updateSelectedNodeData(nodeId, { ...data, label });
   }
 
-  protected setNodeColor(nodeId: string, data: NodeData, event: Event): void {
-    const color = (event.target as HTMLInputElement).value;
+  protected setNodeColor(nodeId: string, data: NodeData, color: string): void {
     this.updateSelectedNodeData(nodeId, { ...data, color });
   }
 
-  protected setNodeBorderColor(nodeId: string, data: NodeData, event: Event): void {
-    const borderColor = (event.target as HTMLInputElement).value;
+  protected setNodeBorderColor(nodeId: string, data: NodeData, borderColor: string): void {
     this.updateSelectedNodeData(nodeId, { ...data, borderColor });
   }
 
-  protected setNodeHeaderColor(nodeId: string, data: NodeData, event: Event): void {
-    const headerColor = (event.target as HTMLInputElement).value;
+  protected setNodeHeaderColor(nodeId: string, data: NodeData, headerColor: string): void {
     this.updateSelectedNodeData(nodeId, { ...data, headerColor });
+  }
+
+  protected setBoxPortsLayout(nodeId: string, data: BoxPortsNodeData, event: Event): void {
+    const layout = (event.target as HTMLSelectElement).value as 'vertical' | 'horizontal';
+    this.updateSelectedNodeData(nodeId, { ...data, layout: layout === 'vertical' ? undefined : layout });
   }
 
   protected setNodeImageAttachment(nodeId: string, data: NodeData, attachmentId: string | null): void {
@@ -2667,9 +2817,12 @@ export class DiagramCanvasComponent implements OnDestroy {
     this.updateSelectedNodeData(nodeId, { ...data, transparent });
   }
 
-  protected setNodeIcon(nodeId: string, data: NodeData, event: Event): void {
-    const icon = (event.target as HTMLSelectElement).value || undefined;
-    this.updateSelectedNodeData(nodeId, { ...data, icon });
+  protected onNodeIconPicked(icon: string | undefined): void {
+    const target = this.pickerTarget();
+    if (target?.kind !== 'node-icon') return;
+    const existing = this.modelService.getNodeById<NodeData>(target.nodeId)?.data;
+    if (existing) this.updateSelectedNodeData(target.nodeId, { ...existing, icon });
+    this.pickerTarget.set(null);
   }
 
   protected setEdgeLabel(edgeId: string, event: Event): void {
@@ -2679,10 +2832,15 @@ export class DiagramCanvasComponent implements OnDestroy {
     this.modelService.updateEdgeData(edgeId, { ...sel.data, label });
   }
 
-  protected setEdgeArrowhead(edgeId: string, end: 'source' | 'target', arrowhead: string | undefined): void {
+  /** `kind` is the abstract 'arrow' | 'dot' choice from arrowheadOptions —
+   *  stored as the width-tiered marker id (see arrowhead-marker.ts), since
+   *  ng-diagram resolves an edge's marker from its own sourceArrowhead/
+   *  targetArrowhead field directly rather than any template-level input. */
+  protected setEdgeArrowhead(edgeId: string, end: 'source' | 'target', kind: string | undefined): void {
     const sel = this.selection();
     if (sel?.kind !== 'edge') return;
     const key = end === 'source' ? 'sourceArrowhead' : 'targetArrowhead';
+    const arrowhead = kind ? arrowheadTieredId(kind, sel.data.width) : undefined;
     this.modelService.updateEdge(edgeId, { [key]: arrowhead });
     this.selection.set({ ...sel, [key]: arrowhead });
   }
@@ -2693,10 +2851,6 @@ export class DiagramCanvasComponent implements OnDestroy {
     const data = { ...sel.data, color };
     this.modelService.updateEdgeData(edgeId, data);
     this.selection.set({ ...sel, data });
-  }
-
-  protected setEdgeColorFromInput(edgeId: string, event: Event): void {
-    this.setEdgeColor(edgeId, (event.target as HTMLInputElement).value);
   }
 
   /** Setting a wire type applies its standard color once; clearing the type
@@ -2731,6 +2885,23 @@ export class DiagramCanvasComponent implements OnDestroy {
     const data = { ...sel.data, dash };
     this.modelService.updateEdgeData(edgeId, data);
     this.selection.set({ ...sel, data });
+  }
+
+  protected setEdgeWidth(edgeId: string, width: number): void {
+    const sel = this.selection();
+    if (sel?.kind !== 'edge') return;
+    const data = { ...sel.data, width };
+    this.modelService.updateEdgeData(edgeId, data);
+    // The arrowhead's size tier is baked into its stored marker id (see
+    // arrowhead-marker.ts) — re-derive it for the new width so an existing
+    // arrowhead keeps tracking the line instead of staying pinned to
+    // whatever size it was picked at.
+    const sourceArrowhead = sel.sourceArrowhead ? arrowheadTieredId(sel.sourceArrowhead, width) : sel.sourceArrowhead;
+    const targetArrowhead = sel.targetArrowhead ? arrowheadTieredId(sel.targetArrowhead, width) : sel.targetArrowhead;
+    if (sourceArrowhead !== sel.sourceArrowhead || targetArrowhead !== sel.targetArrowhead) {
+      this.modelService.updateEdge(edgeId, { sourceArrowhead, targetArrowhead });
+    }
+    this.selection.set({ ...sel, data, sourceArrowhead, targetArrowhead });
   }
 
   /** Drops any manually reshaped route and reverts to auto-routing. */

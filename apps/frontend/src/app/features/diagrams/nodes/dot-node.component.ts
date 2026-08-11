@@ -35,7 +35,16 @@ import { nodeIconPath } from './node-icons';
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 4px;
+      /* A marker is often dropped straight onto a photo/floor-plan
+       * background rather than the app's own panel background, where
+       * plain text can land on anything from white to black — an opaque
+       * chip behind the dot+label guarantees contrast regardless of what's
+       * underneath, rather than relying on a text-shadow that only helps
+       * against some backgrounds. */
+      padding: 3px 8px 3px 4px;
+      border-radius: 999px;
+      background: var(--card-background-color);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
     }
     .dot-wrap {
       position: relative;

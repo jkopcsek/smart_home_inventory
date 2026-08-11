@@ -86,6 +86,13 @@ export type BoxNodeData = z.infer<typeof BoxNodeDataSchema>;
 export const BoxPortsNodeDataSchema = NodeDataBase.extend({
   shape: z.literal('box-ports'),
   ports: z.array(NodePortSchema),
+  /** Inputs/outputs as two side-by-side columns (ports stacked top-to-bottom
+   *  within each) vs. two stacked rows (ports laid out left-to-right within
+   *  each, pins on the top/bottom edge instead of left/right) — the latter
+   *  fits a long list of ports (e.g. a row of breakers) in a wide, short box
+   *  instead of a tall, narrow one. Unset means 'vertical', matching every
+   *  box-ports node saved before this existed. */
+  layout: z.enum(['vertical', 'horizontal']).optional(),
 });
 export type BoxPortsNodeData = z.infer<typeof BoxPortsNodeDataSchema>;
 
@@ -140,6 +147,9 @@ export const EdgeDataSchema = z.object({
   /** Same one-shot-preset-then-independently-editable treatment as color —
    *  see DashStyle. */
   dash: DashStyleSchema.optional(),
+  /** Stroke width in px. Unset renders at ng-diagram's own default width —
+   *  same "unset = library default" treatment as color/dash above. */
+  width: z.number().min(1).max(20).optional(),
 });
 export type EdgeData = z.infer<typeof EdgeDataSchema>;
 

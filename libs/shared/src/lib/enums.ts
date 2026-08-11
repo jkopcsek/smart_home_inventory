@@ -24,6 +24,13 @@ export const DEVICE_CATEGORIES = [
   'network',
   'hub',
   'camera',
+  'valve',
+  'pump',
+  'water_heater',
+  'radiator',
+  'fan',
+  'air_handling_unit',
+  'meter',
   'other',
 ] as const;
 export const DeviceCategorySchema = z.enum(DEVICE_CATEGORIES);

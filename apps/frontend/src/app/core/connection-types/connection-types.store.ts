@@ -16,6 +16,8 @@ export interface ConnectionTypeGroupView {
 const GROUP_LABELS: Record<ConnectionTypeGroup, string> = {
   wired: 'Wired',
   wireless: 'Wireless',
+  plumbing: 'Plumbing',
+  ventilation: 'Ventilation',
   other: 'Other',
 };
 
@@ -31,8 +33,9 @@ export class ConnectionTypesStore implements ConnectionTypeLookup {
 
   readonly types = signal<ConnectionTypeDto[]>([]);
   readonly byKey = computed(() => Object.fromEntries(this.types().map((t) => [t.key, t])));
-  /** Grouped for pickers/filters (Wired, then Wireless, then Other) — a
-   *  group with no types yet (nothing seeded, nothing added) is omitted. */
+  /** Grouped for pickers/filters (Wired, Wireless, Plumbing, Ventilation,
+   *  Other) — a group with no types yet (nothing seeded, nothing added)
+   *  is omitted. */
   readonly groups = computed<ConnectionTypeGroupView[]>(() =>
     CONNECTION_TYPE_GROUPS.map((group) => ({
       group,
