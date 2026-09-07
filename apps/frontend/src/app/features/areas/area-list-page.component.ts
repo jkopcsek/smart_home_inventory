@@ -11,11 +11,18 @@ import { mdiFloorPlan, mdiHomeAlert, mdiHomeOutline, mdiPlus } from '@mdi/js';
 import { AreasApi } from '../../core/api/api.services';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { SourceBadgeComponent } from '../../shared/ui/source-badge.component';
 import { AreaFormDialogComponent } from './area-form-dialog.component';
 
 @Component({
   selector: 'app-area-list-page',
-  imports: [RouterLink, IconComponent, EmptyStateComponent, AreaFormDialogComponent],
+  imports: [
+    RouterLink,
+    IconComponent,
+    EmptyStateComponent,
+    SourceBadgeComponent,
+    AreaFormDialogComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="header">
@@ -52,15 +59,15 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
                 />
               }
             </div>
-            <span class="muted">
-              {{ area.deviceCount }} device{{ area.deviceCount === 1 ? '' : 's' }}
-              @if (area.diagramCount > 0) {
-                · {{ area.diagramCount }} diagram{{ area.diagramCount === 1 ? '' : 's' }}
-              }
-              @if (area.source === 'ha') {
-                · from HA
-              }
-            </span>
+            <div class="row">
+              <span class="muted">
+                {{ area.deviceCount }} device{{ area.deviceCount === 1 ? '' : 's' }}
+                @if (area.diagramCount > 0) {
+                  · {{ area.diagramCount }} diagram{{ area.diagramCount === 1 ? '' : 's' }}
+                }
+              </span>
+              <app-source-badge [source]="area.source" />
+            </div>
           </a>
         }
       </div>

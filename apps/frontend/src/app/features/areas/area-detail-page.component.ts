@@ -21,6 +21,8 @@ import { ConfirmService } from '../../core/confirm/confirm.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { DeviceThumbComponent } from '../../shared/ui/device-thumb.component';
+import { SourceBadgeComponent } from '../../shared/ui/source-badge.component';
 import { OwnerItemsComponent } from '../attachments/owner-items.component';
 import { AreaFormDialogComponent } from './area-form-dialog.component';
 
@@ -30,6 +32,8 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
     RouterLink,
     IconComponent,
     EmptyStateComponent,
+    DeviceThumbComponent,
+    SourceBadgeComponent,
     OwnerItemsComponent,
     AreaFormDialogComponent,
   ],
@@ -38,7 +42,10 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
     @if (area(); as a) {
       <div class="header">
         <div>
-          <h1>{{ a.name }}</h1>
+          <h1>
+            {{ a.name }}
+            <app-source-badge [source]="a.source" />
+          </h1>
           <span class="muted">
             @if (a.floorName) {
               {{ a.floorName }} ·
@@ -81,13 +88,14 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
           <div class="device-list">
             @for (device of devices(); track device.id) {
               <button type="button" class="device-row" (click)="openDevice(device)">
-                <app-icon class="device-icon" [path]="icons.devices" [size]="24" />
+                <app-device-thumb [imageId]="device.primaryImageId" [size]="36" />
                 <div class="device-info">
                   <span class="device-name">{{ device.name }}</span>
                   <span class="device-sub muted">
                     {{ device.manufacturer }} {{ device.model }} · {{ device.status }}
                   </span>
                 </div>
+                <app-source-badge class="device-source" [source]="device.source" />
                 <app-icon class="device-chevron" [path]="icons.chevron" [size]="20" />
               </button>
             }
@@ -125,6 +133,9 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
     }
     .header h1 {
       margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .header-actions {
       display: flex;
@@ -173,10 +184,6 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
     .device-row:hover {
       background: var(--hover-color);
     }
-    .device-icon {
-      color: var(--secondary-text-color);
-      flex-shrink: 0;
-    }
     .device-info {
       display: flex;
       flex-direction: column;
@@ -192,6 +199,9 @@ import { AreaFormDialogComponent } from './area-form-dialog.component';
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    .device-source {
+      flex-shrink: 0;
     }
     .device-chevron {
       color: var(--secondary-text-color);

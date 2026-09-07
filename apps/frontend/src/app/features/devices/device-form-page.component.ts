@@ -259,7 +259,10 @@ export class DeviceFormPageComponent implements OnInit {
         await this.syncCapabilities(device.id);
         this.saving.set(false);
         this.toast.success(id ? 'Device updated' : 'Device created');
-        this.router.navigate(['/devices', device.id]);
+        // replaceUrl: the form itself isn't a page worth keeping in history —
+        // otherwise "back" from the device would land back on the form
+        // instead of wherever the user opened it from (e.g. an area page).
+        this.router.navigate(['/devices', device.id], { replaceUrl: true });
       },
       error: () => this.saving.set(false),
     });
@@ -281,6 +284,6 @@ export class DeviceFormPageComponent implements OnInit {
 
   protected cancel(): void {
     const id = this.deviceId();
-    this.router.navigate(id ? ['/devices', id] : ['/devices']);
+    this.router.navigate(id ? ['/devices', id] : ['/devices'], { replaceUrl: true });
   }
 }

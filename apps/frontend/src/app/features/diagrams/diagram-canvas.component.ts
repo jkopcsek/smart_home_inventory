@@ -83,7 +83,6 @@ import { ConfirmService } from '../../core/confirm/confirm.service';
 import { ConnectionTypesStore } from '../../core/connection-types/connection-types.store';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { ColorPickerComponent } from '../../shared/ui/color-picker.component';
-import { DevicePickerComponent } from '../../shared/ui/device-picker.component';
 import { DotNodeComponent } from './nodes/dot-node.component';
 import { BoxNodeComponent } from './nodes/box-node.component';
 import { ImageNodeComponent } from './nodes/image-node.component';
@@ -98,6 +97,7 @@ import { AreaPickerDialogComponent } from './pickers/area-picker-dialog.componen
 import { AttachmentPickerDialogComponent } from './pickers/attachment-picker-dialog.component';
 import { DiagramLinkPickerDialogComponent } from './pickers/diagram-link-picker-dialog.component';
 import { ConnectionPickerDialogComponent } from './pickers/connection-picker-dialog.component';
+import { DevicePickerDialogComponent } from './pickers/device-picker-dialog.component';
 import { IconPickerDialogComponent } from './pickers/icon-picker-dialog.component';
 import { EdgeReshapeOverlayComponent } from './edge-reshaping/edge-reshape-overlay.component';
 import { EdgeCommandDispatcher } from './edge-reshaping/commands';
@@ -270,11 +270,11 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
     NgDiagramPaletteItemComponent,
     IconComponent,
     ColorPickerComponent,
-    DevicePickerComponent,
     AreaPickerDialogComponent,
     AttachmentPickerDialogComponent,
     DiagramLinkPickerDialogComponent,
     ConnectionPickerDialogComponent,
+    DevicePickerDialogComponent,
     IconPickerDialogComponent,
     EdgeReshapeOverlayComponent,
   ],
@@ -1028,18 +1028,12 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       }
     </div>
 
-    <dialog #deviceDlg class="device-picker-dialog" (cancel)="pickerTarget.set(null)">
-      <h3>Pick a device</h3>
-      <app-device-picker
-        placeholder="Search device…"
-        [currentAreaId]="areaId()"
-        [clearOnSelect]="true"
-        (selected)="onDevicePicked($event)"
-      />
-      <div class="actions">
-        <button type="button" class="btn secondary" (click)="closeDeviceDialog()">Cancel</button>
-      </div>
-    </dialog>
+    <app-device-picker-dialog
+      [open]="pickerTarget()?.kind === 'link-device'"
+      [currentAreaId]="areaId()"
+      (closed)="pickerTarget.set(null)"
+      (picked)="onDevicePicked($event)"
+    />
 
     <app-area-picker-dialog
       [open]="pickerTarget()?.kind === 'link-area'"
@@ -1613,13 +1607,6 @@ function toContent(nodes: NgNode[], edges: NgEdge[], viewport?: DiagramViewport)
       justify-content: flex-end;
       margin-top: 16px;
     }
-    .device-picker-dialog {
-      /* app-device-picker's results dropdown is an absolutely-positioned
-         overlay, so it doesn't grow the dialog's own auto-height like the
-         other pickers' in-flow lists do — reserve real room up front so a
-         modal <dialog>'s forced overflow:auto (Chromium) doesn't clip it. */
-      min-height: min(70vh, 480px);
-    }
     @media (max-width: 640px) {
       .panel {
         /* A full-width, top-anchored panel used to blanket the whole canvas,
@@ -1657,7 +1644,6 @@ export class DiagramCanvasComponent implements OnDestroy {
    *  guard the library's own — now-replaced — zoom controls used internally). */
   protected readonly diagramInitialized = this.diagramService.isInitialized;
   private readonly viewState = inject(DiagramViewState);
-  private readonly deviceDlg = viewChild.required<ElementRef<HTMLDialogElement>>('deviceDlg');
   private readonly canvasEl = viewChild<unknown, ElementRef<HTMLElement>>('canvasEl', { read: ElementRef });
 
   readonly diagramId = input.required<string>();
@@ -1930,13 +1916,6 @@ export class DiagramCanvasComponent implements OnDestroy {
       this.connectionsApi
         .list(areaId ? { areaId } : deviceId ? { deviceId } : undefined)
         .subscribe((conns) => this.connections.set(conns));
-    });
-    effect(() => {
-      const target = this.pickerTarget();
-      const el = this.deviceDlg().nativeElement;
-      const shouldOpen = target?.kind === 'link-device';
-      if (shouldOpen && !el.open) el.showModal();
-      if (!shouldOpen && el.open) el.close();
     });
   }
 
@@ -2576,10 +2555,6 @@ export class DiagramCanvasComponent implements OnDestroy {
 
   protected openPicker(target: PickerTarget): void {
     this.pickerTarget.set(target);
-  }
-
-  protected closeDeviceDialog(): void {
-    this.pickerTarget.set(null);
   }
 
   protected onDevicePicked(device: DeviceDto): void {

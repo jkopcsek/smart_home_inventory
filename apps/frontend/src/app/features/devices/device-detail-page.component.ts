@@ -40,6 +40,7 @@ import {
 import { ConfirmService } from '../../core/confirm/confirm.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { IconComponent } from '../../shared/ui/icon.component';
+import { SourceBadgeComponent } from '../../shared/ui/source-badge.component';
 import { OwnerItemsComponent } from '../attachments/owner-items.component';
 import { ConnectionFormDialogComponent } from '../connections/connection-form-dialog.component';
 
@@ -48,6 +49,7 @@ import { ConnectionFormDialogComponent } from '../connections/connection-form-di
   imports: [
     RouterLink,
     IconComponent,
+    SourceBadgeComponent,
     OwnerItemsComponent,
     ConnectionFormDialogComponent,
   ],
@@ -64,7 +66,10 @@ import { ConnectionFormDialogComponent } from '../connections/connection-form-di
             </div>
           }
           <div>
-            <h1>{{ d.name }}</h1>
+            <h1>
+              {{ d.name }}
+              <app-source-badge [source]="d.source" />
+            </h1>
             <span class="muted">
               {{ d.manufacturer }} {{ d.model }}
               @if (d.areaName) {
@@ -308,6 +313,9 @@ import { ConnectionFormDialogComponent } from '../connections/connection-form-di
     }
     h1 {
       margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .chips {
       display: flex;

@@ -17,16 +17,23 @@ import {
 import { mdiDevices, mdiPlus } from '@mdi/js';
 import {
   AreasApi,
-  attachmentUrl,
   CapabilitiesApi,
   DevicesApi,
 } from '../../core/api/api.services';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { DeviceThumbComponent } from '../../shared/ui/device-thumb.component';
+import { SourceBadgeComponent } from '../../shared/ui/source-badge.component';
 
 @Component({
   selector: 'app-device-list-page',
-  imports: [RouterLink, IconComponent, EmptyStateComponent],
+  imports: [
+    RouterLink,
+    IconComponent,
+    EmptyStateComponent,
+    DeviceThumbComponent,
+    SourceBadgeComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="header">
@@ -79,17 +86,14 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
             <th>Model</th>
             <th>Capabilities</th>
             <th>Status</th>
+            <th>Source</th>
           </tr>
         </thead>
         <tbody>
           @for (device of devices(); track device.id) {
             <tr class="clickable" (click)="open(device)">
               <td class="thumb-cell">
-                @if (device.primaryImageId) {
-                  <img class="thumb" [src]="thumbUrl(device.primaryImageId)" alt="" />
-                } @else {
-                  <app-icon [path]="icons.devices" [size]="22" class="muted" />
-                }
+                <app-device-thumb [imageId]="device.primaryImageId" [size]="36" />
               </td>
               <td>
                 {{ device.name }}
@@ -105,6 +109,9 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
                 }
               </td>
               <td class="muted">{{ device.status }}</td>
+              <td class="source-cell">
+                <app-source-badge [source]="device.source" />
+              </td>
             </tr>
           }
         </tbody>
@@ -150,12 +157,9 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
     .thumb-cell {
       width: 44px;
     }
-    .thumb {
-      width: 36px;
-      height: 36px;
-      object-fit: cover;
-      border-radius: 6px;
-      display: block;
+    .source-cell {
+      width: 1%;
+      white-space: nowrap;
     }
     .warn {
       color: var(--warning-color);
@@ -179,8 +183,6 @@ export class DeviceListPageComponent implements OnInit {
   protected readonly loaded = signal(false);
   protected readonly statuses = DEVICE_STATUSES;
   protected readonly icons = { plus: mdiPlus, devices: mdiDevices };
-
-  protected thumbUrl = (id: string) => attachmentUrl(id, true);
 
   ngOnInit(): void {
     this.areasApi.list().subscribe((areas) => this.areas.set(areas));
