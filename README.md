@@ -1,8 +1,9 @@
 # Smart Home Inventory
 
 A Home Assistant add-on (served via Ingress) that documents your home's
-electrical and smart-home setup: areas, devices, capabilities, actual
-connections, annotated plans/photos, and mermaid diagrams.
+smart-home setup and infrastructure: areas, devices, capabilities, actual
+connections (electrical, water, gas, network, ...), annotated plans/photos,
+attachments (manuals, invoices, ...), and mermaid diagrams.
 
 - Architecture background and constraints: [BOOTSTRAP.md](BOOTSTRAP.md)
 - Per-feature design notes: [docs/features/](docs/features/README.md)
@@ -59,49 +60,29 @@ strictly relative API/asset URLs (guarded by an HTTP interceptor).
 
 ## Install as a Home Assistant add-on
 
-The repo root is the add-on directory (`config.yaml` + `Dockerfile`). For a
-local add-on: copy the repo to `/addons/smart_home_inventory` on your HA box,
-then Settings → Add-ons → Add-on store → ⋮ → Check for updates, and install
-"Smart Home Inventory". On startup the container runs `prisma migrate deploy`
-and serves the UI through Ingress on port 8099.
+This repo is a Home Assistant add-on repository (`repository.yaml` +
+`config.yaml` + `Dockerfile` at root, one add-on). To install:
 
-`homeassistant_api: true` gives the backend `SUPERVISOR_TOKEN` automatically —
-sync then talks to `ws://supervisor/core/websocket`.
+1. Settings → Add-ons → Add-on Store → ⋮ (top right) → Repositories, and add
+   `https://github.com/jkopcsek/smart_home_inventory`.
+2. Find "Smart Home Inventory" in the store and install it.
+3. Start the add-on and open it from the sidebar panel.
 
-### Updating the add-on
+On startup the container runs `prisma migrate deploy` and serves the UI
+through Ingress on port 8099. `homeassistant_api: true` gives the backend
+`SUPERVISOR_TOKEN` automatically — sync then talks to
+`ws://supervisor/core/websocket`. See [DOCS.md](DOCS.md) for configuration
+options and usage, and [CHANGELOG.md](CHANGELOG.md) for release notes.
 
-The add-on is a **pre-built image**, not a source checkout. Building from
-source on-device (`ha apps rebuild`, compiling Angular + Node) is heavy enough
-to OOM a Raspberry Pi 4 and can take Supervisor down with it. Instead, CI
-builds the image per architecture and pushes it to GHCR
-(`.github/workflows/build-addon.yml`, triggered whenever `config.yaml`'s
-`version` changes on `main`); the Pi only ever runs a `docker pull`. Because
-of that, nothing needs to be checked out on the Pi at all — the add-on
-directory under `/addons` holds a single file, `config.yaml`.
+New versions ship as pre-built images (CI builds per architecture and pushes
+to GHCR whenever `config.yaml`'s `version` changes on `main` — see
+`.github/workflows/build-addon.yml`); once installed via the repository
+above, an instance picks these up through its normal "Check for updates" /
+Update flow, no scripts involved.
 
-One-time setup (also needed again if the `/addons/local/smart_home_inventory`
-directory is ever deleted, since Supervisor loses track of the add-on with
-it): on GitHub, make the `smart_home_inventory-aarch64` and
-`smart_home_inventory-amd64` packages public (Supervisor pulls without
-registry auth) — they only exist after the first CI run completes. Then, from
-your own machine:
-
-```bash
-tools/deploy/install-ha.sh
-```
-
-To ship a new version: bump `version` in `config.yaml`, push to `main`, wait
-for the "Build and publish add-on image" workflow to finish, then run:
-
-```bash
-tools/deploy/update-ha.sh
-```
-
-It scps `config.yaml` to `/addons/local/smart_home_inventory` (SSH target
-overridable with `HA_HOST`/`HA_USER`/`HA_PORT`), then runs `ha store reload`
-and `ha apps update local_smart_home_inventory` so Supervisor picks up the new
-version and pulls the matching image — no HA terminal, no deploy key, no git
-on the Pi.
+For the scp-based local install used during development (registering the
+add-on under `/addons/local` directly, bypassing the store), see
+[docs/local-addon-deploy.md](docs/local-addon-deploy.md).
 
 ## Environment variables
 

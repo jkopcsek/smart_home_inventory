@@ -1,7 +1,7 @@
 name: "Smart Home Inventory"
-version: "0.2.13"
+version: "0.2.14"
 slug: "smart_home_inventory"
-description: "Document areas, devices, capabilities, connections, and electrical setup"
+description: "Document areas, devices, capabilities, connections, and infrastructure"
 url: "https://github.com/jkopcsek/smart_home_inventory"
 image: "ghcr.io/jkopcsek/smart_home_inventory-{arch}"
 arch:
@@ -11,7 +11,7 @@ startup: application
 boot: auto
 ingress: true
 ingress_port: 8099
-panel_icon: mdi:home-lightning-bolt-outline
+panel_icon: mdi:floor-plan
 panel_title: "Inventory"
 homeassistant_api: true
 hassio_api: true
