@@ -1,7 +1,7 @@
 # Local add-on install (developer workflow)
 
 This is the scp-based flow used during development, before this repo was a
-proper [add-on repository](../README.md#install-as-a-home-assistant-add-on).
+proper [add-on repository](../README.md#installation).
 It registers the add-on directly under `/addons/local` on your own HA box,
 bypassing the Supervisor store — useful for testing a change without waiting
 on a public repository check-for-updates cycle.

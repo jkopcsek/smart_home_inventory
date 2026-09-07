@@ -1,67 +1,44 @@
 # Smart Home Inventory
 
-A Home Assistant add-on (served via Ingress) that documents your home's
-smart-home setup and infrastructure: areas, devices, capabilities, actual
-connections (electrical, water, gas, network, ...), annotated plans/photos,
-attachments (manuals, invoices, ...), and mermaid diagrams.
+A Home Assistant add-on that documents your home's smart-home setup and
+infrastructure: areas, devices, capabilities, actual connections, annotated
+plans/photos, and attached manuals or invoices — all stored locally, next
+to each other, so you stop losing this information to memory, random
+photos, or a spreadsheet that falls out of date.
 
-- Architecture background and constraints: [BOOTSTRAP.md](BOOTSTRAP.md)
-- Per-feature design notes: [docs/features/](docs/features/README.md)
+## Features
 
-## Stack
+- **Areas & devices** — synced straight from Home Assistant's own registry
+  (one click, uses the Supervisor token automatically), then enriched with
+  the details HA doesn't track: purchase date, install notes, capabilities,
+  physical location. Devices HA doesn't know about — junction boxes,
+  passive switches, fuses — get added directly as local devices, and each
+  area page shows at a glance what's synced from HA and what's local-only.
+- **Connections & plans** — draw the actual wiring between devices as a
+  diagram, not just electrical: model water, gas, and network runs the same
+  way, alongside 230V mains, 24V DC, or a Zigbee binding. It's the thing you
+  wish you had the one time a breaker trips, a pipe needs shutting off, or
+  you're tracing which switch feeds which outlet.
+- **Attachments** — manuals, invoices, warranty cards, floor plans, photos —
+  attach them to the device or area they belong to, annotate plans/photos
+  directly, and pull mermaid diagrams out of what you've documented.
 
-Nx monorepo — NestJS backend (`apps/backend`), Angular frontend
-(`apps/frontend`), shared zod DTOs (`libs/shared`). SQLite via Prisma; all
-persistent state (DB + uploaded files) lives under `DATA_DIR` (`/data` in the
-add-on, `./data` in dev) so HA backups cover it automatically.
+All of it is stored under the add-on's data directory, so it rides along
+with your normal HA backups — no separate export/import step.
 
-## Development
+## Screenshots
 
-```bash
-npm install
-npm run prisma:migrate      # create/update ./data/inventory.db
-npm run dev                 # backend on :8099, frontend dev server with /api proxy
-```
+Areas synced from Home Assistant, with local-only devices mixed in:
 
-Open the frontend dev server URL it prints (http://localhost:4211).
+![Area with synced and local devices](https://raw.githubusercontent.com/jkopcsek/smart_home_inventory/main/docs/images/area-devices.png)
 
-Without any HA configuration the backend runs in **mock** mode — "Sync from
-Home Assistant" in Settings imports built-in fixture areas/devices. To sync a
-real instance during development, set in `.env`:
+A plan showing the actual wiring between fuse, switches, and devices,
+color-coded by connection type — the same view works for water, gas, or
+network runs, not just electrical:
 
-```
-HA_URL=http://homeassistant.local:8123
-HA_TOKEN=<long-lived access token>
-```
+![Wiring plan diagram](https://raw.githubusercontent.com/jkopcsek/smart_home_inventory/main/docs/images/electrical-plan.png)
 
-### Useful commands
-
-```bash
-npx nx build backend|frontend|shared     # production builds
-npx nx test backend|frontend|shared      # unit tests (merge rules, schema, editor math)
-npx nx run-many -t eslint:lint           # lint everything
-npm run prisma:migrate                   # prisma migrate dev (schema changes)
-```
-
-### Testing the Ingress environment locally
-
-Ingress serves the app under a dynamic path (`/api/hassio_ingress/<token>/`),
-which is the main class of bugs for add-on frontends. To simulate it:
-
-```bash
-npx nx build backend && npx nx build frontend
-DATA_DIR=./data STATIC_DIR=dist/apps/frontend/browser node dist/apps/backend/main.js &
-node tools/ingress-proxy/proxy.mjs
-# open http://localhost:8100  (renders the app in an iframe under a fake ingress prefix)
-```
-
-The app survives this because it uses hash routing, `<base href="./">`, and
-strictly relative API/asset URLs (guarded by an HTTP interceptor).
-
-## Install as a Home Assistant add-on
-
-This repo is a Home Assistant add-on repository (`repository.yaml` +
-`config.yaml` + `Dockerfile` at root, one add-on).
+## Installation
 
 [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjkopcsek%2Fsmart_home_inventory)
 
@@ -70,33 +47,42 @@ Or manually:
 1. Settings → Add-ons → Add-on Store → ⋮ (top right) → Repositories, and add
    `https://github.com/jkopcsek/smart_home_inventory`.
 2. Find "Smart Home Inventory" in the store and install it.
-3. Start the add-on and open it from the sidebar panel.
+3. Start the add-on, then open it from the sidebar panel (or "Open Web UI").
 
-On startup the container runs `prisma migrate deploy` and serves the UI
-through Ingress on port 8099. `homeassistant_api: true` gives the backend
-`SUPERVISOR_TOKEN` automatically — sync then talks to
-`ws://supervisor/core/websocket`. See [DOCS.md](DOCS.md) for configuration
-options and usage, and [CHANGELOG.md](CHANGELOG.md) for release notes.
+Once added, new versions show up through the Add-on Store's normal
+"Check for updates" / Update flow — nothing else to do.
 
-New versions ship as pre-built images (CI builds per architecture and pushes
-to GHCR whenever `config.yaml`'s `version` changes on `main` — see
-`.github/workflows/build-addon.yml`); once installed via the repository
-above, an instance picks these up through its normal "Check for updates" /
-Update flow, no scripts involved.
+## How to use
 
-For the scp-based local install used during development (registering the
-add-on under `/addons/local` directly, bypassing the store), see
-[docs/local-addon-deploy.md](docs/local-addon-deploy.md).
+On first start the add-on has no data. Go to Settings inside the app and use
+"Sync from Home Assistant" to import your areas and devices from HA's
+registry — this uses the Supervisor token automatically, no setup needed.
+From there, add capabilities, wire up actual connections, and attach photos,
+floor plans, manuals, or invoices.
 
-## Environment variables
+## Configuration
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `PORT` | `8099` | must match `ingress_port` |
-| `DATA_DIR` | `/data` | SQLite DB + uploads root |
-| `STATIC_DIR` | unset | serve built Angular app from this dir (prod) |
-| `HA_URL` / `HA_TOKEN` | unset | dev: sync against a real HA instance |
-| `HA_MOCK` | `false` | force fixture registry |
-| `HA_READ_ONLY` | `true` | hard guard: block any non-read HA command at the client (also add-on option `read_only`) |
-| `HA_SYNC_INTERVAL_MINUTES` | `0` (off) | periodic background sync |
-| `UPLOAD_MAX_BYTES` | 50 MB | upload size limit |
+```yaml
+read_only: true
+```
+
+| Option      | Default | Description                                                                     |
+| ----------- | ------- | -------------------------------------------------------------------------------- |
+| `read_only` | `true`  | Blocks any non-read Home Assistant command from the sync client. Turn off only if you intend to let the add-on write back to HA (not currently used by any feature). |
+
+## Known issues and limitations
+
+- Sync only pulls from Home Assistant; it does not push changes back.
+- The Ingress URL is dynamic per session — don't bookmark it directly, use
+  the sidebar panel.
+
+## Support
+
+Found a bug or have a request? Open an issue on
+[GitHub](https://github.com/jkopcsek/smart_home_inventory/issues). Release
+notes live in [CHANGELOG.md](CHANGELOG.md).
+
+## Development
+
+Looking to build from source, run it locally, or contribute? See
+[CONTRIBUTING.md](CONTRIBUTING.md).
