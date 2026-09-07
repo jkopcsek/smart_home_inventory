@@ -1,5 +1,10 @@
 # Smart Home Inventory
 
+[![Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjkopcsek%2Fsmart_home_inventory%2Fmain%2Fconfig.yaml&query=%24.version&label=version&prefix=v&color=blue)](CHANGELOG.md)
+[![Architectures](https://img.shields.io/badge/arch-aarch64%20%7C%20amd64-blue)](config.yaml)
+[![Build and publish add-on image](https://github.com/jkopcsek/smart_home_inventory/actions/workflows/build-addon.yml/badge.svg)](https://github.com/jkopcsek/smart_home_inventory/actions/workflows/build-addon.yml)
+[![License: MIT](https://img.shields.io/github/license/jkopcsek/smart_home_inventory)](LICENSE)
+
 A Home Assistant add-on that documents your home's smart-home setup and
 infrastructure: areas, devices, capabilities, actual connections, annotated
 plans/photos, and attached manuals or invoices — all stored locally, next
