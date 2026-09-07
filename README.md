@@ -61,7 +61,11 @@ strictly relative API/asset URLs (guarded by an HTTP interceptor).
 ## Install as a Home Assistant add-on
 
 This repo is a Home Assistant add-on repository (`repository.yaml` +
-`config.yaml` + `Dockerfile` at root, one add-on). To install:
+`config.yaml` + `Dockerfile` at root, one add-on).
+
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjkopcsek%2Fsmart_home_inventory)
+
+Or manually:
 
 1. Settings → Add-ons → Add-on Store → ⋮ (top right) → Repositories, and add
    `https://github.com/jkopcsek/smart_home_inventory`.
